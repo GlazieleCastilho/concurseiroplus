@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 13, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/Gcast/Documents/concurseiroplus/concurseiroplus/src/app/%28with-layout%29/page.tsx"],"sourcesContent":["import { Button } from \"@/components/ui/button\"\r\n\r\nexport default function Home() {\r\n  return (\r\n<div>\r\n     <h1>Concurseiro+</h1>\r\n     <Button>Click me</Button>\r\n</div>\r\n  );\r\n}\r\n"],"names":[],"mappings":";;;;AAAA;;;AAEe,SAAS;IACtB,qBACF,8OAAC;;0BACI,8OAAC;0BAAG;;;;;;0BACJ,8OAAC,kIAAA,CAAA,SAAM;0BAAC;;;;;;;;;;;;AAGb","debugId":null}}]
+}
