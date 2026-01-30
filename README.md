@@ -1,4 +1,4 @@
-Concurseiro+ é uma plataforma digital focada exclusivamente na realização de simulados para concursos públicos, permitindo que estudantes treinem de forma personalizada, acompanhem seu desempenho e identifiquem pontos de melhoria com base em dados reais.
+Concurseiro+ é uma plataforma digital focada exclusivamente na realização de simulados para concursos públicos, permitindo que estudantes treinem de forma personalizada, acompanhem seu desempenho, identifiquem pontos de melhoria com base em dados reais, faça seu  próprio cronograma e interaja com outros concurseiros através do feed.
 
  Visão geral
   Principais recursos
