@@ -10,3 +10,7 @@ playwright-report/
 test-results/
 tsconfig.tsbuildinfo
 .DS_Store
+.next/
+node_modules/
+src/generated/prisma/
+.env
