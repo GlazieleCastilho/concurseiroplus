@@ -1,6 +1,5 @@
 "use client";
 
-import { CheckRole } from "@/lib/clerk";
 import {Separator} from "@/components/ui/separator";
 import {
     SidebarGroup,
@@ -12,9 +11,9 @@ import { useUser } from "@clerk/nextjs";
 import {
     BookOpen,
     BookUp2,
+    Brain,
     ChartArea,
     MessageCircle,
-    SquareDashedBottomCode,
     Trophy,
     Users,
     Calendar1,
@@ -22,11 +21,6 @@ import {
     CalendarCheck,
     Headset,
     SquarePen,
-    Play,
-    MessageSquareLock,
-    MessagesSquare,
-    MessageCircleQuestionMark,
-    Megaphone,
     Newspaper,
     MessageCircleHeart,
     ChartLine,
@@ -43,17 +37,27 @@ type NavItem = {
 export const NavItems =() => {
     const {user} = useUser();
 
-    const isAdmin = user?.publicMetadata?.role === "admin";
+    const isAdmin = user?.publicMetadata?.role === "admin" || user?.publicMetadata?.role === "super_admin";
     const navItems: NavItem[] = [
         {
             label:"Inicio",
-            path:"/",
+            path:"/dashboard",
             icon:House,
         },
         {
             label:"Simulados",
             path: "/simulados",
             icon: FileClock,
+        },
+        {
+            label:"Redacao IA",
+            path:"/redacao",
+            icon:SquarePen,
+        },
+        {
+            label:"Skills",
+            path:"/skills",
+            icon:Brain,
         },
         {
             label:"Material de Estudos",

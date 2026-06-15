@@ -7,50 +7,61 @@ datasource db {
   provider = "postgresql"
 }
 
-model User {
-  id String @id @default(uuid())
-  firstName String
-  lastName String?
-  email    String @unique
-  clerkUserId String @unique
-  imageUrl    String?
-
-  createdAt  DateTime @default(now())
-  updateAt  DateTime  @updatedAt
-
-  @@map("users")
+enum Role {
+  user
+  admin
+  super_admin
 }
 
- /*model Course {
-  id String @id @default(cuid())
-  title String
-  status CourseStatus @default(DRAFT)
-  difficulty CourseDifficulty?
+enum PlanTier {
+  ESSENCIAL
+  PRO
+  ELITE
+}
 
-  createdAt DateTime @default(now())
-  updateAt DateTime @updatedAt
+enum BillingCycle {
+  MENSAL
+  TRIMESTRAL
+  ANUAL
+  VITALICIO
+}
 
-  tags CourseTag[]
+enum SubscriptionStatus {
+  INCOMPLETE
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+  TRIALING
+  LIFETIME
+}
 
-  @@map("courses")
-} */
+enum PaymentProvider {
+  STRIPE
+  MERCADO_PAGO
+}
 
-model CourseTag {
-  id String @id @default(cuid())
-  name String @unique
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  FAILED
+  CANCELED
+  REFUNDED
+  CHARGEBACK
+}
 
-  createdAt DateTime @default(now())
-  updateAt DateTime @updatedAt
-
-  course  Course? @relation(fields: [courseId], references: [id])
-  courseId String?
-
-  @@map("course_tags")
+enum InvoiceStatus {
+  DRAFT
+  OPEN
+  PAID
+  VOID
+  UNCOLLECTIBLE
 }
 
 enum CourseStatus {
   DRAFT
   PUBLISHED
+  ARCHIVED
 }
 
 enum CourseDifficulty {
@@ -59,65 +70,688 @@ enum CourseDifficulty {
   HARD
 }
 
-model Course {
-  id String @id @default(cuid())
+enum BancaPattern {
+  ENEM
+  CESPE
+  FCC
+  FGV
+}
 
-  status CourseStatus @default(DRAFT)
+enum ExamLevel {
+  FUNDAMENTAL
+  MEDIO
+  SUPERIOR
+}
 
-  title String
-  slug String @unique
-  description String 
-  shortDescription String?
-  thumbnail String
-  price Float
-  discountPrice Float?
-  tags CourseTag[]
-  difficulty CourseDifficulty @default(EASY)
+enum QuestionType {
+  OBJETIVA
+  CERTO_ERRADO
+  DISSERTATIVA
+}
 
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum SimuladoStatus {
+  PENDENTE
+  EM_ANDAMENTO
+  FINALIZADO
+  EXPIRADO
+}
+
+enum RedacaoStatus {
+  SUBMITTED
+  PROCESSING
+  GRADED
+  FAILED
+}
+
+enum SkillSlug {
+  juridica
+  gestao
+  linguagem
+  redacao
+  digital
+  logica
+  contabil
+}
+
+enum PlannerStatus {
+  TODO
+  DOING
+  DONE
+  CANCELED
+}
+
+enum PlannerRecurrence {
+  NONE
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum PomodoroType {
+  FOCO
+  PAUSA_CURTA
+  PAUSA_LONGA
+}
+
+enum NotificationChannel {
+  EMAIL
+  PUSH
+  IN_APP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  READ
+  FAILED
+}
+
+enum PostStatus {
+  PUBLISHED
+  HIDDEN
+  REPORTED
+  DELETED
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+model User {
+  id          String   @id @default(uuid())
+  clerkUserId String   @unique
+  firstName   String
+  lastName    String?
+  email       String   @unique
+  imageUrl    String?
+  role        Role     @default(user)
+  planTier    PlanTier @default(ESSENCIAL)
+  lastLoginAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subscriptions    Subscription[]
+  payments         Payment[]
+  invoices         Invoice[]
+  simulados        Simulado[]
+  respostas        Resposta[]
+  resultados       Resultado[]
+  redacoes         Redacao[]
+  skillChats       SkillChat[]
+  plannerTasks     PlannerTask[]
+  pomodoroSessions PomodoroSession[]
+  statistics       StudyStatistic[]
+  notifications    Notification[]
+  posts            Post[]
+  comments         Comment[]
+  likes            Like[]
+  rankings         Ranking[]
+  supportTickets   SupportTicket[]
+  auditLogs        AuditLog[]
+
+  @@index([role])
+  @@index([planTier])
+  @@map("users")
+}
+
+model Plan {
+  id             String       @id @default(cuid())
+  tier           PlanTier
+  cycle          BillingCycle
+  name           String
+  description    String
+  priceCents     Int
+  currency       String       @default("BRL")
+  essayLimit     Int?
+  discursiveLimit Int?
+  skillsLimit    Int?
+  features       Json
+  stripePriceId  String?      @unique
+  mercadoPagoPlanId String?   @unique
+  active         Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  subscriptions Subscription[]
+  payments      Payment[]
+
+  @@unique([tier, cycle])
+  @@index([active, tier])
+  @@map("plans")
+}
+
+model Subscription {
+  id                     String             @id @default(cuid())
+  userId                 String
+  user                   User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId                 String?
+  plan                   Plan?              @relation(fields: [planId], references: [id], onDelete: SetNull)
+  planTier               PlanTier
+  billingCycle           BillingCycle
+  provider               PaymentProvider
+  status                 SubscriptionStatus @default(INCOMPLETE)
+  externalCustomerId     String?
+  externalSubscriptionId String?            @unique
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+  cancelAtPeriodEnd      Boolean            @default(false)
+  canceledAt             DateTime?
+  metadata               Json?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  invoices Invoice[]
+
+  @@index([userId, status])
+  @@index([provider, externalCustomerId])
+  @@map("subscriptions")
+}
+
+model Payment {
+  id                String          @id @default(cuid())
+  userId            String
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId            String?
+  plan              Plan?           @relation(fields: [planId], references: [id], onDelete: SetNull)
+  provider          PaymentProvider
+  status            PaymentStatus   @default(PENDING)
+  amountCents       Int
+  currency          String          @default("BRL")
+  externalPaymentId String?         @unique
+  checkoutUrl       String?
+  rawPayload        Json?
+  paidAt            DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  invoices Invoice[]
+
+  @@index([userId, status])
+  @@index([provider, status])
+  @@map("payments")
+}
+
+model Invoice {
+  id                String        @id @default(cuid())
+  userId            String
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptionId    String?
+  subscription      Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  paymentId         String?
+  payment           Payment?      @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  provider          PaymentProvider
+  status            InvoiceStatus @default(OPEN)
+  number            String?
+  amountDueCents    Int
+  amountPaidCents   Int           @default(0)
+  hostedInvoiceUrl  String?
+  externalInvoiceId String?       @unique
+  dueDate           DateTime?
+  paidAt            DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([userId, status])
+  @@map("invoices")
+}
+
+model Prova {
+  id              String      @id @default(cuid())
+  titulo          String
+  orgao           String
+  banca           String
+  cargo           String
+  ano             Int
+  nivel           ExamLevel
+  disciplina      String?
+  dataProva       DateTime?
+  totalQuestoes   Int         @default(0)
+  duracaoMin      Int         @default(240)
+  popularidade    Int         @default(0)
+  s3Key           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  questoes  Questao[]
+  simulados Simulado[]
+
+  @@index([banca, orgao, cargo])
+  @@index([dataProva])
+  @@map("provas")
+}
+
+model Questao {
+  id           String       @id @default(cuid())
+  provaId      String
+  prova        Prova        @relation(fields: [provaId], references: [id], onDelete: Cascade)
+  numero       Int
+  tipo         QuestionType @default(OBJETIVA)
+  enunciado    String       @db.Text
+  disciplina   String?
+  assunto      String?
+  dificuldade  Difficulty   @default(MEDIUM)
+  gabarito     String?
+  comentario   String?      @db.Text
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  alternativas Alternativa[]
+  respostas    Resposta[]
+
+  @@unique([provaId, numero])
+  @@index([disciplina, dificuldade])
+  @@map("questoes")
+}
+
+model Alternativa {
+  id        String   @id @default(cuid())
+  questaoId String
+  questao   Questao  @relation(fields: [questaoId], references: [id], onDelete: Cascade)
+  letra     String
+  texto     String   @db.Text
+  correta   Boolean  @default(false)
   createdAt DateTime @default(now())
-  updateAt DateTime @updatedAt
-  
+
+  respostas Resposta[]
+
+  @@unique([questaoId, letra])
+  @@map("alternativas")
+}
+
+model Simulado {
+  id            String         @id @default(cuid())
+  userId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provaId       String?
+  prova         Prova?         @relation(fields: [provaId], references: [id], onDelete: SetNull)
+  titulo        String
+  status        SimuladoStatus @default(PENDENTE)
+  duracaoMin    Int
+  iniciadoEm    DateTime?
+  finalizadoEm  DateTime?
+  expiradoEm    DateTime?
+  pontuacao     Float?
+  totalQuestoes Int
+  metadata      Json?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  respostas  Resposta[]
+  resultados Resultado[]
+  redacoes   Redacao[]
+
+  @@index([userId, status])
+  @@index([provaId, status])
+  @@map("simulados")
+}
+
+model Resposta {
+  id            String       @id @default(cuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  simuladoId    String
+  simulado      Simulado     @relation(fields: [simuladoId], references: [id], onDelete: Cascade)
+  questaoId     String
+  questao       Questao      @relation(fields: [questaoId], references: [id], onDelete: Cascade)
+  alternativaId String?
+  alternativa   Alternativa? @relation(fields: [alternativaId], references: [id], onDelete: SetNull)
+  respostaTexto String?      @db.Text
+  respostaDada  String?
+  correta       Boolean?
+  comentarioIA  String?      @db.Text
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@unique([simuladoId, questaoId])
+  @@index([userId, createdAt])
+  @@map("respostas")
+}
+
+model Resultado {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  simuladoId     String
+  simulado       Simulado @relation(fields: [simuladoId], references: [id], onDelete: Cascade)
+  acertos        Int
+  erros          Int
+  naoRespondidas Int
+  percentual     Float
+  porDisciplina  Json
+  tempoGastoSec  Int
+  createdAt      DateTime @default(now())
+
+  @@unique([simuladoId])
+  @@index([userId, createdAt])
+  @@map("resultados")
+}
+
+model Redacao {
+  id           String        @id @default(cuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  simuladoId   String?
+  simulado     Simulado?     @relation(fields: [simuladoId], references: [id], onDelete: SetNull)
+  tema         String
+  texto        String        @db.Text
+  bancaPattern BancaPattern
+  status       RedacaoStatus @default(SUBMITTED)
+  totalScore   Float?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  feedback RedacaoFeedback?
+
+  @@index([userId, createdAt])
+  @@index([bancaPattern])
+  @@map("redacoes")
+}
+
+model RedacaoFeedback {
+  id               String   @id @default(cuid())
+  redacaoId        String   @unique
+  redacao          Redacao  @relation(fields: [redacaoId], references: [id], onDelete: Cascade)
+  criterios        Json
+  trechos          Json
+  sugestoes        Json
+  versaoMelhorada  String   @db.Text
+  feedbackGeral    String   @db.Text
+  rawResponse      Json?
+  createdAt        DateTime @default(now())
+
+  @@map("redacao_feedbacks")
+}
+
+model Skill {
+  id           String    @id @default(cuid())
+  slug         SkillSlug @unique
+  name         String
+  discipline   String
+  description  String
+  systemPrompt String    @db.Text
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  chats SkillChat[]
+
+  @@map("skills")
+}
+
+model SkillChat {
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skillId          String
+  skill            Skill     @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  skillSlug        SkillSlug
+  title            String
+  planTier         PlanTier
+  topicsCovered    String[]
+  proficiencyScore Float     @default(0)
+  tokenUsage       Int       @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  messages SkillMessage[]
+
+  @@index([userId, skillSlug])
+  @@map("skill_chats")
+}
+
+model SkillMessage {
+  id        String    @id @default(cuid())
+  chatId    String
+  chat      SkillChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  role      String
+  content   String    @db.Text
+  metadata  Json?
+  createdAt DateTime  @default(now())
+
+  @@index([chatId, createdAt])
+  @@map("skill_messages")
+}
+
+model PlannerTask {
+  id          String            @id @default(cuid())
+  userId      String
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String?           @db.Text
+  discipline  String?
+  goal        String?
+  status      PlannerStatus     @default(TODO)
+  recurrence  PlannerRecurrence @default(NONE)
+  startsAt    DateTime?
+  dueAt       DateTime?
+  completedAt DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  pomodoroSessions PomodoroSession[]
+
+  @@index([userId, status, dueAt])
+  @@map("planner_tasks")
+}
+
+model PomodoroSession {
+  id            String       @id @default(cuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plannerTaskId String?
+  plannerTask   PlannerTask? @relation(fields: [plannerTaskId], references: [id], onDelete: SetNull)
+  tipo          PomodoroType
+  duracaoMin    Int
+  completado    Boolean      @default(false)
+  startedAt     DateTime     @default(now())
+  endedAt       DateTime?
+  createdAt     DateTime     @default(now())
+
+  @@index([userId, startedAt])
+  @@map("pomodoro_sessions")
+}
+
+model StudyStatistic {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date            DateTime
+  discipline      String?
+  questionsDone   Int      @default(0)
+  correctAnswers  Int      @default(0)
+  essaysSubmitted Int      @default(0)
+  focusMinutes    Int      @default(0)
+  skillMessages   Int      @default(0)
+  metadata        Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, date, discipline])
+  @@index([userId, date])
+  @@map("study_statistics")
+}
+
+model Notification {
+  id        String              @id @default(cuid())
+  userId    String
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel   NotificationChannel
+  status    NotificationStatus  @default(PENDING)
+  title     String
+  body      String
+  actionUrl String?
+  metadata  Json?
+  sentAt    DateTime?
+  readAt    DateTime?
+  createdAt DateTime            @default(now())
+
+  @@index([userId, status, createdAt])
+  @@map("notifications")
+}
+
+model Post {
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   String     @db.Text
+  status    PostStatus @default(PUBLISHED)
+  mediaUrl  String?
+  tags      String[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  comments Comment[]
+  likes    Like[]
+
+  @@index([status, createdAt])
+  @@map("posts")
+}
+
+model Comment {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId    String
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  parentId  String?
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[] @relation("CommentReplies")
+  content   String    @db.Text
+  hidden    Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  likes Like[]
+
+  @@index([postId, createdAt])
+  @@map("comments")
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId    String?
+  post      Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  commentId String?
+  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+  @@unique([userId, commentId])
+  @@index([postId])
+  @@index([commentId])
+  @@map("likes")
+}
+
+model Ranking {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  period      String
+  score       Float
+  position    Int
+  questions   Int      @default(0)
+  essays      Int      @default(0)
+  focusMinutes Int     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, period])
+  @@index([period, position])
+  @@map("rankings")
+}
+
+model Course {
+  id               String           @id @default(cuid())
+  title            String
+  slug             String           @unique
+  description      String
+  shortDescription String?
+  thumbnail        String
+  price            Float
+  discountPrice    Float?
+  status           CourseStatus     @default(DRAFT)
+  difficulty       CourseDifficulty @default(MEDIUM)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
   modules CourseModule[]
 
+  @@index([status, difficulty])
   @@map("courses")
 }
 
 model CourseModule {
-  id String @id @default(cuid())
-  
-  title String
-  description String
-  
-  courseId String
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  
-  order Int
-
-
-  createdAt DateTime @default(now())
-  updateAt DateTime @updatedAt
+  id          String         @id @default(cuid())
+  courseId    String
+  course      Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  order       Int
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 
   lessons CourseLesson[]
 
+  @@unique([courseId, order])
   @@map("course_modules")
 }
 
 model CourseLesson {
-  id String @id @default(cuid())
-  
-  title String
-  description String
-  videoId String
+  id           String       @id @default(cuid())
+  moduleId     String
+  module       CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  videoId      String?
   durationInMs Int
+  order        Int
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
-  order Int
-
-  moduleId String
-  module CourseModule @relation(fields: [moduleId], references:[id], onDelete: Cascade)
-  
-  createdAt DateTime @default(now())
-  updateAt DateTime @updatedAt
-
+  @@unique([moduleId, order])
   @@map("course_lessons")
+}
 
+model SupportTicket {
+  id          String       @id @default(cuid())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject     String
+  message     String       @db.Text
+  status      TicketStatus @default(OPEN)
+  priority    String       @default("normal")
+  response    String?      @db.Text
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([status, createdAt])
+  @@map("support_tickets")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String
+  entity     String
+  entityId   String?
+  ipAddress  String?
+  userAgent  String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([entity, entityId])
+  @@map("audit_logs")
 }

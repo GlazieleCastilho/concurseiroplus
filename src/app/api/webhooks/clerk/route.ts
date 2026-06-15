@@ -69,7 +69,11 @@ export async function POST(req: Request) {
             clerkUserId,
           },
           update: {
-            clerkUserId,
+            email,
+            firstName: data.first_name ?? email.split("@")[0],
+            lastName: data.last_name,
+            imageUrl: data.image_url,
+            role: (data.public_metadata?.role as "user" | "admin" | "super_admin" | undefined) ?? "user",
           },
           create: {
             clerkUserId,
@@ -77,6 +81,7 @@ export async function POST(req: Request) {
             firstName: data.first_name ?? email.split("@")[0],
             lastName: data.last_name,
             imageUrl: data.image_url,
+            role: (data.public_metadata?.role as "user" | "admin" | "super_admin" | undefined) ?? "user",
           },
         });
         break;
@@ -132,6 +137,7 @@ export async function POST(req: Request) {
             firstName: data.first_name ?? email.split("@")[0],
             lastName: data.last_name,
             imageUrl: data.image_url,
+            role: (data.public_metadata?.role as "user" | "admin" | "super_admin" | undefined) ?? databaseUser.role,
           },
         });
         break;
