@@ -1,7 +1,10 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { AppSidebar } from "@/components/shared/app-sidebar";
 import { SearchInput } from "@/components/shared/Search-input";
 import {SidebarProvider, SidebarInset, SidebarTrigger} from "@/components/ui/sidebar";
+import { useUser} from "@clerk/nextjs";
 import { LogIn } from "lucide-react";
 import  Link  from "next/link";
 import {ReactNode} from "react";
@@ -11,6 +14,9 @@ type LayoutProps = {
 };
 
 export default function Layout({children}: LayoutProps) {
+    
+    const { user } = useUser();
+
     return (
         <SidebarProvider>
             <AppSidebar/>
@@ -20,13 +26,15 @@ export default function Layout({children}: LayoutProps) {
                     <SidebarTrigger className="flex md:hidden -ml-1"/>
                     <SearchInput/>
                 </div>
+            {!user && (
                 <Link href="/auth/sign-in">
-                <Button size="sm">
-                    <LogIn/>
-                    Entrar
-                </Button>
+                    <Button size="sm">
+                        <LogIn />
+                            Entrar
+                    </Button>
                 </Link>
-              </header>
+            )}
+            </header>
               <div className="flex flex-1 flex-col gap-6 p-6 overflow-auto">{children}</div>
             </SidebarInset>
         </SidebarProvider>

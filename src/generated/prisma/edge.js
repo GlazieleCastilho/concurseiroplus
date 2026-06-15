@@ -19,7 +19,10 @@ const {
   skip,
   Decimal,
   Debug,
-  objectEnumValues,
+  DbNull,
+  JsonNull,
+  AnyNull,
+  NullTypes,
   makeStrictEnum,
   Extensions,
   warnOnce,
@@ -27,7 +30,7 @@ const {
   Public,
   getRuntime,
   createParam,
-} = require('./runtime/edge.js')
+} = require('./runtime/wasm-compiler-edge.js')
 
 
 const Prisma = {}
@@ -36,12 +39,12 @@ exports.Prisma = Prisma
 exports.$Enums = {}
 
 /**
- * Prisma Client JS version: 6.19.2
- * Query Engine version: c2990dca591cba766e3b7ef5d9e8a84796e47ab7
+ * Prisma Client JS version: 7.7.0
+ * Query Engine version: 75cbdc1eb7150937890ad5465d861175c6624711
  */
 Prisma.prismaVersion = {
-  client: "6.19.2",
-  engine: "c2990dca591cba766e3b7ef5d9e8a84796e47ab7"
+  client: "7.7.0",
+  engine: "75cbdc1eb7150937890ad5465d861175c6624711"
 }
 
 Prisma.PrismaClientKnownRequestError = PrismaClientKnownRequestError;
@@ -69,15 +72,11 @@ Prisma.defineExtension = Extensions.defineExtension
 /**
  * Shorthand utilities for JSON filtering
  */
-Prisma.DbNull = objectEnumValues.instances.DbNull
-Prisma.JsonNull = objectEnumValues.instances.JsonNull
-Prisma.AnyNull = objectEnumValues.instances.AnyNull
+Prisma.DbNull = DbNull
+Prisma.JsonNull = JsonNull
+Prisma.AnyNull = AnyNull
 
-Prisma.NullTypes = {
-  DbNull: objectEnumValues.classes.DbNull,
-  JsonNull: objectEnumValues.classes.JsonNull,
-  AnyNull: objectEnumValues.classes.AnyNull
-}
+Prisma.NullTypes = NullTypes
 
 
 
@@ -104,6 +103,51 @@ exports.Prisma.UserScalarFieldEnum = {
   updateAt: 'updateAt'
 };
 
+exports.Prisma.CourseTagScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  createdAt: 'createdAt',
+  updateAt: 'updateAt',
+  courseId: 'courseId'
+};
+
+exports.Prisma.CourseScalarFieldEnum = {
+  id: 'id',
+  status: 'status',
+  title: 'title',
+  slug: 'slug',
+  description: 'description',
+  shortDescription: 'shortDescription',
+  thumbnail: 'thumbnail',
+  price: 'price',
+  discountPrice: 'discountPrice',
+  difficulty: 'difficulty',
+  createdAt: 'createdAt',
+  updateAt: 'updateAt'
+};
+
+exports.Prisma.CourseModuleScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  description: 'description',
+  courseId: 'courseId',
+  order: 'order',
+  createdAt: 'createdAt',
+  updateAt: 'updateAt'
+};
+
+exports.Prisma.CourseLessonScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  description: 'description',
+  videoId: 'videoId',
+  durationInMs: 'durationInMs',
+  order: 'order',
+  moduleId: 'moduleId',
+  createdAt: 'createdAt',
+  updateAt: 'updateAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -118,80 +162,54 @@ exports.Prisma.NullsOrder = {
   first: 'first',
   last: 'last'
 };
+exports.CourseStatus = exports.$Enums.CourseStatus = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED'
+};
 
+exports.CourseDifficulty = exports.$Enums.CourseDifficulty = {
+  EASY: 'EASY',
+  MEDIUM: 'MEDIUM',
+  HARD: 'HARD'
+};
 
 exports.Prisma.ModelName = {
-  User: 'User'
+  User: 'User',
+  CourseTag: 'CourseTag',
+  Course: 'Course',
+  CourseModule: 'CourseModule',
+  CourseLesson: 'CourseLesson'
 };
 /**
  * Create the Client
  */
 const config = {
-  "generator": {
-    "name": "client",
-    "provider": {
-      "fromEnvVar": null,
-      "value": "prisma-client-js"
-    },
-    "output": {
-      "value": "C:\\Users\\Gcast\\Documents\\concurseiroplus\\concurseiroplus\\src\\generated\\prisma",
-      "fromEnvVar": null
-    },
-    "config": {
-      "engineType": "library"
-    },
-    "binaryTargets": [
-      {
-        "fromEnvVar": null,
-        "value": "windows",
-        "native": true
-      }
-    ],
-    "previewFeatures": [],
-    "sourceFilePath": "C:\\Users\\Gcast\\Documents\\concurseiroplus\\concurseiroplus\\prisma\\schema.prisma",
-    "isCustomOutput": true
-  },
-  "relativeEnvPaths": {
-    "rootEnvPath": "../../../.env",
-    "schemaEnvPath": "../../../.env"
-  },
-  "relativePath": "../../../prisma",
-  "clientVersion": "6.19.2",
-  "engineVersion": "c2990dca591cba766e3b7ef5d9e8a84796e47ab7",
-  "datasourceNames": [
-    "db"
-  ],
+  "previewFeatures": [],
+  "clientVersion": "7.7.0",
+  "engineVersion": "75cbdc1eb7150937890ad5465d861175c6624711",
   "activeProvider": "postgresql",
-  "inlineDatasources": {
-    "db": {
-      "url": {
-        "fromEnvVar": "DATABASE_URL",
-        "value": null
-      }
-    }
-  },
-  "inlineSchema": "generator client {\n  provider = \"prisma-client-js\"\n  output   = \"../src/generated/prisma\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  url      = env(\"DATABASE_URL\")\n}\n\nmodel User {\n  id          String  @id @default(uuid())\n  firstName   String\n  lastName    String?\n  email       String  @unique\n  clerkUserId String  @unique\n  imageUrl    String?\n\n  createdAt DateTime @default(now())\n  updateAt  DateTime @updatedAt\n\n  @@map(\"users\")\n}\n",
-  "inlineSchemaHash": "88eb6fc6837eceea810de51db6c76d8757e1d5b9ca7874ba07382e52621561f8",
-  "copyEngine": true
+  "inlineSchema": "generator client {\n  provider = \"prisma-client-js\"\n  output   = \"../src/generated/prisma\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n}\n\nmodel User {\n  id          String  @id @default(uuid())\n  firstName   String\n  lastName    String?\n  email       String  @unique\n  clerkUserId String  @unique\n  imageUrl    String?\n\n  createdAt DateTime @default(now())\n  updateAt  DateTime @updatedAt\n\n  @@map(\"users\")\n}\n\n/**\n * model Course {\n * id String @id @default(cuid())\n * title String\n * status CourseStatus @default(DRAFT)\n * difficulty CourseDifficulty?\n * createdAt DateTime @default(now())\n * updateAt DateTime @updatedAt\n * tags CourseTag[]\n * @@map(\"courses\")\n * }\n */\n\nmodel CourseTag {\n  id   String @id @default(cuid())\n  name String @unique\n\n  createdAt DateTime @default(now())\n  updateAt  DateTime @updatedAt\n\n  course   Course? @relation(fields: [courseId], references: [id])\n  courseId String?\n\n  @@map(\"course_tags\")\n}\n\nenum CourseStatus {\n  DRAFT\n  PUBLISHED\n}\n\nenum CourseDifficulty {\n  EASY\n  MEDIUM\n  HARD\n}\n\nmodel Course {\n  id String @id @default(cuid())\n\n  status CourseStatus @default(DRAFT)\n\n  title            String\n  slug             String           @unique\n  description      String\n  shortDescription String?\n  thumbnail        String\n  price            Float\n  discountPrice    Float?\n  tags             CourseTag[]\n  difficulty       CourseDifficulty @default(EASY)\n\n  createdAt DateTime @default(now())\n  updateAt  DateTime @updatedAt\n\n  modules CourseModule[]\n\n  @@map(\"courses\")\n}\n\nmodel CourseModule {\n  id String @id @default(cuid())\n\n  title       String\n  description String\n\n  courseId String\n  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)\n\n  order Int\n\n  createdAt DateTime @default(now())\n  updateAt  DateTime @updatedAt\n\n  lessons CourseLesson[]\n\n  @@map(\"course_modules\")\n}\n\nmodel CourseLesson {\n  id String @id @default(cuid())\n\n  title        String\n  description  String\n  videoId      String\n  durationInMs Int\n\n  order Int\n\n  moduleId String\n  module   CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)\n\n  createdAt DateTime @default(now())\n  updateAt  DateTime @updatedAt\n\n  @@map(\"course_lessons\")\n}\n"
 }
-config.dirname = '/'
 
-config.runtimeDataModel = JSON.parse("{\"models\":{\"User\":{\"dbName\":\"users\",\"schema\":null,\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":true,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"String\",\"nativeType\":null,\"default\":{\"name\":\"uuid\",\"args\":[4]},\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"firstName\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"nativeType\":null,\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"lastName\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"nativeType\":null,\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"email\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":true,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"nativeType\":null,\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"clerkUserId\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":true,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"nativeType\":null,\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"imageUrl\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"nativeType\":null,\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"DateTime\",\"nativeType\":null,\"default\":{\"name\":\"now\",\"args\":[]},\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"updateAt\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"DateTime\",\"nativeType\":null,\"isGenerated\":false,\"isUpdatedAt\":true}],\"primaryKey\":null,\"uniqueFields\":[],\"uniqueIndexes\":[],\"isGenerated\":false}},\"enums\":{},\"types\":{}}")
+config.runtimeDataModel = JSON.parse("{\"models\":{\"User\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"firstName\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"lastName\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"email\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"clerkUserId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"imageUrl\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updateAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":\"users\"},\"CourseTag\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updateAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"course\",\"kind\":\"object\",\"type\":\"Course\",\"relationName\":\"CourseToCourseTag\"},{\"name\":\"courseId\",\"kind\":\"scalar\",\"type\":\"String\"}],\"dbName\":\"course_tags\"},\"Course\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"status\",\"kind\":\"enum\",\"type\":\"CourseStatus\"},{\"name\":\"title\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"slug\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"description\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"shortDescription\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"thumbnail\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"price\",\"kind\":\"scalar\",\"type\":\"Float\"},{\"name\":\"discountPrice\",\"kind\":\"scalar\",\"type\":\"Float\"},{\"name\":\"tags\",\"kind\":\"object\",\"type\":\"CourseTag\",\"relationName\":\"CourseToCourseTag\"},{\"name\":\"difficulty\",\"kind\":\"enum\",\"type\":\"CourseDifficulty\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updateAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"modules\",\"kind\":\"object\",\"type\":\"CourseModule\",\"relationName\":\"CourseToCourseModule\"}],\"dbName\":\"courses\"},\"CourseModule\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"title\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"description\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"courseId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"course\",\"kind\":\"object\",\"type\":\"Course\",\"relationName\":\"CourseToCourseModule\"},{\"name\":\"order\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updateAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"lessons\",\"kind\":\"object\",\"type\":\"CourseLesson\",\"relationName\":\"CourseLessonToCourseModule\"}],\"dbName\":\"course_modules\"},\"CourseLesson\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"title\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"description\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"videoId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"durationInMs\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"order\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"moduleId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"module\",\"kind\":\"object\",\"type\":\"CourseModule\",\"relationName\":\"CourseLessonToCourseModule\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updateAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":\"course_lessons\"}},\"enums\":{},\"types\":{}}")
 defineDmmfProperty(exports.Prisma, config.runtimeDataModel)
-config.engineWasm = undefined
-config.compilerWasm = undefined
-
-config.injectableEdgeEnv = () => ({
-  parsed: {
-    DATABASE_URL: typeof globalThis !== 'undefined' && globalThis['DATABASE_URL'] || typeof process !== 'undefined' && process.env && process.env.DATABASE_URL || undefined
-  }
-})
-
-if (typeof globalThis !== 'undefined' && globalThis['DEBUG'] || typeof process !== 'undefined' && process.env && process.env.DEBUG || undefined) {
-  Debug.enable(typeof globalThis !== 'undefined' && globalThis['DEBUG'] || typeof process !== 'undefined' && process.env && process.env.DEBUG || undefined)
+config.parameterizationSchema = {
+  strings: JSON.parse("[\"where\",\"User.findUnique\",\"User.findUniqueOrThrow\",\"orderBy\",\"cursor\",\"User.findFirst\",\"User.findFirstOrThrow\",\"User.findMany\",\"data\",\"User.createOne\",\"User.createMany\",\"User.createManyAndReturn\",\"User.updateOne\",\"User.updateMany\",\"User.updateManyAndReturn\",\"create\",\"update\",\"User.upsertOne\",\"User.deleteOne\",\"User.deleteMany\",\"having\",\"_count\",\"_min\",\"_max\",\"User.groupBy\",\"User.aggregate\",\"tags\",\"course\",\"module\",\"lessons\",\"modules\",\"CourseTag.findUnique\",\"CourseTag.findUniqueOrThrow\",\"CourseTag.findFirst\",\"CourseTag.findFirstOrThrow\",\"CourseTag.findMany\",\"CourseTag.createOne\",\"CourseTag.createMany\",\"CourseTag.createManyAndReturn\",\"CourseTag.updateOne\",\"CourseTag.updateMany\",\"CourseTag.updateManyAndReturn\",\"CourseTag.upsertOne\",\"CourseTag.deleteOne\",\"CourseTag.deleteMany\",\"CourseTag.groupBy\",\"CourseTag.aggregate\",\"Course.findUnique\",\"Course.findUniqueOrThrow\",\"Course.findFirst\",\"Course.findFirstOrThrow\",\"Course.findMany\",\"Course.createOne\",\"Course.createMany\",\"Course.createManyAndReturn\",\"Course.updateOne\",\"Course.updateMany\",\"Course.updateManyAndReturn\",\"Course.upsertOne\",\"Course.deleteOne\",\"Course.deleteMany\",\"_avg\",\"_sum\",\"Course.groupBy\",\"Course.aggregate\",\"CourseModule.findUnique\",\"CourseModule.findUniqueOrThrow\",\"CourseModule.findFirst\",\"CourseModule.findFirstOrThrow\",\"CourseModule.findMany\",\"CourseModule.createOne\",\"CourseModule.createMany\",\"CourseModule.createManyAndReturn\",\"CourseModule.updateOne\",\"CourseModule.updateMany\",\"CourseModule.updateManyAndReturn\",\"CourseModule.upsertOne\",\"CourseModule.deleteOne\",\"CourseModule.deleteMany\",\"CourseModule.groupBy\",\"CourseModule.aggregate\",\"CourseLesson.findUnique\",\"CourseLesson.findUniqueOrThrow\",\"CourseLesson.findFirst\",\"CourseLesson.findFirstOrThrow\",\"CourseLesson.findMany\",\"CourseLesson.createOne\",\"CourseLesson.createMany\",\"CourseLesson.createManyAndReturn\",\"CourseLesson.updateOne\",\"CourseLesson.updateMany\",\"CourseLesson.updateManyAndReturn\",\"CourseLesson.upsertOne\",\"CourseLesson.deleteOne\",\"CourseLesson.deleteMany\",\"CourseLesson.groupBy\",\"CourseLesson.aggregate\",\"AND\",\"OR\",\"NOT\",\"id\",\"title\",\"description\",\"videoId\",\"durationInMs\",\"order\",\"moduleId\",\"createdAt\",\"updateAt\",\"equals\",\"in\",\"notIn\",\"lt\",\"lte\",\"gt\",\"gte\",\"not\",\"contains\",\"startsWith\",\"endsWith\",\"courseId\",\"CourseStatus\",\"status\",\"slug\",\"shortDescription\",\"thumbnail\",\"price\",\"discountPrice\",\"CourseDifficulty\",\"difficulty\",\"every\",\"some\",\"none\",\"name\",\"firstName\",\"lastName\",\"email\",\"clerkUserId\",\"imageUrl\",\"is\",\"isNot\",\"connectOrCreate\",\"upsert\",\"createMany\",\"set\",\"disconnect\",\"delete\",\"connect\",\"updateMany\",\"deleteMany\",\"increment\",\"decrement\",\"multiply\",\"divide\"]"),
+  graph: "nAIxUAthAAC3AQAwYgAABAAQYwAAtwEAMGQBAAAAAWtAAKoBACFsQACqAQAhhgEBAKUBACGHAQEApgEAIYgBAQAAAAGJAQEAAAABigEBAKYBACEBAAAAAQAgAQAAAAEAIAthAAC3AQAwYgAABAAQYwAAtwEAMGQBAKUBACFrQACqAQAhbEAAqgEAIYYBAQClAQAhhwEBAKYBACGIAQEApQEAIYkBAQClAQAhigEBAKYBACEChwEAANcBACCKAQAA1wEAIAMAAAAEACADAAAFADAEAAABACADAAAABAAgAwAABQAwBAAAAQAgAwAAAAQAIAMAAAUAMAQAAAEAIAhkAQAAAAFrQAAAAAFsQAAAAAGGAQEAAAABhwEBAAAAAYgBAQAAAAGJAQEAAAABigEBAAAAAQEIAAAJACAIZAEAAAABa0AAAAABbEAAAAABhgEBAAAAAYcBAQAAAAGIAQEAAAABiQEBAAAAAYoBAQAAAAEBCAAACwAwAQgAAAsAMAhkAQC9AQAha0AAvwEAIWxAAL8BACGGAQEAvQEAIYcBAQDeAQAhiAEBAL0BACGJAQEAvQEAIYoBAQDeAQAhAgAAAAEAIAgAAA4AIAhkAQC9AQAha0AAvwEAIWxAAL8BACGGAQEAvQEAIYcBAQDeAQAhiAEBAL0BACGJAQEAvQEAIYoBAQDeAQAhAgAAAAQAIAgAABAAIAIAAAAEACAIAAAQACADAAAAAQAgDwAACQAgEAAADgAgAQAAAAEAIAEAAAAEACAFFQAAiAIAIBYAAIoCACAXAACJAgAghwEAANcBACCKAQAA1wEAIAthAAC2AQAwYgAAFwAQYwAAtgEAMGQBAIgBACFrQACKAQAhbEAAigEAIYYBAQCIAQAhhwEBAJUBACGIAQEAiAEAIYkBAQCIAQAhigEBAJUBACEDAAAABAAgAwAAFgAwFAAAFwAgAwAAAAQAIAMAAAUAMAQAAAEAIAkbAAC1AQAgYQAAtAEAMGIAAB4AEGMAALQBADBkAQAAAAFrQACqAQAhbEAAqgEAIXgBAKYBACGFAQEAAAABAQAAABoAIBEaAACrAQAgHgAArAEAIGEAAKMBADBiAAAcABBjAACjAQAwZAEApQEAIWUBAKUBACFmAQClAQAha0AAqgEAIWxAAKoBACF6AACkAXoiewEApQEAIXwBAKYBACF9AQClAQAhfggApwEAIX8IAKgBACGBAQAAqQGBASIBAAAAHAAgCRsAALUBACBhAAC0AQAwYgAAHgAQYwAAtAEAMGQBAKUBACFrQACqAQAhbEAAqgEAIXgBAKYBACGFAQEApQEAIQIbAACGAgAgeAAA1wEAIAMAAAAeACADAAAfADAEAAAaACAMGwAAsgEAIB0AALMBACBhAACxAQAwYgAAIQAQYwAAsQEAMGQBAKUBACFlAQClAQAhZgEApQEAIWkCAK8BACFrQACqAQAhbEAAqgEAIXgBAKUBACECGwAAhgIAIB0AAIcCACAMGwAAsgEAIB0AALMBACBhAACxAQAwYgAAIQAQYwAAsQEAMGQBAAAAAWUBAKUBACFmAQClAQAhaQIArwEAIWtAAKoBACFsQACqAQAheAEApQEAIQMAAAAhACADAAAiADAEAAAjACANHAAAsAEAIGEAAK4BADBiAAAlABBjAACuAQAwZAEApQEAIWUBAKUBACFmAQClAQAhZwEApQEAIWgCAK8BACFpAgCvAQAhagEApQEAIWtAAKoBACFsQACqAQAhARwAAIUCACANHAAAsAEAIGEAAK4BADBiAAAlABBjAACuAQAwZAEAAAABZQEApQEAIWYBAKUBACFnAQClAQAhaAIArwEAIWkCAK8BACFqAQClAQAha0AAqgEAIWxAAKoBACEDAAAAJQAgAwAAJgAwBAAAJwAgAQAAACUAIAEAAAAeACABAAAAIQAgAQAAABoAIAMAAAAeACADAAAfADAEAAAaACADAAAAHgAgAwAAHwAwBAAAGgAgAwAAAB4AIAMAAB8AMAQAABoAIAYbAACEAgAgZAEAAAABa0AAAAABbEAAAAABeAEAAAABhQEBAAAAAQEIAAAwACAFZAEAAAABa0AAAAABbEAAAAABeAEAAAABhQEBAAAAAQEIAAAyADABCAAAMgAwAQAAABwAIAYbAACDAgAgZAEAvQEAIWtAAL8BACFsQAC_AQAheAEA3gEAIYUBAQC9AQAhAgAAABoAIAgAADYAIAVkAQC9AQAha0AAvwEAIWxAAL8BACF4AQDeAQAhhQEBAL0BACECAAAAHgAgCAAAOAAgAgAAAB4AIAgAADgAIAEAAAAcACADAAAAGgAgDwAAMAAgEAAANgAgAQAAABoAIAEAAAAeACAEFQAAgAIAIBYAAIICACAXAACBAgAgeAAA1wEAIAhhAACtAQAwYgAAQAAQYwAArQEAMGQBAIgBACFrQACKAQAhbEAAigEAIXgBAJUBACGFAQEAiAEAIQMAAAAeACADAAA_ADAUAABAACADAAAAHgAgAwAAHwAwBAAAGgAgERoAAKsBACAeAACsAQAgYQAAowEAMGIAABwAEGMAAKMBADBkAQAAAAFlAQClAQAhZgEApQEAIWtAAKoBACFsQACqAQAhegAApAF6InsBAAAAAXwBAKYBACF9AQClAQAhfggApwEAIX8IAKgBACGBAQAAqQGBASIBAAAAQwAgAQAAAEMAIAQaAAD-AQAgHgAA_wEAIHwAANcBACB_AADXAQAgAwAAABwAIAMAAEYAMAQAAEMAIAMAAAAcACADAABGADAEAABDACADAAAAHAAgAwAARgAwBAAAQwAgDhoAAPwBACAeAAD9AQAgZAEAAAABZQEAAAABZgEAAAABa0AAAAABbEAAAAABegAAAHoCewEAAAABfAEAAAABfQEAAAABfggAAAABfwgAAAABgQEAAACBAQIBCAAASgAgDGQBAAAAAWUBAAAAAWYBAAAAAWtAAAAAAWxAAAAAAXoAAAB6AnsBAAAAAXwBAAAAAX0BAAAAAX4IAAAAAX8IAAAAAYEBAAAAgQECAQgAAEwAMAEIAABMADAOGgAA4gEAIB4AAOMBACBkAQC9AQAhZQEAvQEAIWYBAL0BACFrQAC_AQAhbEAAvwEAIXoAAN0BeiJ7AQC9AQAhfAEA3gEAIX0BAL0BACF-CADfAQAhfwgA4AEAIYEBAADhAYEBIgIAAABDACAIAABPACAMZAEAvQEAIWUBAL0BACFmAQC9AQAha0AAvwEAIWxAAL8BACF6AADdAXoiewEAvQEAIXwBAN4BACF9AQC9AQAhfggA3wEAIX8IAOABACGBAQAA4QGBASICAAAAHAAgCAAAUQAgAgAAABwAIAgAAFEAIAMAAABDACAPAABKACAQAABPACABAAAAQwAgAQAAABwAIAcVAADYAQAgFgAA2wEAIBcAANoBACA9AADZAQAgPgAA3AEAIHwAANcBACB_AADXAQAgD2EAAJMBADBiAABYABBjAACTAQAwZAEAiAEAIWUBAIgBACFmAQCIAQAha0AAigEAIWxAAIoBACF6AACUAXoiewEAiAEAIXwBAJUBACF9AQCIAQAhfggAlgEAIX8IAJcBACGBAQAAmAGBASIDAAAAHAAgAwAAVwAwFAAAWAAgAwAAABwAIAMAAEYAMAQAAEMAIAEAAAAjACABAAAAIwAgAwAAACEAIAMAACIAMAQAACMAIAMAAAAhACADAAAiADAEAAAjACADAAAAIQAgAwAAIgAwBAAAIwAgCRsAANUBACAdAADWAQAgZAEAAAABZQEAAAABZgEAAAABaQIAAAABa0AAAAABbEAAAAABeAEAAAABAQgAAGAAIAdkAQAAAAFlAQAAAAFmAQAAAAFpAgAAAAFrQAAAAAFsQAAAAAF4AQAAAAEBCAAAYgAwAQgAAGIAMAkbAADHAQAgHQAAyAEAIGQBAL0BACFlAQC9AQAhZgEAvQEAIWkCAL4BACFrQAC_AQAhbEAAvwEAIXgBAL0BACECAAAAIwAgCAAAZQAgB2QBAL0BACFlAQC9AQAhZgEAvQEAIWkCAL4BACFrQAC_AQAhbEAAvwEAIXgBAL0BACECAAAAIQAgCAAAZwAgAgAAACEAIAgAAGcAIAMAAAAjACAPAABgACAQAABlACABAAAAIwAgAQAAACEAIAUVAADCAQAgFgAAxQEAIBcAAMQBACA9AADDAQAgPgAAxgEAIAphAACSAQAwYgAAbgAQYwAAkgEAMGQBAIgBACFlAQCIAQAhZgEAiAEAIWkCAIkBACFrQACKAQAhbEAAigEAIXgBAIgBACEDAAAAIQAgAwAAbQAwFAAAbgAgAwAAACEAIAMAACIAMAQAACMAIAEAAAAnACABAAAAJwAgAwAAACUAIAMAACYAMAQAACcAIAMAAAAlACADAAAmADAEAAAnACADAAAAJQAgAwAAJgAwBAAAJwAgChwAAMEBACBkAQAAAAFlAQAAAAFmAQAAAAFnAQAAAAFoAgAAAAFpAgAAAAFqAQAAAAFrQAAAAAFsQAAAAAEBCAAAdgAgCWQBAAAAAWUBAAAAAWYBAAAAAWcBAAAAAWgCAAAAAWkCAAAAAWoBAAAAAWtAAAAAAWxAAAAAAQEIAAB4ADABCAAAeAAwChwAAMABACBkAQC9AQAhZQEAvQEAIWYBAL0BACFnAQC9AQAhaAIAvgEAIWkCAL4BACFqAQC9AQAha0AAvwEAIWxAAL8BACECAAAAJwAgCAAAewAgCWQBAL0BACFlAQC9AQAhZgEAvQEAIWcBAL0BACFoAgC-AQAhaQIAvgEAIWoBAL0BACFrQAC_AQAhbEAAvwEAIQIAAAAlACAIAAB9ACACAAAAJQAgCAAAfQAgAwAAACcAIA8AAHYAIBAAAHsAIAEAAAAnACABAAAAJQAgBRUAALgBACAWAAC7AQAgFwAAugEAID0AALkBACA-AAC8AQAgDGEAAIcBADBiAACEAQAQYwAAhwEAMGQBAIgBACFlAQCIAQAhZgEAiAEAIWcBAIgBACFoAgCJAQAhaQIAiQEAIWoBAIgBACFrQACKAQAhbEAAigEAIQMAAAAlACADAACDAQAwFAAAhAEAIAMAAAAlACADAAAmADAEAAAnACAMYQAAhwEAMGIAAIQBABBjAACHAQAwZAEAiAEAIWUBAIgBACFmAQCIAQAhZwEAiAEAIWgCAIkBACFpAgCJAQAhagEAiAEAIWtAAIoBACFsQACKAQAhDhUAAIwBACAWAACRAQAgFwAAkQEAIG0BAAAAAW4BAAAABG8BAAAABHABAAAAAXEBAAAAAXIBAAAAAXMBAAAAAXQBAJABACF1AQAAAAF2AQAAAAF3AQAAAAENFQAAjAEAIBYAAIwBACAXAACMAQAgPQAAjwEAID4AAIwBACBtAgAAAAFuAgAAAARvAgAAAARwAgAAAAFxAgAAAAFyAgAAAAFzAgAAAAF0AgCOAQAhCxUAAIwBACAWAACNAQAgFwAAjQEAIG1AAAAAAW5AAAAABG9AAAAABHBAAAAAAXFAAAAAAXJAAAAAAXNAAAAAAXRAAIsBACELFQAAjAEAIBYAAI0BACAXAACNAQAgbUAAAAABbkAAAAAEb0AAAAAEcEAAAAABcUAAAAABckAAAAABc0AAAAABdEAAiwEAIQhtAgAAAAFuAgAAAARvAgAAAARwAgAAAAFxAgAAAAFyAgAAAAFzAgAAAAF0AgCMAQAhCG1AAAAAAW5AAAAABG9AAAAABHBAAAAAAXFAAAAAAXJAAAAAAXNAAAAAAXRAAI0BACENFQAAjAEAIBYAAIwBACAXAACMAQAgPQAAjwEAID4AAIwBACBtAgAAAAFuAgAAAARvAgAAAARwAgAAAAFxAgAAAAFyAgAAAAFzAgAAAAF0AgCOAQAhCG0IAAAAAW4IAAAABG8IAAAABHAIAAAAAXEIAAAAAXIIAAAAAXMIAAAAAXQIAI8BACEOFQAAjAEAIBYAAJEBACAXAACRAQAgbQEAAAABbgEAAAAEbwEAAAAEcAEAAAABcQEAAAABcgEAAAABcwEAAAABdAEAkAEAIXUBAAAAAXYBAAAAAXcBAAAAAQttAQAAAAFuAQAAAARvAQAAAARwAQAAAAFxAQAAAAFyAQAAAAFzAQAAAAF0AQCRAQAhdQEAAAABdgEAAAABdwEAAAABCmEAAJIBADBiAABuABBjAACSAQAwZAEAiAEAIWUBAIgBACFmAQCIAQAhaQIAiQEAIWtAAIoBACFsQACKAQAheAEAiAEAIQ9hAACTAQAwYgAAWAAQYwAAkwEAMGQBAIgBACFlAQCIAQAhZgEAiAEAIWtAAIoBACFsQACKAQAhegAAlAF6InsBAIgBACF8AQCVAQAhfQEAiAEAIX4IAJYBACF_CACXAQAhgQEAAJgBgQEiBxUAAIwBACAWAACiAQAgFwAAogEAIG0AAAB6Am4AAAB6CG8AAAB6CHQAAKEBeiIOFQAAnAEAIBYAAKABACAXAACgAQAgbQEAAAABbgEAAAAFbwEAAAAFcAEAAAABcQEAAAABcgEAAAABcwEAAAABdAEAnwEAIXUBAAAAAXYBAAAAAXcBAAAAAQ0VAACMAQAgFgAAjwEAIBcAAI8BACA9AACPAQAgPgAAjwEAIG0IAAAAAW4IAAAABG8IAAAABHAIAAAAAXEIAAAAAXIIAAAAAXMIAAAAAXQIAJ4BACENFQAAnAEAIBYAAJ0BACAXAACdAQAgPQAAnQEAID4AAJ0BACBtCAAAAAFuCAAAAAVvCAAAAAVwCAAAAAFxCAAAAAFyCAAAAAFzCAAAAAF0CACbAQAhBxUAAIwBACAWAACaAQAgFwAAmgEAIG0AAACBAQJuAAAAgQEIbwAAAIEBCHQAAJkBgQEiBxUAAIwBACAWAACaAQAgFwAAmgEAIG0AAACBAQJuAAAAgQEIbwAAAIEBCHQAAJkBgQEiBG0AAACBAQJuAAAAgQEIbwAAAIEBCHQAAJoBgQEiDRUAAJwBACAWAACdAQAgFwAAnQEAID0AAJ0BACA-AACdAQAgbQgAAAABbggAAAAFbwgAAAAFcAgAAAABcQgAAAABcggAAAABcwgAAAABdAgAmwEAIQhtAgAAAAFuAgAAAAVvAgAAAAVwAgAAAAFxAgAAAAFyAgAAAAFzAgAAAAF0AgCcAQAhCG0IAAAAAW4IAAAABW8IAAAABXAIAAAAAXEIAAAAAXIIAAAAAXMIAAAAAXQIAJ0BACENFQAAjAEAIBYAAI8BACAXAACPAQAgPQAAjwEAID4AAI8BACBtCAAAAAFuCAAAAARvCAAAAARwCAAAAAFxCAAAAAFyCAAAAAFzCAAAAAF0CACeAQAhDhUAAJwBACAWAACgAQAgFwAAoAEAIG0BAAAAAW4BAAAABW8BAAAABXABAAAAAXEBAAAAAXIBAAAAAXMBAAAAAXQBAJ8BACF1AQAAAAF2AQAAAAF3AQAAAAELbQEAAAABbgEAAAAFbwEAAAAFcAEAAAABcQEAAAABcgEAAAABcwEAAAABdAEAoAEAIXUBAAAAAXYBAAAAAXcBAAAAAQcVAACMAQAgFgAAogEAIBcAAKIBACBtAAAAegJuAAAAeghvAAAAegh0AAChAXoiBG0AAAB6Am4AAAB6CG8AAAB6CHQAAKIBeiIRGgAAqwEAIB4AAKwBACBhAACjAQAwYgAAHAAQYwAAowEAMGQBAKUBACFlAQClAQAhZgEApQEAIWtAAKoBACFsQACqAQAhegAApAF6InsBAKUBACF8AQCmAQAhfQEApQEAIX4IAKcBACF_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_AQAhbEAAvwEAIQhkAQC9AQAhZQEAvQEAIWYBAL0BACFnAQC9AQAhaAIAvgEAIWkCAL4BACFrQAC_AQAhbEAAvwEAIQhkAQAAAAFlAQAAAAFmAQAAAAFnAQAAAAFoAgAAAAFpAgAAAAFrQAAAAAFsQAAAAAEDDwAAkgIAII0BAACTAgAgkwEAAEMAIAQPAADJAQAwjQEAAMoBADCPAQAAzAEAIJMBAADNAQAwAAAAAAAAAZABAAAAegIBkAEBAAAAAQWQAQgAAAABlgEIAAAAAZcBCAAAAAGYAQgAAAABmQEIAAAAAQWQAQgAAAABlgEIAAAAAZcBCAAAAAGYAQgAAAABmQEIAAAAAQGQAQAAAIEBAgsPAADwAQAwEAAA9QEAMI0BAADxAQAwjgEAAPIBADCPAQAA8wEAIJABAAD0AQAwkQEAAPQBADCSAQAA9AEAMJMBAAD0AQAwlAEAAPYBADCVAQAA9wEAMAsPAADkAQAwEAAA6QEAMI0BAADlAQAwjgEAAOYBADCPAQAA5wEAIJABAADoAQAwkQEAAOgBADCSAQAA6AEAMJMBAADoAQAwlAEAAOoBADCVAQAA6wEAMAcdAADWAQAgZAEAAAABZQEAAAABZgEAAAABaQIAAAABa0AAAAABbEAAAAABAgAAACMAIA8AAO8BACADAAAAIwAgDwAA7wEAIBAAAO4BACABCAAAkQIAMAwbAACyAQAgHQAAswEAIGEAALEBADBiAAAhABBjAACxAQAwZAEAAAABZQEApQEAIWYBAKUBACFpAgCvAQAha0AAqgEAIWxAAKoBACF4AQClAQAhAgAAACMAIAgAAO4BACACAAAA7AEAIAgAAO0BACAKYQAA6wEAMGIAAOwBABBjAADrAQAwZAEApQEAIWUBAKUBACFmAQClAQAhaQIArwEAIWtAAKoBACFsQACqAQAheAEApQEAIQphAADrAQAwYgAA7AEAEGMAAOsBADBkAQClAQAhZQEApQEAIWYBAKUBACFpAgCvAQAha0AAqgEAIWxAAKoBACF4AQClAQAhBmQBAL0BACFlAQC9AQAhZgEAvQEAIWkCAL4BACFrQAC_AQAhbEAAvwEAIQcdAADIAQAgZAEAvQEAIWUBAL0BACFmAQC9AQAhaQIAvgEAIWtAAL8BACFsQAC_AQAhBx0AANYBACBkAQAAAAFlAQAAAAFmAQAAAAFpAgAAAAFrQAAAAAFsQAAAAAEEZAEAAAABa0AAAAABbEAAAAABhQEBAAAAAQIAAAAaACAPAAD7AQAgAwAAABoAIA8AAPsBACAQAAD6AQAgAQgAAJACADAJGwAAtQEAIGEAALQBADBiAAAeABBjAAC0AQAwZAEAAAABa0AAqgEAIWxAAKoBACF4AQCmAQAhhQEBAAAAAQIAAAAaACAIAAD6AQAgAgAAAPgBACAIAAD5AQAgCGEAAPcBADBiAAD4AQAQYwAA9wEAMGQBAKUBACFrQACqAQAhbEAAqgEAIXgBAKYBACGFAQEApQEAIQhhAAD3AQAwYgAA-AEAEGMAAPcBADBkAQClAQAha0AAqgEAIWxAAKoBACF4AQCmAQAhhQEBAKUBACEEZAEAvQEAIWtAAL8BACFsQAC_AQAhhQEBAL0BACEEZAEAvQEAIWtAAL8BACFsQAC_AQAhhQEBAL0BACEEZAEAAAABa0AAAAABbEAAAAABhQEBAAAAAQQPAADwAQAwjQEAAPEBADCPAQAA8wEAIJMBAAD0AQAwBA8AAOQBADCNAQAA5QEAMI8BAADnAQAgkwEAAOgBADAAAAAAAAcPAACLAgAgEAAAjgIAII0BAACMAgAgjgEAAI0CACCRAQAAHAAgkgEAABwAIJMBAABDACADDwAAiwIAII0BAACMAgAgkwEAAEMAIAIbAACGAgAgHQAAhwIAIAQaAAD-AQAgHgAA_wEAIHwAANcBACB_AADXAQAgAAAAAA0eAAD9AQAgZAEAAAABZQEAAAABZgEAAAABa0AAAAABbEAAAAABegAAAHoCewEAAAABfAEAAAABfQEAAAABfggAAAABfwgAAAABgQEAAACBAQICAAAAQwAgDwAAiwIAIAMAAAAcACAPAACLAgAgEAAAjwIAIA8AAAAcACAIAACPAgAgHgAA4wEAIGQBAL0BACFlAQC9AQAhZgEAvQEAIWtAAL8BACFsQAC_AQAhegAA3QF6InsBAL0BACF8AQDeAQAhfQEAvQEAIX4IAN8BACF_CADgAQAhgQEAAOEBgQEiDR4AAOMBACBkAQC9AQAhZQEAvQEAIWYBAL0BACFrQAC_AQAhbEAAvwEAIXoAAN0BeiJ7AQC9AQAhfAEA3gEAIX0BAL0BACF-CADfAQAhfwgA4AEAIYEBAADhAYEBIgRkAQAAAAFrQAAAAAFsQAAAAAGFAQEAAAABBmQBAAAAAWUBAAAAAWYBAAAAAWkCAAAAAWtAAAAAAWxAAAAAAQ0aAAD8AQAgZAEAAAABZQEAAAABZgEAAAABa0AAAAABbEAAAAABegAAAHoCewEAAAABfAEAAAABfQEAAAABfggAAAABfwgAAAABgQEAAACBAQICAAAAQwAgDwAAkgIAIAhkAQAAAAFlAQAAAAFmAQAAAAFnAQAAAAFoAgAAAAFpAgAAAAFrQAAAAAFsQAAAAAEDAAAAHAAgDwAAkgIAIBAAAJcCACAPAAAAHAAgCAAAlwIAIBoAAOIBACBkAQC9AQAhZQEAvQEAIWYBAL0BACFrQAC_AQAhbEAAvwEAIXoAAN0BeiJ7AQC9AQAhfAEA3gEAIX0BAL0BACF-CADfAQAhfwgA4AEAIYEBAADhAYEBIg0aAADiAQAgZAEAvQEAIWUBAL0BACFmAQC9AQAha0AAvwEAIWxAAL8BACF6AADdAXoiewEAvQEAIXwBAN4BACF9AQC9AQAhfggA3wEAIX8IAOABACGBAQAA4QGBASIIGwAA1QEAIGQBAAAAAWUBAAAAAWYBAAAAAWkCAAAAAWtAAAAAAWxAAAAAAXgBAAAAAQIAAAAjACAPAACYAgAgAwAAACEAIA8AAJgCACAQAACcAgAgCgAAACEAIAgAAJwCACAbAADHAQAgZAEAvQEAIWUBAL0BACFmAQC9AQAhaQIAvgEAIWtAAL8BACFsQAC_AQAheAEAvQEAIQgbAADHAQAgZAEAvQEAIWUBAL0BACFmAQC9AQAhaQIAvgEAIWtAAL8BACFsQAC_AQAheAEAvQEAIQAAAAADFQAGFgAHFwAIAAAAAxUABhYABxcACAEbHQsDFQAPGiAKHiQMAxUADhsACx0oDQEcAAwBHSkAAhoqAB4rAAEbNQsBGzsLAxUAExYAFBcAFQAAAAMVABMWABQXABUAAAUVABoWAB0XAB49ABs-ABwAAAAAAAUVABoWAB0XAB49ABs-ABwBGwALARsACwUVACMWACYXACc9ACQ-ACUAAAAAAAUVACMWACYXACc9ACQ-ACUBHAAMARwADAUVACwWAC8XADA9AC0-AC4AAAAAAAUVACwWAC8XADA9AC0-AC4BAgECAwEFBgEGBwEHCAEJCgEKDAILDQMMDwENEQIOEgQREwESFAETFQIYGAUZGQkfGwogLAohLQoiLgojLwokMQolMwImNBAnNwooOQIpOhEqPAorPQosPgItQRIuQhYvRAswRQsxRwsySAszSQs0Sws1TQI2Thc3UAs4UgI5Uxg6VAs7VQs8VgI_WRlAWh9BWwxCXAxDXQxEXgxFXwxGYQxHYwJIZCBJZgxKaAJLaSFMagxNawxObAJPbyJQcChRcQ1Scg1Tcw1UdA1VdQ1Wdw1XeQJYeilZfA1afgJbfypcgAENXYEBDV6CAQJfhQErYIYBMQ"
+}
+config.compilerWasm = {
+  getRuntime: async () => require('./query_compiler_fast_bg.js'),
+  getQueryCompilerWasmModule: async () => {
+    const loader = (await import('#wasm-compiler-loader')).default
+    const compiler = (await loader).default
+    return compiler
+  },
+  importName: './query_compiler_fast_bg.js',
+}
+if (typeof globalThis !== 'undefined' && globalThis['DEBUG'] || (typeof process !== 'undefined' && process.env && process.env.DEBUG) || undefined) {
+  Debug.enable(typeof globalThis !== 'undefined' && globalThis['DEBUG'] || (typeof process !== 'undefined' && process.env && process.env.DEBUG) || undefined)
 }
 
 const PrismaClient = getPrismaClient(config)
 exports.PrismaClient = PrismaClient
 Object.assign(exports, Prisma)
-

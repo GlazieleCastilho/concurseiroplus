@@ -1,3 +1,6 @@
+"use client";
+
+import { CheckRole } from "@/lib/clerk";
 import {Separator} from "@/components/ui/separator";
 import {
     SidebarGroup,
@@ -5,6 +8,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { useUser } from "@clerk/nextjs";
 import {
     BookOpen,
     BookUp2,
@@ -37,6 +41,9 @@ type NavItem = {
 };
 
 export const NavItems =() => {
+    const {user} = useUser();
+
+    const isAdmin = user?.publicMetadata?.role === "admin";
     const navItems: NavItem[] = [
         {
             label:"Inicio",
@@ -128,9 +135,13 @@ export const NavItems =() => {
         <SidebarGroup>
             <SidebarMenu>
                 {renderNavItems(navItems)}
-                <Separator className="my-2"/>
 
-                {renderNavItems(adminNavItems)}
+                {isAdmin && (
+                    <>
+                        <Separator className="my-2"/>
+                        {renderNavItems(adminNavItems)}
+                    </>
+                )}
             </SidebarMenu>
         </SidebarGroup>
     );
