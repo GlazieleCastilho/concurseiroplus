@@ -19,5 +19,7 @@ Use Supabase Storage ou S3 para arquivos de provas, imagens e materiais. Variave
 ## Webhooks
 
 - Clerk: `https://dominio/api/webhooks/clerk`
-- Stripe: `https://dominio/api/webhooks/stripe`
-- Mercado Pago: `https://dominio/api/webhooks/mercadopago`
+- AbacatePay: `https://dominio/api/webhooks/abacatepay?webhookSecret=SEU_SECRET`
+  - Eventos: `checkout.completed`, `checkout.refunded`, `checkout.disputed`, `checkout.lost`, `subscription.completed`, `subscription.renewed`, `subscription.cancelled`, `subscription.trial_started`.
+  - Configure `ABACATEPAY_WEBHOOK_SECRET` com o secret da query string.
+  - Configure `ABACATEPAY_WEBHOOK_PUBLIC_KEY` para validar `X-Webhook-Signature`.

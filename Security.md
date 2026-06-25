@@ -9,7 +9,7 @@ Controles implementados:
 - Rate limit em login, IA, redacoes, skills e APIs publicas via Upstash Redis.
 - Zod em todas as entradas criticas.
 - Audit logs com usuario, acao, entidade, IP e user agent.
-- Webhooks verificados por assinatura quando o provedor disponibiliza segredo.
+- Webhooks AbacatePay verificados com secret na URL, HMAC SHA-256 em `X-Webhook-Signature` e idempotencia em `WebhookEvent`.
 
 Checklist pre-producao:
 

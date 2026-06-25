@@ -14,7 +14,6 @@ export const skillSlugSchema = z.enum([
 export const billingCheckoutSchema = z.object({
   tier: z.enum(["ESSENCIAL", "PRO", "ELITE"]),
   cycle: z.enum(["MENSAL", "TRIMESTRAL", "ANUAL", "VITALICIO"]),
-  provider: z.enum(["STRIPE", "MERCADO_PAGO"]),
 });
 
 export const redacaoSubmissionSchema = z.object({

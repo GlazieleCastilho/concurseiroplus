@@ -37,8 +37,7 @@ enum SubscriptionStatus {
 }
 
 enum PaymentProvider {
-  STRIPE
-  MERCADO_PAGO
+  ABACATEPAY
 }
 
 enum PaymentStatus {
@@ -173,6 +172,7 @@ model User {
   lastName    String?
   email       String   @unique
   imageUrl    String?
+  abacatepayCustomerId String? @unique
   role        Role     @default(user)
   planTier    PlanTier @default(ESSENCIAL)
   lastLoginAt DateTime?
@@ -215,8 +215,8 @@ model Plan {
   discursiveLimit Int?
   skillsLimit    Int?
   features       Json
-  stripePriceId  String?      @unique
-  mercadoPagoPlanId String?   @unique
+  externalProductId String?   @unique
+  abacatepayProductId String? @unique
   active         Boolean      @default(true)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -302,6 +302,22 @@ model Invoice {
 
   @@index([userId, status])
   @@map("invoices")
+}
+
+model WebhookEvent {
+  id          String          @id @default(cuid())
+  eventId     String          @unique
+  provider    PaymentProvider @default(ABACATEPAY)
+  event       String
+  payload     Json?
+  processedAt DateTime?
+  error       String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([provider, event])
+  @@index([processedAt])
+  @@map("webhook_events")
 }
 
 model Prova {

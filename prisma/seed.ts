@@ -2,6 +2,7 @@ import "dotenv/config";
 import { PrismaClient } from "../src/generated/prisma";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
+import { planExternalProductId } from "../src/lib/billing-period";
 import { plans, priceForCycle, skills } from "../src/lib/product";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -21,6 +22,7 @@ async function seedPlans() {
           discursiveLimit: plan.limits.discursivePerMonth,
           skillsLimit: plan.limits.skills,
           features: plan.features,
+          externalProductId: planExternalProductId(plan.tier, cycle),
           active: true,
         },
         create: {
@@ -33,6 +35,7 @@ async function seedPlans() {
           discursiveLimit: plan.limits.discursivePerMonth,
           skillsLimit: plan.limits.skills,
           features: plan.features,
+          externalProductId: planExternalProductId(plan.tier, cycle),
         },
       });
     }

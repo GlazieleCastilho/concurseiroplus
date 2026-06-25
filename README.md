@@ -9,7 +9,7 @@ Plataforma SaaS premium para preparacao de concursos publicos brasileiros.
 - PostgreSQL com Prisma v7 e adapter PG
 - Clerk para autenticacao, MFA, Google Login e sessoes
 - Anthropic Claude com fallback OpenAI para IA
-- Stripe e Mercado Pago para assinaturas
+- AbacatePay para assinaturas, Pix, cartao e planos pre-pagos
 - Upstash Redis para rate limiting
 - Sentry, PostHog e Vercel Analytics para observabilidade
 - Resend para e-mails transacionais
@@ -59,8 +59,7 @@ npm run build
 3. Rode migrations em ambiente controlado.
 4. Configure webhooks:
    - Clerk: `/api/webhooks/clerk`
-   - Stripe: `/api/webhooks/stripe`
-   - Mercado Pago: `/api/webhooks/mercadopago`
+   - AbacatePay: `/api/webhooks/abacatepay?webhookSecret=SEU_SECRET`
 5. Configure domínios, PostHog, Sentry e Resend.
 
 Documentos complementares: `Architecture.md`, `API.md`, `Database.md`, `Deployment.md`, `Security.md` e `Runbook.md`.

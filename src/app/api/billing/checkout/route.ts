@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     const user = await getCurrentDbUser();
     await rateLimit("publicApi", user.id);
     const body = billingCheckoutSchema.parse(await req.json());
-    const checkout = await createCheckout({ user, tier: body.tier, cycle: body.cycle, provider: body.provider });
+    const checkout = await createCheckout({ user, tier: body.tier, cycle: body.cycle });
     await auditLog({ userId: user.id, action: "billing.checkout", entity: "Payment", entityId: checkout.paymentId, metadata: body });
     return NextResponse.json(checkout);
   } catch (error) {

@@ -25,11 +25,13 @@ Todas as rotas privadas exigem sessao Clerk.
 ## Billing
 
 - `POST /api/billing/checkout`
-  - Body: `{ tier, cycle, provider }`
-  - Cria checkout no Stripe ou Mercado Pago.
+  - Body: `{ tier, cycle }`
+  - Cria checkout hospedado na AbacatePay.
+  - `MENSAL` e `ANUAL` usam assinatura; `TRIMESTRAL` e `VITALICIO` usam pagamento unico.
 
-- `POST /api/webhooks/stripe`
-- `POST /api/webhooks/mercadopago`
+- `POST /api/webhooks/abacatepay?webhookSecret=SEU_SECRET`
+  - Eventos: `checkout.completed`, `checkout.refunded`, `checkout.disputed`, `checkout.lost`, `subscription.completed`, `subscription.renewed`, `subscription.cancelled`, `subscription.trial_started`.
+  - Exige assinatura `X-Webhook-Signature`.
 - `POST /api/webhooks/clerk`
 
 ## Produto

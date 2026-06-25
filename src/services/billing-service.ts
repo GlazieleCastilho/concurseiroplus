@@ -1,24 +1,11 @@
-import Stripe from "stripe";
-import { MercadoPagoConfig, Preference } from "mercadopago";
-import type { BillingCycle, PaymentProvider, PlanTier, User } from "@/generated/prisma";
+import type { BillingCycle, Plan, PlanTier, User } from "@/generated/prisma";
+import { abacatepayProductCycle, isRecurringCycle, planExternalProductId } from "@/lib/billing-period";
 import { prisma } from "@/lib/prisma";
 import { plans, priceForCycle } from "@/lib/product";
+import { abacatepayRequest, AbacatePayError, type AbacatePayCheckout, type AbacatePayCustomer, type AbacatePayProduct } from "@/lib/abacatepay";
 
 function baseUrl(): string {
   return process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-}
-
-function stripeClient(): Stripe {
-  if (!process.env.STRIPE_SECRET_KEY) throw new Response("STRIPE_SECRET_KEY is not configured", { status: 503 });
-  return new Stripe(process.env.STRIPE_SECRET_KEY);
-}
-
-function mercadoPagoPreference(): Preference {
-  if (!process.env.MERCADO_PAGO_ACCESS_TOKEN) {
-    throw new Response("MERCADO_PAGO_ACCESS_TOKEN is not configured", { status: 503 });
-  }
-  const client = new MercadoPagoConfig({ accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN });
-  return new Preference(client);
 }
 
 async function resolvePlan(tier: PlanTier, cycle: BillingCycle) {
@@ -37,6 +24,61 @@ async function resolvePlan(tier: PlanTier, cycle: BillingCycle) {
       discursiveLimit: definition.limits.discursivePerMonth,
       skillsLimit: definition.limits.skills,
       features: definition.features,
+      externalProductId: planExternalProductId(tier, cycle),
+    },
+  });
+}
+
+async function getOrCreateCustomer(user: User): Promise<string> {
+  if (user.abacatepayCustomerId) return user.abacatepayCustomerId;
+
+  const customer = await abacatepayRequest<AbacatePayCustomer>("/customers/create", {
+    method: "POST",
+    body: JSON.stringify({
+      email: user.email,
+      name: `${user.firstName} ${user.lastName ?? ""}`.trim(),
+      metadata: {
+        userId: user.id,
+        clerkUserId: user.clerkUserId,
+      },
+    }),
+  });
+
+  await prisma.user.update({ where: { id: user.id }, data: { abacatepayCustomerId: customer.id } });
+  return customer.id;
+}
+
+async function findAbacatePayProduct(externalProductId: string): Promise<AbacatePayProduct | null> {
+  try {
+    return await abacatepayRequest<AbacatePayProduct>(`/products/get?externalId=${encodeURIComponent(externalProductId)}`);
+  } catch (error) {
+    if (error instanceof AbacatePayError && error.status === 404) return null;
+    throw error;
+  }
+}
+
+async function ensureAbacatePayProduct(plan: Plan): Promise<Plan> {
+  if (plan.abacatepayProductId && plan.externalProductId) return plan;
+
+  const externalProductId = plan.externalProductId ?? planExternalProductId(plan.tier, plan.cycle);
+  const existing = await findAbacatePayProduct(externalProductId);
+  const product = existing ?? await abacatepayRequest<AbacatePayProduct>("/products/create", {
+    method: "POST",
+    body: JSON.stringify({
+      externalId: externalProductId,
+      name: `Concurseiro+ ${plan.name} ${plan.cycle.toLowerCase()}`,
+      description: plan.description,
+      price: plan.priceCents,
+      currency: "BRL",
+      cycle: abacatepayProductCycle(plan.cycle) ?? undefined,
+    }),
+  });
+
+  return prisma.plan.update({
+    where: { id: plan.id },
+    data: {
+      externalProductId,
+      abacatepayProductId: product.id,
     },
   });
 }
@@ -45,90 +87,50 @@ export async function createCheckout(input: {
   user: User;
   tier: PlanTier;
   cycle: BillingCycle;
-  provider: PaymentProvider;
 }): Promise<{ checkoutUrl: string; paymentId: string }> {
-  const plan = await resolvePlan(input.tier, input.cycle);
+  const plan = await ensureAbacatePayProduct(await resolvePlan(input.tier, input.cycle));
+  if (!plan.abacatepayProductId) throw new Error("AbacatePay product was not synchronized");
+
+  const customerId = await getOrCreateCustomer(input.user);
   const payment = await prisma.payment.create({
     data: {
       userId: input.user.id,
       planId: plan.id,
-      provider: input.provider,
+      provider: "ABACATEPAY",
       amountCents: plan.priceCents,
       status: "PENDING",
     },
   });
 
-  if (input.provider === "STRIPE") {
-    const stripe = stripeClient();
-    const session = await stripe.checkout.sessions.create({
-      mode: input.cycle === "VITALICIO" ? "payment" : "subscription",
-      customer_email: input.user.email,
-      client_reference_id: input.user.id,
-      success_url: `${baseUrl()}/billing/sucesso?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl()}/billing/cancelado`,
-      metadata: {
-        paymentId: payment.id,
-        userId: input.user.id,
-        tier: input.tier,
-        cycle: input.cycle,
-      },
-      line_items: [
-        plan.stripePriceId
-          ? { price: plan.stripePriceId, quantity: 1 }
-          : {
-              quantity: 1,
-              price_data: {
-                currency: "brl",
-                unit_amount: plan.priceCents,
-                recurring: input.cycle === "VITALICIO" ? undefined : { interval: input.cycle === "ANUAL" ? "year" : "month", interval_count: input.cycle === "TRIMESTRAL" ? 3 : 1 },
-                product_data: { name: `Concurseiro+ ${plan.name} ${input.cycle.toLowerCase()}` },
-              },
-            },
-      ],
-    });
-
-    await prisma.payment.update({
-      where: { id: payment.id },
-      data: { checkoutUrl: session.url, externalPaymentId: session.id },
-    });
-    if (!session.url) throw new Error("Stripe did not return checkout URL");
-    return { checkoutUrl: session.url, paymentId: payment.id };
-  }
-
-  const preference = mercadoPagoPreference();
-  const response = await preference.create({
-    body: {
-      external_reference: payment.id,
-      back_urls: {
-        success: `${baseUrl()}/billing/sucesso`,
-        pending: `${baseUrl()}/billing/pendente`,
-        failure: `${baseUrl()}/billing/cancelado`,
-      },
-      notification_url: `${baseUrl()}/api/webhooks/mercadopago`,
+  const checkoutPath = isRecurringCycle(input.cycle) ? "/subscriptions/create" : "/checkouts/create";
+  const checkout = await abacatepayRequest<AbacatePayCheckout>(checkoutPath, {
+    method: "POST",
+    body: JSON.stringify({
       items: [
         {
-          id: plan.id,
-          title: `Concurseiro+ ${plan.name} ${input.cycle.toLowerCase()}`,
+          id: plan.abacatepayProductId,
           quantity: 1,
-          currency_id: "BRL",
-          unit_price: plan.priceCents / 100,
         },
       ],
-      payer: { email: input.user.email, name: `${input.user.firstName} ${input.user.lastName ?? ""}`.trim() },
+      customerId,
+      externalId: payment.id,
+      returnUrl: `${baseUrl()}/billing`,
+      completionUrl: `${baseUrl()}/billing/sucesso`,
+      methods: ["PIX", "CARD"],
+      card: { maxInstallments: 12 },
       metadata: {
         paymentId: payment.id,
         userId: input.user.id,
         tier: input.tier,
         cycle: input.cycle,
       },
-    },
+    }),
   });
 
-  const checkoutUrl = response.init_point ?? response.sandbox_init_point;
-  if (!checkoutUrl) throw new Error("Mercado Pago did not return checkout URL");
+  if (!checkout.url) throw new Error("AbacatePay did not return checkout URL");
   await prisma.payment.update({
     where: { id: payment.id },
-    data: { checkoutUrl, externalPaymentId: String(response.id) },
+    data: { checkoutUrl: checkout.url, externalPaymentId: checkout.id },
   });
-  return { checkoutUrl, paymentId: payment.id };
+  return { checkoutUrl: checkout.url, paymentId: payment.id };
 }

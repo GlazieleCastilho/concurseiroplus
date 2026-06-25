@@ -28,10 +28,8 @@ export default async function BillingPage() {
               <ul className="space-y-2 text-sm text-muted-foreground">
                 {plan.features.map((feature) => <li key={feature}>{feature}</li>)}
               </ul>
-              <div className="grid gap-2">
-                <CheckoutButton tier={plan.tier} cycle={cycle} provider="STRIPE" />
-                <CheckoutButton tier={plan.tier} cycle={cycle} provider="MERCADO_PAGO" />
-              </div>
+              <p className="text-xs text-muted-foreground">Checkout seguro via AbacatePay com Pix, cartao e parcelamento em ate 12x nos planos pre-pagos.</p>
+              <CheckoutButton tier={plan.tier} cycle={cycle} />
             </CardContent>
           </Card>
         ))}
