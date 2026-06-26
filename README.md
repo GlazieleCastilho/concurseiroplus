@@ -9,7 +9,7 @@ Plataforma SaaS premium para preparacao de concursos publicos brasileiros.
 - PostgreSQL com Prisma v7 e adapter PG
 - Clerk para autenticacao, MFA, Google Login e sessoes
 - Anthropic Claude com fallback OpenAI para IA
-- AbacatePay para assinaturas, Pix, cartao e planos pre-pagos
+- AbacatePay para assinaturas, Pix nos planos pre-pagos, cartao e parcelamento
 - Upstash Redis para rate limiting
 - Sentry, PostHog e Vercel Analytics para observabilidade
 - Resend para e-mails transacionais

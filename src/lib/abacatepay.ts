@@ -40,9 +40,13 @@ export class AbacatePayError extends Error {
   }
 }
 
-export function verifyAbacatePaySignature(rawBody: string, signatureFromHeader: string | null, publicKey = process.env.ABACATEPAY_WEBHOOK_PUBLIC_KEY): boolean {
-  if (!signatureFromHeader || !publicKey) return false;
-  const expectedSignature = crypto.createHmac("sha256", publicKey).update(Buffer.from(rawBody, "utf8")).digest("base64");
+export function verifyAbacatePaySignature(
+  rawBody: string,
+  signatureFromHeader: string | null,
+  signingSecret = process.env.ABACATEPAY_WEBHOOK_HMAC_SECRET ?? process.env.ABACATEPAY_WEBHOOK_PUBLIC_KEY
+): boolean {
+  if (!signatureFromHeader || !signingSecret) return false;
+  const expectedSignature = crypto.createHmac("sha256", signingSecret).update(Buffer.from(rawBody, "utf8")).digest("base64");
   const expected = Buffer.from(expectedSignature);
   const received = Buffer.from(signatureFromHeader);
   return expected.length === received.length && crypto.timingSafeEqual(expected, received);

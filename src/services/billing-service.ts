@@ -2,7 +2,7 @@ import type { BillingCycle, Plan, PlanTier, User } from "@/generated/prisma";
 import { abacatepayProductCycle, isRecurringCycle, planExternalProductId } from "@/lib/billing-period";
 import { prisma } from "@/lib/prisma";
 import { plans, priceForCycle } from "@/lib/product";
-import { abacatepayRequest, AbacatePayError, type AbacatePayCheckout, type AbacatePayCustomer, type AbacatePayProduct } from "@/lib/abacatepay";
+import { abacatepayRequest, type AbacatePayCheckout, type AbacatePayCustomer, type AbacatePayProduct } from "@/lib/abacatepay";
 
 function baseUrl(): string {
   return process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -49,12 +49,9 @@ async function getOrCreateCustomer(user: User): Promise<string> {
 }
 
 async function findAbacatePayProduct(externalProductId: string): Promise<AbacatePayProduct | null> {
-  try {
-    return await abacatepayRequest<AbacatePayProduct>(`/products/get?externalId=${encodeURIComponent(externalProductId)}`);
-  } catch (error) {
-    if (error instanceof AbacatePayError && error.status === 404) return null;
-    throw error;
-  }
+  const response = await abacatepayRequest<AbacatePayProduct[] | { products?: AbacatePayProduct[]; items?: AbacatePayProduct[] }>("/products/list");
+  const products = Array.isArray(response) ? response : response.products ?? response.items ?? [];
+  return products.find((product) => product.externalId === externalProductId) ?? null;
 }
 
 async function ensureAbacatePayProduct(plan: Plan): Promise<Plan> {
@@ -116,7 +113,7 @@ export async function createCheckout(input: {
       externalId: payment.id,
       returnUrl: `${baseUrl()}/billing`,
       completionUrl: `${baseUrl()}/billing/sucesso`,
-      methods: ["PIX", "CARD"],
+      methods: isRecurringCycle(input.cycle) ? ["CARD"] : ["PIX", "CARD"],
       card: { maxInstallments: 12 },
       metadata: {
         paymentId: payment.id,

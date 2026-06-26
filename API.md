@@ -27,7 +27,7 @@ Todas as rotas privadas exigem sessao Clerk.
 - `POST /api/billing/checkout`
   - Body: `{ tier, cycle }`
   - Cria checkout hospedado na AbacatePay.
-  - `MENSAL` e `ANUAL` usam assinatura; `TRIMESTRAL` e `VITALICIO` usam pagamento unico.
+  - `MENSAL` e `ANUAL` usam assinatura por cartao; `TRIMESTRAL` e `VITALICIO` usam pagamento unico com Pix/cartao.
 
 - `POST /api/webhooks/abacatepay?webhookSecret=SEU_SECRET`
   - Eventos: `checkout.completed`, `checkout.refunded`, `checkout.disputed`, `checkout.lost`, `subscription.completed`, `subscription.renewed`, `subscription.cancelled`, `subscription.trial_started`.

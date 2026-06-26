@@ -30,6 +30,7 @@ jobs:
       CLERK_WEBHOOK_SECRET: whsec_placeholder
       ABACATEPAY_API_KEY: placeholder
       ABACATEPAY_WEBHOOK_SECRET: whsec_placeholder
+      ABACATEPAY_WEBHOOK_HMAC_SECRET: webhook_hmac_secret_placeholder
       ABACATEPAY_WEBHOOK_PUBLIC_KEY: webhook_public_key_placeholder
       ANTHROPIC_API_KEY: placeholder
       OPENAI_API_KEY: placeholder
