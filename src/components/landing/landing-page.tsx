@@ -25,6 +25,14 @@ const features = [
   [Calendar, "Planner de Estudos", "Metas, calendario, recorrencia, lembretes e organizacao semanal."],
 ] as const;
 
+function billingRedirectUrl(tier?: string, cycle?: BillingCycle): string {
+  const params = new URLSearchParams();
+  if (tier) params.set("tier", tier);
+  if (cycle) params.set("cycle", cycle);
+  const query = params.toString();
+  return query ? `/billing?${query}` : "/billing";
+}
+
 export function LandingPage() {
   const [cycle, setCycle] = useState<BillingCycle>("MENSAL");
 
@@ -35,7 +43,7 @@ export function LandingPage() {
           <a href="#top" className="font-display text-xl font-extrabold tracking-tight">
             Concurseiro<span className="text-accent">+</span>
           </a>
-          <SignInButton mode="modal">
+          <SignInButton mode="redirect" forceRedirectUrl="/dashboard" fallbackRedirectUrl="/dashboard">
             <Button variant="outline" size="sm">Ja sou assinante</Button>
           </SignInButton>
         </div>
@@ -51,7 +59,7 @@ export function LandingPage() {
             Simulados reais, correcao de redacao por IA e skills especializadas por disciplina. Tudo em uma plataforma feita para quem leva concurso a serio.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <SignUpButton mode="modal">
+            <SignUpButton mode="redirect" forceRedirectUrl="/billing" fallbackRedirectUrl="/billing">
               <Button size="lg" className="shadow-[0_0_32px_rgb(74_144_217/0.24)]">Comecar agora</Button>
             </SignUpButton>
             <a href="#planos">
@@ -171,7 +179,7 @@ export function LandingPage() {
                     <li key={feature} className="flex gap-2 text-sm"><Check className="mt-0.5 h-4 w-4 shrink-0 text-green-400" /> {feature}</li>
                   ))}
                 </ul>
-                <SignUpButton mode="modal">
+                <SignUpButton mode="redirect" forceRedirectUrl={billingRedirectUrl(plan.tier, cycle)} fallbackRedirectUrl={billingRedirectUrl(plan.tier, cycle)}>
                   <Button className="mt-6 w-full" variant={plan.popular ? "default" : "outline"}>Assinar {plan.name}</Button>
                 </SignUpButton>
               </CardContent>
