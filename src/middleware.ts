@@ -39,21 +39,22 @@ function withSecurityHeaders(response: NextResponse): NextResponse {
   );
   return response;
 }
+
 export default clerkMiddleware(async (auth, req) => {
-  // 1. Se for rota admin, apenas garante que o usuário está LOGADO
   if (isAdminRoute(req)) {
-    await auth.protect();
+    const { sessionClaims } = await auth();
+    const role = sessionClaims?.metadata?.role;
+    if (role !== "admin" && role !== "super_admin") {
+      return withSecurityHeaders(NextResponse.redirect(new URL("/dashboard", req.url)));
+    }
   }
 
-  // 2. Se não for rota pública, garante login
   if (!isPublicRoute(req)) {
     await auth.protect();
   }
 
-  // 3. Aplica seus cabeçalhos de segurança perfeitamente
   return withSecurityHeaders(NextResponse.next());
 });
-
 
 export const config = {
   matcher: [
