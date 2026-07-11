@@ -337,18 +337,37 @@ model Prova {
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
-  questoes  Questao[]
-  simulados Simulado[]
+  questoes    Questao[]
+  simulados   Simulado[]
+  textosApoio TextoApoio[]
 
   @@index([banca, orgao, cargo])
   @@index([dataProva])
   @@map("provas")
 }
 
+model TextoApoio {
+  id        String   @id @default(cuid())
+  provaId   String
+  prova     Prova    @relation(fields: [provaId], references: [id], onDelete: Cascade)
+  chave     String
+  titulo    String?
+  conteudo  String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  questoes Questao[]
+
+  @@unique([provaId, chave])
+  @@map("textos_apoio")
+}
+
 model Questao {
   id           String       @id @default(cuid())
   provaId      String
   prova        Prova        @relation(fields: [provaId], references: [id], onDelete: Cascade)
+  textoApoioId String?
+  textoApoio   TextoApoio?  @relation(fields: [textoApoioId], references: [id], onDelete: SetNull)
   numero       Int
   tipo         QuestionType @default(OBJETIVA)
   enunciado    String       @db.Text
@@ -365,6 +384,7 @@ model Questao {
 
   @@unique([provaId, numero])
   @@index([disciplina, dificuldade])
+  @@index([textoApoioId])
   @@map("questoes")
 }
 

@@ -4,6 +4,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { planExternalProductId } from "../src/lib/billing-period";
 import { plans, priceForCycle, skills } from "../src/lib/product";
+import { prf2021Prova, prf2021Questoes, prf2021Textos } from "./seed-data/prf-2021";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
@@ -116,6 +117,37 @@ async function seedProvas() {
   }
 }
 
+async function seedProvaReal() {
+  const id = `${prf2021Prova.banca.toLowerCase()}-${prf2021Prova.ano}-${prf2021Prova.cargo.toLowerCase().replaceAll(/\s+/g, "-")}`;
+  const prova = await prisma.prova.upsert({
+    where: { id },
+    update: prf2021Prova,
+    create: { id, ...prf2021Prova },
+  });
+
+  const textoIdByChave = new Map<string, string>();
+  for (const texto of prf2021Textos) {
+    const registro = await prisma.textoApoio.upsert({
+      where: { provaId_chave: { provaId: prova.id, chave: texto.chave } },
+      update: { titulo: texto.titulo, conteudo: texto.conteudo },
+      create: { provaId: prova.id, ...texto },
+    });
+    textoIdByChave.set(texto.chave, registro.id);
+  }
+
+  for (const questao of prf2021Questoes) {
+    const { textoApoioChave, alternativas, ...rest } = questao;
+    const textoApoioId = textoApoioChave ? textoIdByChave.get(textoApoioChave) : undefined;
+    await prisma.questao.upsert({
+      where: { provaId_numero: { provaId: prova.id, numero: rest.numero } },
+      update: { ...rest, textoApoioId, alternativas: { deleteMany: {}, create: alternativas } },
+      create: { ...rest, provaId: prova.id, textoApoioId, alternativas: { create: alternativas } },
+    });
+  }
+
+  await prisma.prova.update({ where: { id: prova.id }, data: { totalQuestoes: prf2021Questoes.length } });
+}
+
 async function seedCourses() {
   await prisma.course.upsert({
     where: { slug: "direito-constitucional-essencial" },
@@ -152,6 +184,7 @@ async function main() {
   await seedPlans();
   await seedSkills();
   await seedProvas();
+  await seedProvaReal();
   await seedCourses();
   console.log("Seed Concurseiro+ concluido.");
 }

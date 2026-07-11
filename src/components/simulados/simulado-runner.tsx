@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Alternativa, Questao } from "@/generated/prisma";
+import type { Alternativa, Questao, TextoApoio } from "@/generated/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-type QuestaoComAlternativas = Questao & { alternativas: Alternativa[] };
+type QuestaoComAlternativas = Questao & { alternativas: Alternativa[]; textoApoio: TextoApoio | null };
 
 export function SimuladoRunner({ simuladoId, expiradoEm, questoes }: { simuladoId: string; expiradoEm: string; questoes: QuestaoComAlternativas[] }) {
   const [remaining, setRemaining] = useState(Math.max(0, new Date(expiradoEm).getTime() - Date.now()));
@@ -31,8 +31,19 @@ export function SimuladoRunner({ simuladoId, expiradoEm, questoes }: { simuladoI
         </div>
         <Button>Finalizar simulado</Button>
       </div>
-      {questoes.map((questao) => (
-        <Card key={questao.id}>
+      {questoes.map((questao, index) => (
+        <div key={questao.id} className="space-y-4">
+          {questao.textoApoio && questao.textoApoio.id !== questoes[index - 1]?.textoApoio?.id && (
+            <Card className="border-dashed bg-muted/30">
+              <CardHeader>
+                <CardTitle className="text-base">{questao.textoApoio.titulo ?? "Texto de apoio"}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{questao.textoApoio.conteudo}</p>
+              </CardContent>
+            </Card>
+          )}
+          <Card>
           <CardHeader>
             <CardTitle>Questao {questao.numero}</CardTitle>
           </CardHeader>
@@ -58,7 +69,8 @@ export function SimuladoRunner({ simuladoId, expiradoEm, questoes }: { simuladoI
               ))}
             </div>
           </CardContent>
-        </Card>
+          </Card>
+        </div>
       ))}
     </div>
   );
