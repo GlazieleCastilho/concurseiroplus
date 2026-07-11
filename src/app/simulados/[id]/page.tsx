@@ -9,7 +9,7 @@ export default async function SimuladoPage({ params }: { params: Promise<{ id: s
   const user = await getCurrentDbUser();
   const simulado = await prisma.simulado.findFirst({
     where: { id, userId: user.id },
-    include: { prova: { include: { questoes: { include: { alternativas: true }, orderBy: { numero: "asc" } } } } },
+    include: { prova: { include: { questoes: { include: { alternativas: true, textoApoio: true }, orderBy: { numero: "asc" } } } } },
   });
   if (!simulado || !simulado.prova) notFound();
 

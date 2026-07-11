@@ -1,6 +1,16 @@
 -- CreateSchema
 CREATE SCHEMA IF NOT EXISTS "public";
 
+-- Reconcile with the pre-existing course-only schema (migrations 20260128002224_db_concurseiroplus
+-- and 20260429234537_init): this migration recreates these tables/types with the full SaaS shape,
+-- so drop the legacy versions first instead of colliding with them.
+DROP TABLE IF EXISTS "course_lessons" CASCADE;
+DROP TABLE IF EXISTS "course_modules" CASCADE;
+DROP TABLE IF EXISTS "courses" CASCADE;
+DROP TABLE IF EXISTS "users" CASCADE;
+DROP TYPE IF EXISTS "CourseStatus" CASCADE;
+DROP TYPE IF EXISTS "CourseDifficulty" CASCADE;
+
 -- CreateEnum
 CREATE TYPE "Role" AS ENUM ('user', 'admin', 'super_admin');
 
@@ -822,6 +832,10 @@ ALTER TABLE "course_modules" ADD CONSTRAINT "course_modules_courseId_fkey" FOREI
 
 -- AddForeignKey
 ALTER TABLE "course_lessons" ADD CONSTRAINT "course_lessons_moduleId_fkey" FOREIGN KEY ("moduleId") REFERENCES "course_modules"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- Restore the course_tags -> courses foreign key dropped by the CASCADE cleanup above
+-- (course_tags itself is untouched by this migration, it was created in 20260429234537_init).
+ALTER TABLE "course_tags" ADD CONSTRAINT "course_tags_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "courses"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "support_tickets" ADD CONSTRAINT "support_tickets_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;

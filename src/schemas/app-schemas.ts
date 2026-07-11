@@ -69,3 +69,64 @@ export const simuladoAnswerSchema = z.object({
   respostaTexto: z.string().max(8000).optional(),
   respostaDada: z.string().max(8).optional(),
 });
+
+export const examLevelSchema = z.enum(["FUNDAMENTAL", "MEDIO", "SUPERIOR"]);
+export const questionTypeSchema = z.enum(["OBJETIVA", "CERTO_ERRADO", "DISSERTATIVA"]);
+export const difficultySchema = z.enum(["EASY", "MEDIUM", "HARD"]);
+
+export const provaSchema = z.object({
+  titulo: z.string().min(3).max(200),
+  orgao: z.string().min(2).max(160),
+  banca: z.string().min(2).max(80),
+  cargo: z.string().min(2).max(160),
+  ano: z.coerce.number().int().min(1990).max(2100),
+  nivel: examLevelSchema.default("SUPERIOR"),
+  disciplina: z.string().max(120).optional(),
+  dataProva: z.coerce.date().optional(),
+  duracaoMin: z.coerce.number().int().min(30).max(600).default(240),
+});
+
+export const alternativaSchema = z.object({
+  letra: z.string().min(1).max(2),
+  texto: z.string().min(1).max(2000),
+  correta: z.boolean().default(false),
+});
+
+export const textoApoioSchema = z.object({
+  chave: z.string().min(1).max(80),
+  titulo: z.string().max(200).optional(),
+  conteudo: z.string().min(1),
+});
+
+export const questaoSchema = z
+  .object({
+    numero: z.coerce.number().int().min(1),
+    tipo: questionTypeSchema.default("OBJETIVA"),
+    enunciado: z.string().min(3),
+    disciplina: z.string().max(120).optional(),
+    assunto: z.string().max(120).optional(),
+    dificuldade: difficultySchema.default("MEDIUM"),
+    gabarito: z.string().max(20).optional(),
+    comentario: z.string().max(4000).optional(),
+    alternativas: z.array(alternativaSchema).max(6).default([]),
+    textoApoioId: z.string().cuid().optional(),
+    textoApoioChave: z.string().max(80).optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.tipo === "DISSERTATIVA") return;
+    if (value.alternativas.length < 2) {
+      ctx.addIssue({ code: "custom", message: "Questoes objetivas ou certo/errado precisam de ao menos 2 alternativas", path: ["alternativas"] });
+    }
+    if (!value.alternativas.some((alternativa) => alternativa.correta) && !value.gabarito) {
+      ctx.addIssue({ code: "custom", message: "Marque a alternativa correta ou informe o gabarito", path: ["gabarito"] });
+    }
+  });
+
+export const provaImportSchema = provaSchema.extend({
+  textosApoio: z.array(textoApoioSchema).max(60).optional().default([]),
+  questoes: z.array(questaoSchema).min(1).max(500),
+});
+
+export const bulkImportSchema = z.object({
+  provas: z.array(provaImportSchema).min(1).max(50),
+});
