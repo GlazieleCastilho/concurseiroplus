@@ -4,14 +4,12 @@ import { bulkImportSchema } from "@/schemas/app-schemas";
 const MAX_CHARS = 40000;
 
 export async function extractPdfText(buffer: Buffer): Promise<string> {
-  const { PDFParse } = await import("pdf-parse");
-  const parser = new PDFParse({ data: buffer });
-  try {
-    const result = await parser.getText();
-    return result.text;
-  } finally {
-    await parser.destroy();
-  }
+  // Import the inner implementation directly: pdf-parse's index.js runs a debug branch
+  // (`!module.parent`) that misfires under ESM dynamic import and crashes looking for its
+  // own test fixture file.
+  const pdfParse = (await import("pdf-parse/lib/pdf-parse.js")).default;
+  const result = await pdfParse(buffer);
+  return result.text;
 }
 
 function extractJson(text: string): unknown {
