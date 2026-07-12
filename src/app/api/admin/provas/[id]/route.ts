@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/clerk";
+import { toErrorResponse } from "@/lib/api-error";
 import { provaSchema } from "@/schemas/app-schemas";
 import { deleteProva, updateProva } from "@/repositories/questions-repository";
 
@@ -11,8 +12,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const prova = await updateProva(id, body);
     return NextResponse.json({ prova });
   } catch (error) {
-    if (error instanceof Response) return error;
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Erro ao editar prova" }, { status: 400 });
+    return toErrorResponse(error, "Erro ao editar prova");
   }
 }
 
@@ -23,7 +23,6 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     await deleteProva(id);
     return NextResponse.json({ ok: true });
   } catch (error) {
-    if (error instanceof Response) return error;
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Erro ao excluir prova" }, { status: 400 });
+    return toErrorResponse(error, "Erro ao excluir prova");
   }
 }
