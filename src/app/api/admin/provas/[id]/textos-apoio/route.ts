@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/clerk";
+import { toErrorResponse } from "@/lib/api-error";
 import { textoApoioSchema } from "@/schemas/app-schemas";
 import { createTextoApoio } from "@/repositories/questions-repository";
 
@@ -11,7 +12,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const textoApoio = await createTextoApoio(id, body);
     return NextResponse.json({ textoApoio }, { status: 201 });
   } catch (error) {
-    if (error instanceof Response) return error;
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Erro ao criar texto de apoio" }, { status: 400 });
+    return toErrorResponse(error, "Erro ao criar texto de apoio");
   }
 }

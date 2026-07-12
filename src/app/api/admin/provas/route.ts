@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/clerk";
+import { toErrorResponse } from "@/lib/api-error";
 import { provaSchema } from "@/schemas/app-schemas";
 import { createProva, listProvas } from "@/repositories/questions-repository";
 
@@ -9,8 +10,7 @@ export async function GET() {
     const provas = await listProvas();
     return NextResponse.json({ provas });
   } catch (error) {
-    if (error instanceof Response) return error;
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Erro ao listar provas" }, { status: 500 });
+    return toErrorResponse(error, "Erro ao listar provas");
   }
 }
 
@@ -21,7 +21,6 @@ export async function POST(req: Request) {
     const prova = await createProva(body);
     return NextResponse.json({ prova }, { status: 201 });
   } catch (error) {
-    if (error instanceof Response) return error;
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Erro ao criar prova" }, { status: 400 });
+    return toErrorResponse(error, "Erro ao criar prova");
   }
 }

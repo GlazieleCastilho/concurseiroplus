@@ -5,13 +5,13 @@
 
 */
 -- DropForeignKey
-ALTER TABLE "course_tags" DROP CONSTRAINT "course_tags_courseId_fkey";
+ALTER TABLE IF EXISTS "course_tags" DROP CONSTRAINT IF EXISTS "course_tags_courseId_fkey";
 
 -- AlterTable
-ALTER TABLE "questoes" ADD COLUMN     "textoApoioId" TEXT;
+ALTER TABLE "questoes" ADD COLUMN IF NOT EXISTS "textoApoioId" TEXT;
 
 -- DropTable
-DROP TABLE "course_tags";
+DROP TABLE IF EXISTS "course_tags";
 
 -- CreateTable
 CREATE TABLE "textos_apoio" (

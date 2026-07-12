@@ -124,6 +124,8 @@ export function QuestionImportManager() {
           <p className="text-sm text-muted-foreground">
             Envie o PDF oficial da prova (com gabarito, se publicado). A IA extrai o texto e monta um rascunho —
             <strong> nada e salvo automaticamente</strong>. Revise principalmente os gabaritos antes de confirmar.
+            Para provas grandes (mais de ~40 questoes), envie por partes (ex: recorte o PDF em blocos) para nao
+            estourar o tempo limite da IA — ou use CSV/JSON, que importam sem IA e sem esse limite.
           </p>
           <div className="grid gap-3 sm:grid-cols-4">
             <Input placeholder="Banca (ex: CESPE)" value={pdfHints.banca} onChange={(e) => setPdfHints({ ...pdfHints, banca: e.target.value })} />

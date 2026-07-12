@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/clerk";
+import { toErrorResponse } from "@/lib/api-error";
 import { bulkImportSchema } from "@/schemas/app-schemas";
 import { csvRowsToImportPayload, parseCsv } from "@/lib/question-import";
 import { draftProvaFromText, extractPdfText } from "@/services/question-extraction-service";
@@ -48,7 +49,6 @@ export async function POST(req: Request) {
       source: name.endsWith(".pdf") ? "pdf" : name.endsWith(".csv") ? "csv" : "json",
     });
   } catch (error) {
-    if (error instanceof Response) return error;
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Erro ao processar arquivo" }, { status: 500 });
+    return toErrorResponse(error, "Erro ao processar arquivo");
   }
 }
