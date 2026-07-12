@@ -2,9 +2,9 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "concurseiro-plus-dev",
-      "runtimeExecutable": "bash",
-      "runtimeArgs": ["-c", "cd '/Users/user/Documents/Concurseiro+' && npm run dev"],
+      "name": "dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
       "port": 3000
     }
   ]

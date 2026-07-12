@@ -1,6 +1,6 @@
 "use client";
 
-import { Avatar } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -41,7 +41,7 @@ export const NavUser = () => {
                 size="lg"
                 className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
               >
-                <Avatar src={user.imageUrl} fallback={user.fullName ?? ""} />
+                <UserAvatar imageUrl={user.imageUrl} fallback={user.fullName ?? user.firstName ?? "U"} />
 
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span>{user.fullName}</span>
@@ -62,7 +62,7 @@ export const NavUser = () => {
             >
               <DropdownMenuLabel className="p-0 font-normal">
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                  <Avatar src={user.imageUrl} fallback={user.fullName ?? ""} />
+                  <UserAvatar imageUrl={user.imageUrl} fallback={user.fullName ?? user.firstName ?? "U"} />
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold">{user.fullName}</span>
                     <span className="truncate text-xs">
@@ -111,3 +111,12 @@ export const NavUser = () => {
     </SidebarMenu>
   );
 };
+
+function UserAvatar({ imageUrl, fallback }: { imageUrl: string; fallback: string }) {
+  return (
+    <Avatar>
+      <AvatarImage src={imageUrl} alt={fallback} />
+      <AvatarFallback>{fallback.slice(0, 2).toUpperCase()}</AvatarFallback>
+    </Avatar>
+  );
+}
