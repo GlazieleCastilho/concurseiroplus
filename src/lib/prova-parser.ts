@@ -5,23 +5,24 @@
  * Cobre o caso comum; o admin sempre revisa o rascunho antes de confirmar o import.
  */
 
-type AlternativaDraft = { letra: string; texto: string; correta: boolean };
+type AlternativaDraft = { letra: string; texto: string; correta: boolean; imagemUrl?: string };
 
 type QuestaoDraft = {
   numero: number;
   tipo: "OBJETIVA" | "CERTO_ERRADO";
   enunciado: string;
+  imagemUrl?: string;
   gabarito?: string;
   alternativas: AlternativaDraft[];
 };
 
 const NOISE_LINE = /^(pcimarkpci\b|www\.\S+$|--\s*\d+\s+of\s+\d+\s*--$|espa[cç]o livre$|.*P[ÁA]GINA\s+\d+\s*$)/i;
 // Numero do item seguido de texto na mesma linha (ex.: CEBRASPE "9 Observe a charge...").
-const ITEM_START_INLINE = /^(\d{1,3})[ \t]+(\S.*)$/;
+export const ITEM_START_INLINE = /^(\d{1,3})[ \t]+(\S.*)$/;
 // Numero do item sozinho na linha, com o enunciado comecando na linha seguinte (ex.: FGV).
-const ITEM_START_ALONE = /^(\d{1,3})\s*$/;
+export const ITEM_START_ALONE = /^(\d{1,3})\s*$/;
 // Alternativa "A) texto", "A. texto" ou "(A) texto" (com ou sem parenteses).
-const ALTERNATIVA_START = /^\(?([A-E])[).]\s+(.*)$/;
+export const ALTERNATIVA_START = /^\(?([A-E])[).]\s+(.*)$/;
 
 function isNoise(line: string): boolean {
   return NOISE_LINE.test(line.trim());
@@ -276,6 +277,21 @@ export function applyGabarito(questoes: QuestaoDraft[], gabarito: Map<number, st
   });
 }
 
+/** Aplica URLs de imagem extraidas do PDF as questoes/alternativas correspondentes. */
+export function applyImages(
+  questoes: QuestaoDraft[],
+  assignments: Array<{ numero: number; letra: string | null; url: string }>
+): QuestaoDraft[] {
+  return questoes.map((questao) => {
+    const questaoImage = assignments.find((a) => a.numero === questao.numero && a.letra === null);
+    const alternativas = questao.alternativas.map((alt) => {
+      const altImage = assignments.find((a) => a.numero === questao.numero && a.letra?.toUpperCase() === alt.letra.toUpperCase());
+      return altImage ? { ...alt, imagemUrl: altImage.url } : alt;
+    });
+    return questaoImage ? { ...questao, imagemUrl: questaoImage.url, alternativas } : { ...questao, alternativas };
+  });
+}
+
 export type ProvaHints = { banca?: string; orgao?: string; cargo?: string; ano?: number };
 
 export function buildProvaDraft(questoes: QuestaoDraft[], hints: ProvaHints) {
@@ -297,6 +313,7 @@ export function buildProvaDraft(questoes: QuestaoDraft[], hints: ProvaHints) {
           numero: questao.numero,
           tipo: questao.tipo,
           enunciado: questao.enunciado,
+          imagemUrl: questao.imagemUrl,
           dificuldade: "MEDIUM" as const,
           gabarito: questao.gabarito,
           alternativas: questao.alternativas,

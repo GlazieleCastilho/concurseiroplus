@@ -49,6 +49,10 @@ export function SimuladoRunner({ simuladoId, expiradoEm, questoes }: { simuladoI
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="whitespace-pre-wrap text-sm leading-6">{questao.enunciado}</p>
+            {questao.imagemUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={questao.imagemUrl} alt={`Imagem da questao ${questao.numero}`} className="max-w-full rounded-md border border-border" />
+            )}
             <div className="grid gap-2">
               {questao.alternativas.map((alternativa) => (
                 <button
@@ -65,6 +69,10 @@ export function SimuladoRunner({ simuladoId, expiradoEm, questoes }: { simuladoI
                   className={`rounded-md border px-3 py-2 text-left text-sm ${answers[questao.id] === alternativa.letra ? "border-accent bg-accent/10" : "border-border"}`}
                 >
                   <strong>{alternativa.letra}.</strong> {alternativa.texto}
+                  {alternativa.imagemUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={alternativa.imagemUrl} alt={`Imagem da alternativa ${alternativa.letra}`} className="mt-2 max-w-full rounded-md border border-border" />
+                  )}
                 </button>
               ))}
             </div>

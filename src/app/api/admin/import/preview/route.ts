@@ -3,8 +3,10 @@ import { requireRole } from "@/lib/clerk";
 import { toErrorResponse } from "@/lib/api-error";
 import { bulkImportSchema } from "@/schemas/app-schemas";
 import { csvRowsToImportPayload, parseCsv } from "@/lib/question-import";
-import { extractPdfText } from "@/services/question-extraction-service";
-import { applyGabarito, buildProvaDraft, detectParsingAnomaly, parseGabaritoText, parseProvaText } from "@/lib/prova-parser";
+import { extractPdfText, extractItemPositions } from "@/services/question-extraction-service";
+import { applyGabarito, applyImages, buildProvaDraft, detectParsingAnomaly, parseGabaritoText, parseProvaText } from "@/lib/prova-parser";
+import { assignImagesToQuestions, extractImagePlacements } from "@/lib/pdf-image-extractor";
+import { uploadQuestionImage } from "@/lib/supabase-storage";
 
 export async function POST(req: Request) {
   try {
@@ -42,6 +44,27 @@ export async function POST(req: Request) {
           parseGabaritoText(gabaritoText, { provaVersao: form.get("provaVersao")?.toString(), cargo })
         );
       }
+
+      try {
+        const placements = extractImagePlacements(buffer);
+        if (placements.length > 0) {
+          const itemPositions = await extractItemPositions(buffer);
+          const assignments = assignImagesToQuestions(placements, itemPositions);
+          const uploaded = await Promise.all(
+            assignments.map(async (assignment) => ({
+              numero: assignment.numero,
+              letra: assignment.letra,
+              url: await uploadQuestionImage(assignment.bytes, `q${assignment.numero}${assignment.letra ?? ""}.jpg`),
+            }))
+          );
+          questoes = applyImages(questoes, uploaded);
+        }
+      } catch (imageError) {
+        // Extracao de imagem e um extra (best-effort): se falhar (ex.: storage nao
+        // configurado), o rascunho de texto continua valido e o admin so nao vera imagens.
+        console.error("Falha ao extrair/subir imagens do PDF:", imageError);
+      }
+
       draft = buildProvaDraft(questoes, {
         banca: form.get("banca")?.toString(),
         orgao: form.get("orgao")?.toString(),

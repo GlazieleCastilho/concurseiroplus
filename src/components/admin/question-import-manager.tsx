@@ -130,7 +130,10 @@ export function QuestionImportManager() {
             <strong> Nada e salvo automaticamente</strong>: revise o rascunho, principalmente os gabaritos, antes de
             confirmar. Funciona melhor com provas objetivas bem formatadas; se o parser nao identificar os itens,
             use CSV/JSON ou cadastre manualmente. Se o gabarito trouxer varias versoes da prova (Prova 1, Prova 2...),
-            informe &ldquo;Cargo&rdquo; e &ldquo;Versao da prova&rdquo; para escolher a grade certa.
+            informe &ldquo;Cargo&rdquo; e &ldquo;Versao da prova&rdquo; para escolher a grade certa. Imagens embutidas
+            no PDF (charges, graficos, quadrinhos) sao extraidas e associadas automaticamente a questao/alternativa
+            mais proxima na pagina — essa associacao e por posicao, entao <strong>confira sempre se a imagem caiu na
+            questao certa</strong> antes de confirmar.
           </p>
           <div className="grid gap-3 sm:grid-cols-5">
             <Input placeholder="Banca (ex: CESPE)" value={pdfHints.banca} onChange={(e) => setPdfHints({ ...pdfHints, banca: e.target.value })} />

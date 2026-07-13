@@ -371,6 +371,7 @@ model Questao {
   numero       Int
   tipo         QuestionType @default(OBJETIVA)
   enunciado    String       @db.Text
+  imagemUrl    String?
   disciplina   String?
   assunto      String?
   dificuldade  Difficulty   @default(MEDIUM)
@@ -394,6 +395,7 @@ model Alternativa {
   questao   Questao  @relation(fields: [questaoId], references: [id], onDelete: Cascade)
   letra     String
   texto     String   @db.Text
+  imagemUrl String?
   correta   Boolean  @default(false)
   createdAt DateTime @default(now())
 

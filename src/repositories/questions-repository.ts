@@ -13,12 +13,13 @@ export type ProvaInput = {
   duracaoMin?: number;
 };
 
-export type AlternativaInput = { letra: string; texto: string; correta: boolean };
+export type AlternativaInput = { letra: string; texto: string; correta: boolean; imagemUrl?: string };
 
 export type QuestaoInput = {
   numero: number;
   tipo: QuestionType;
   enunciado: string;
+  imagemUrl?: string;
   disciplina?: string;
   assunto?: string;
   dificuldade: Difficulty;
@@ -92,6 +93,7 @@ export async function createQuestao(provaId: string, input: QuestaoInput) {
         numero: input.numero,
         tipo: input.tipo,
         enunciado: input.enunciado,
+        imagemUrl: input.imagemUrl,
         disciplina: input.disciplina,
         assunto: input.assunto,
         dificuldade: input.dificuldade,
@@ -116,6 +118,7 @@ export async function updateQuestao(questaoId: string, input: QuestaoInput) {
         numero: input.numero,
         tipo: input.tipo,
         enunciado: input.enunciado,
+        imagemUrl: input.imagemUrl,
         disciplina: input.disciplina,
         assunto: input.assunto,
         dificuldade: input.dificuldade,
@@ -163,6 +166,7 @@ export async function bulkImportProvas(provas: ProvaImportInput[]) {
         const data = {
           tipo: questao.tipo,
           enunciado: questao.enunciado,
+          imagemUrl: questao.imagemUrl,
           disciplina: questao.disciplina,
           assunto: questao.assunto,
           dificuldade: questao.dificuldade,
