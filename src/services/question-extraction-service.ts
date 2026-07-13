@@ -1,11 +1,15 @@
 import { completeWithFallback } from "@/services/ai-service";
 import { bulkImportSchema } from "@/schemas/app-schemas";
 
-// Kept conservative on purpose: Vercel's Hobby plan hard-kills serverless functions at 60s,
-// and generating a large structured JSON is what actually eats the time (not the input size).
+// Kept conservative on purpose: Vercel's Hobby plan hard-kills serverless functions at 60s.
+// claude-sonnet-4-5 alone (the app's default model) still took over a minute to generate a
+// structured JSON at the previous limits, so this also pins a faster model just for this
+// extraction task (pure text-to-JSON, no deep reasoning needed) instead of relying on
+// ANTHROPIC_MODEL, which stays tuned for essay grading elsewhere.
 // A bigger prova needs to be uploaded in smaller chunks (or imported via CSV/JSON, which skips the AI call).
-const MAX_CHARS = 12000;
-const MAX_TOKENS = 3000;
+const MAX_CHARS = 10000;
+const MAX_TOKENS = 2500;
+const FAST_MODEL = process.env.ANTHROPIC_MODEL_FAST ?? "claude-haiku-4-5-20251001";
 
 export async function extractPdfText(buffer: Buffer): Promise<string> {
   // Import the inner implementation directly: pdf-parse's index.js runs a debug branch
@@ -44,7 +48,7 @@ export async function draftProvaFromText(rawText: string, hints?: ExtractionHint
   const hintLine = hints && Object.values(hints).some(Boolean) ? `Dados ja conhecidos sobre esta prova: ${JSON.stringify(hints)}\n\n` : "";
   const content = `${hintLine}Texto extraido do PDF:\n${text}`;
 
-  const raw = await completeWithFallback(system, [{ role: "user", content }], MAX_TOKENS);
+  const raw = await completeWithFallback(system, [{ role: "user", content }], MAX_TOKENS, FAST_MODEL);
   const parsed = extractJson(raw);
   return parsed;
 }

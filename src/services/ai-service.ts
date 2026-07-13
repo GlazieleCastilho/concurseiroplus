@@ -32,7 +32,7 @@ function extractJson(text: string): unknown {
   return JSON.parse(match[0]);
 }
 
-async function callAnthropic(system: string, messages: ChatMessage[], maxTokens = 2500): Promise<string> {
+async function callAnthropic(system: string, messages: ChatMessage[], maxTokens = 2500, model?: string): Promise<string> {
   const apiKey = requireKey("ANTHROPIC_API_KEY");
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -42,7 +42,7 @@ async function callAnthropic(system: string, messages: ChatMessage[], maxTokens 
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-5",
+      model: model ?? process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-5",
       max_tokens: maxTokens,
       temperature: 0.2,
       system,
@@ -80,9 +80,9 @@ async function callOpenAI(system: string, messages: ChatMessage[], maxTokens = 2
   return payload.choices?.[0]?.message?.content ?? "";
 }
 
-export async function completeWithFallback(system: string, messages: ChatMessage[], maxTokens = 2500): Promise<string> {
+export async function completeWithFallback(system: string, messages: ChatMessage[], maxTokens = 2500, model?: string): Promise<string> {
   try {
-    return await callAnthropic(system, messages, maxTokens);
+    return await callAnthropic(system, messages, maxTokens, model);
   } catch (anthropicError) {
     if (!process.env.OPENAI_API_KEY) throw anthropicError;
     return callOpenAI(system, messages, maxTokens);
