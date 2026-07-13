@@ -42,16 +42,19 @@ export function QuestionImportManager() {
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
   const [results, setResults] = useState<ConfirmResult[] | null>(null);
   const [pdfHints, setPdfHints] = useState({ banca: "", orgao: "", cargo: "", ano: "" });
+  const [gabaritoFile, setGabaritoFile] = useState<File | null>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
   const jsonInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
+  const gabaritoInputRef = useRef<HTMLInputElement>(null);
 
-  async function runPreview(file: File, extraFields?: Record<string, string>) {
+  async function runPreview(file: File, extraFields?: Record<string, string>, gabarito?: File | null) {
     setPreviewLoading(true);
     setResults(null);
     try {
       const form = new FormData();
       form.append("file", file);
+      if (gabarito) form.append("gabaritoFile", gabarito);
       if (extraFields) {
         for (const [key, value] of Object.entries(extraFields)) {
           if (value) form.append(key, value);
@@ -115,17 +118,18 @@ export function QuestionImportManager() {
     <div className="space-y-4">
       <Tabs defaultValue="pdf">
         <TabsList>
-          <TabsTrigger value="pdf">PDF oficial (com IA)</TabsTrigger>
+          <TabsTrigger value="pdf">PDF oficial</TabsTrigger>
           <TabsTrigger value="csv">CSV</TabsTrigger>
           <TabsTrigger value="json">JSON</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pdf" className="mt-4 space-y-3">
           <p className="text-sm text-muted-foreground">
-            Envie o PDF oficial da prova (com gabarito, se publicado). A IA extrai o texto e monta um rascunho —
-            <strong> nada e salvo automaticamente</strong>. Revise principalmente os gabaritos antes de confirmar.
-            Para provas grandes (mais de ~40 questoes), envie por partes (ex: recorte o PDF em blocos) para nao
-            estourar o tempo limite da IA — ou use CSV/JSON, que importam sem IA e sem esse limite.
+            Envie o PDF oficial da prova e, se tiver, o PDF do gabarito oficial separado — a extracao e feita por
+            padroes de formatacao (item numerado, alternativas A-E ou Certo/Errado, grade de gabarito), sem IA.
+            <strong> Nada e salvo automaticamente</strong>: revise o rascunho, principalmente os gabaritos, antes de
+            confirmar. Funciona melhor com provas objetivas bem formatadas; se o parser nao identificar os itens,
+            use CSV/JSON ou cadastre manualmente.
           </p>
           <div className="grid gap-3 sm:grid-cols-4">
             <Input placeholder="Banca (ex: CESPE)" value={pdfHints.banca} onChange={(e) => setPdfHints({ ...pdfHints, banca: e.target.value })} />
@@ -134,18 +138,35 @@ export function QuestionImportManager() {
             <Input placeholder="Ano" value={pdfHints.ano} onChange={(e) => setPdfHints({ ...pdfHints, ano: e.target.value })} />
           </div>
           <input
+            ref={gabaritoInputRef}
+            type="file"
+            accept="application/pdf"
+            className="hidden"
+            onChange={(event) => {
+              setGabaritoFile(event.target.files?.[0] ?? null);
+            }}
+          />
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" type="button" onClick={() => gabaritoInputRef.current?.click()}>
+              {gabaritoFile ? `Gabarito: ${gabaritoFile.name}` : "Selecionar PDF do gabarito (opcional)"}
+            </Button>
+            {gabaritoFile && (
+              <Button variant="ghost" size="sm" type="button" onClick={() => setGabaritoFile(null)}>Remover</Button>
+            )}
+          </div>
+          <input
             ref={pdfInputRef}
             type="file"
             accept="application/pdf"
             className="hidden"
             onChange={(event) => {
               const file = event.target.files?.[0];
-              if (file) runPreview(file, pdfHints);
+              if (file) runPreview(file, pdfHints, gabaritoFile);
               event.target.value = "";
             }}
           />
           <Button variant="outline" onClick={() => pdfInputRef.current?.click()} disabled={previewLoading}>
-            {previewLoading ? "Analisando PDF..." : "Selecionar PDF"}
+            {previewLoading ? "Analisando PDF..." : "Selecionar PDF da prova"}
           </Button>
         </TabsContent>
 
