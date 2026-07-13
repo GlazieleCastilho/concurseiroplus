@@ -38,6 +38,10 @@ function findRepeatedHeaderLines(lines: string[]): Set<string> {
   for (const rawLine of lines) {
     const line = rawLine.trim();
     if (line.length < 4 || line.length > 160) continue;
+    // Alternativas curtas do tipo "(C)  V – F – V." sao todas maiusculas e podem se
+    // repetir varias vezes num mesmo caderno de prova (poucas combinacoes possiveis
+    // entre varias questoes de V/F) — nunca sao cabecalho/rodape, entao ficam de fora.
+    if (ALTERNATIVA_START.test(line) || ITEM_START_ALONE.test(line)) continue;
     const isAllCaps = line === line.toUpperCase() && /[A-ZÀ-Ú]/.test(line);
     if (!isAllCaps) continue;
     counts.set(line, (counts.get(line) ?? 0) + 1);
@@ -68,10 +72,35 @@ function findTrailingCreditsLines(lines: string[]): Set<string> {
   return trailing;
 }
 
+/**
+ * Titulos de secao (ex.: "Tópicos de Legislação", "Conhecimentos Específicos") aparecem
+ * uma unica vez cada, entao a heuristica de linha repetida nao os pega. Mas sempre ficam
+ * bem antes de um item numerado (a proxima questao da nova secao), separando-o da ultima
+ * alternativa da secao anterior. Qualquer linha curta, sem pontuacao de frase, que aparece
+ * logo antes de um "numero do item sozinho na linha" e tratada como titulo de secao.
+ */
+function findSectionTitleLines(lines: string[]): Set<string> {
+  const titles = new Set<string>();
+  for (let i = 0; i < lines.length; i += 1) {
+    if (!ITEM_START_ALONE.test(lines[i].trim())) continue;
+    for (let j = i - 1; j >= 0; j -= 1) {
+      const candidate = lines[j].trim();
+      if (!candidate) continue;
+      const looksLikeRealContent =
+        candidate.length > 60 || /[.?!:;]$/.test(candidate) || ALTERNATIVA_START.test(candidate) || ITEM_START_ALONE.test(candidate);
+      if (looksLikeRealContent) break;
+      titles.add(candidate);
+      break;
+    }
+  }
+  return titles;
+}
+
 export function parseProvaText(rawText: string): QuestaoDraft[] {
   const lines = rawText.split(/\r?\n/).map((line) => line.trimEnd());
   const repeatedHeaders = findRepeatedHeaderLines(lines);
   const trailingCredits = findTrailingCreditsLines(lines);
+  const sectionTitles = findSectionTitleLines(lines);
   const questoes: QuestaoDraft[] = [];
   let current: { numero: number; linhas: string[] } | null = null;
   let lastNumero = 0;
@@ -79,7 +108,11 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
   function flush() {
     if (!current) return;
     const blockLines = current.linhas.filter(
-      (line) => !isNoise(line.trim()) && !repeatedHeaders.has(line.trim()) && !trailingCredits.has(line.trim())
+      (line) =>
+        !isNoise(line.trim()) &&
+        !repeatedHeaders.has(line.trim()) &&
+        !trailingCredits.has(line.trim()) &&
+        !sectionTitles.has(line.trim())
     );
     const altStartIdx = blockLines.findIndex((line) => ALTERNATIVA_START.test(line.trim()));
     const stemLines = altStartIdx === -1 ? blockLines : blockLines.slice(0, altStartIdx);
@@ -117,7 +150,7 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
 
   for (const rawLine of lines) {
     const line = rawLine.trim();
-    if (!line || isNoise(line) || repeatedHeaders.has(line) || trailingCredits.has(line)) continue;
+    if (!line || isNoise(line) || repeatedHeaders.has(line) || trailingCredits.has(line) || sectionTitles.has(line)) continue;
     const inlineMatch = ITEM_START_INLINE.exec(rawLine);
     const aloneMatch = inlineMatch ? null : ITEM_START_ALONE.exec(line);
     const numero = inlineMatch ? Number(inlineMatch[1]) : aloneMatch ? Number(aloneMatch[1]) : null;
