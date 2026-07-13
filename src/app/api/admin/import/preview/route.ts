@@ -3,9 +3,8 @@ import { requireRole } from "@/lib/clerk";
 import { toErrorResponse } from "@/lib/api-error";
 import { bulkImportSchema } from "@/schemas/app-schemas";
 import { csvRowsToImportPayload, parseCsv } from "@/lib/question-import";
-import { draftProvaFromText, extractPdfText } from "@/services/question-extraction-service";
-
-export const maxDuration = 60;
+import { extractPdfText } from "@/services/question-extraction-service";
+import { applyGabarito, buildProvaDraft, parseGabaritoText, parseProvaText } from "@/lib/prova-parser";
 
 export async function POST(req: Request) {
   try {
@@ -25,7 +24,17 @@ export async function POST(req: Request) {
       if (text.trim().length < 40) {
         return NextResponse.json({ error: "Nao foi possivel extrair texto do PDF (pode ser um PDF escaneado sem OCR)" }, { status: 422 });
       }
-      draft = await draftProvaFromText(text, {
+      let questoes = parseProvaText(text);
+      if (questoes.length === 0) {
+        return NextResponse.json({ error: "Nao foi possivel identificar itens numerados no PDF. Use CSV/JSON ou cadastre manualmente." }, { status: 422 });
+      }
+      const gabaritoFile = form.get("gabaritoFile");
+      if (gabaritoFile instanceof File) {
+        const gabaritoBuffer = Buffer.from(await gabaritoFile.arrayBuffer());
+        const gabaritoText = await extractPdfText(gabaritoBuffer);
+        questoes = applyGabarito(questoes, parseGabaritoText(gabaritoText));
+      }
+      draft = buildProvaDraft(questoes, {
         banca: form.get("banca")?.toString(),
         orgao: form.get("orgao")?.toString(),
         cargo: form.get("cargo")?.toString(),
