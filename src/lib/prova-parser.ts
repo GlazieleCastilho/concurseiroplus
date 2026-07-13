@@ -15,23 +15,72 @@ type QuestaoDraft = {
   alternativas: AlternativaDraft[];
 };
 
-const NOISE_LINE = /^(pcimarkpci\b|www\.\S+$|--\s*\d+\s+of\s+\d+\s*--$|espa[cç]o livre$)/i;
-const ITEM_START = /^(\d{1,3})[ \t]+(\S.*)$/;
-const ALTERNATIVA_START = /^([A-E])[).]\s+(.*)$/;
+const NOISE_LINE = /^(pcimarkpci\b|www\.\S+$|--\s*\d+\s+of\s+\d+\s*--$|espa[cç]o livre$|.*P[ÁA]GINA\s+\d+\s*$)/i;
+// Numero do item seguido de texto na mesma linha (ex.: CEBRASPE "9 Observe a charge...").
+const ITEM_START_INLINE = /^(\d{1,3})[ \t]+(\S.*)$/;
+// Numero do item sozinho na linha, com o enunciado comecando na linha seguinte (ex.: FGV).
+const ITEM_START_ALONE = /^(\d{1,3})\s*$/;
+// Alternativa "A) texto", "A. texto" ou "(A) texto" (com ou sem parenteses).
+const ALTERNATIVA_START = /^\(?([A-E])[).]\s+(.*)$/;
 
 function isNoise(line: string): boolean {
   return NOISE_LINE.test(line.trim());
 }
 
+/**
+ * Cabecalhos/rodapes institucionais (nome do orgao, banca, cargo) se repetem
+ * identicos em toda pagina. Como variam de banca pra banca, nao da pra ter uma
+ * lista fixa de regex — em vez disso, qualquer linha totalmente em maiusculas
+ * que se repete varias vezes no documento e tratada como ruido de pagina.
+ */
+function findRepeatedHeaderLines(lines: string[]): Set<string> {
+  const counts = new Map<string, number>();
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (line.length < 4 || line.length > 160) continue;
+    const isAllCaps = line === line.toUpperCase() && /[A-ZÀ-Ú]/.test(line);
+    if (!isAllCaps) continue;
+    counts.set(line, (counts.get(line) ?? 0) + 1);
+  }
+  const headers = new Set<string>();
+  for (const [line, count] of counts) {
+    if (count >= 3) headers.add(line);
+  }
+  return headers;
+}
+
+/**
+ * Paginas de credito/encerramento (ex.: "Realização", logos de patrocinador, "FIM DA PROVA")
+ * costumam vir depois da ultima alternativa sem nenhum item numerado depois, entao nao tem
+ * como distingui-las por conteudo — mas sempre sao curtas, sem pontuacao de frase, e ficam
+ * bem no final do documento. Caminha de tras pra frente coletando essas linhas ate achar a
+ * primeira linha "de verdade" (longa ou terminada em pontuacao de frase).
+ */
+function findTrailingCreditsLines(lines: string[]): Set<string> {
+  const trailing = new Set<string>();
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const looksLikeRealContent = line.length > 40 || /[.?!:;]$/.test(line) || ALTERNATIVA_START.test(line) || ITEM_START_ALONE.test(line);
+    if (looksLikeRealContent) break;
+    trailing.add(line);
+  }
+  return trailing;
+}
+
 export function parseProvaText(rawText: string): QuestaoDraft[] {
   const lines = rawText.split(/\r?\n/).map((line) => line.trimEnd());
+  const repeatedHeaders = findRepeatedHeaderLines(lines);
+  const trailingCredits = findTrailingCreditsLines(lines);
   const questoes: QuestaoDraft[] = [];
   let current: { numero: number; linhas: string[] } | null = null;
   let lastNumero = 0;
 
   function flush() {
     if (!current) return;
-    const blockLines = current.linhas.filter((line) => !isNoise(line.trim()));
+    const blockLines = current.linhas.filter(
+      (line) => !isNoise(line.trim()) && !repeatedHeaders.has(line.trim()) && !trailingCredits.has(line.trim())
+    );
     const altStartIdx = blockLines.findIndex((line) => ALTERNATIVA_START.test(line.trim()));
     const stemLines = altStartIdx === -1 ? blockLines : blockLines.slice(0, altStartIdx);
     const enunciado = stemLines.join(" ").replace(/\s+/g, " ").trim();
@@ -68,13 +117,14 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
 
   for (const rawLine of lines) {
     const line = rawLine.trim();
-    if (!line || isNoise(line)) continue;
-    const match = ITEM_START.exec(rawLine);
-    const numero = match ? Number(match[1]) : null;
+    if (!line || isNoise(line) || repeatedHeaders.has(line) || trailingCredits.has(line)) continue;
+    const inlineMatch = ITEM_START_INLINE.exec(rawLine);
+    const aloneMatch = inlineMatch ? null : ITEM_START_ALONE.exec(line);
+    const numero = inlineMatch ? Number(inlineMatch[1]) : aloneMatch ? Number(aloneMatch[1]) : null;
     if (numero !== null && numero > lastNumero && numero <= lastNumero + 30) {
       flush();
       lastNumero = numero;
-      current = { numero, linhas: [match![2]] };
+      current = { numero, linhas: inlineMatch ? [inlineMatch[2]] : [] };
     } else if (current) {
       current.linhas.push(line);
     }
@@ -84,20 +134,112 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
   return questoes;
 }
 
-/** Extrai pares {numero -> letra} de um PDF de gabarito oficial (grade numerica ou lista simples). */
-export function parseGabaritoText(rawText: string): Map<number, string> {
-  const gabarito = new Map<number, string>();
+const MAX_REASONABLE_ENUNCIADO_LENGTH = 3000;
+
+/**
+ * Alguns layouts de PDF (ex.: bancas que nao quebram linha entre o numero do item e o
+ * enunciado, ou que escrevem as alternativas "(A) ... (B) ..." dentro do mesmo paragrafo)
+ * fazem o parser por linha engolir varios itens dentro de um so bloco. O resultado passa
+ * a ter poucas questoes com enunciados anormalmente longos, em vez de falhar. Detectamos
+ * esse padrao aqui para recusar o rascunho em vez de devolver lixo como se fosse valido.
+ */
+export function detectParsingAnomaly(rawText: string, questoes: QuestaoDraft[]): string | null {
+  const oversized = questoes.find((questao) => questao.enunciado.length > MAX_REASONABLE_ENUNCIADO_LENGTH);
+  if (oversized) {
+    return `A questão ${oversized.numero} ficou com ${oversized.enunciado.length} caracteres, o que indica que o parser não conseguiu separar os itens corretamente neste PDF (provavelmente o layout não quebra linha entre o número do item e o texto, ou as alternativas estão escritas em formato "(A) ... (B) ..." dentro do parágrafo). Use CSV/JSON ou cadastre manualmente.`;
+  }
+  const meaningfulLength = rawText.replace(/\s+/g, " ").trim().length;
+  const expectedMinQuestoes = Math.floor(meaningfulLength / (MAX_REASONABLE_ENUNCIADO_LENGTH * 3));
+  if (expectedMinQuestoes > 0 && questoes.length > 0 && questoes.length < expectedMinQuestoes) {
+    return `Foram identificadas apenas ${questoes.length} questão(ões) para um texto de ${meaningfulLength} caracteres, bem menos do que o esperado. O parser provavelmente não conseguiu segmentar os itens neste layout de PDF. Use CSV/JSON ou cadastre manualmente.`;
+  }
+  return null;
+}
+
+function normalize(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+/**
+ * Alguns editais publicam, num unico PDF, o gabarito de varias "versoes" da mesma
+ * prova (PROVA 1, PROVA 2...) e/ou varios cargos, em blocos separados por um
+ * cabecalho e formatados como pares de linhas "1 2 3 ... 20" / "B C A ... D".
+ * Extrai cada bloco encontrado, mapeado pelo texto do cabecalho que o precede.
+ */
+function parseVersionedGrid(lines: string[]): Array<{ header: string; gabarito: Map<number, string> }> {
+  const HEADER_LINE = /PROVA\s+0*(\d{1,2})\b/i;
+  const NUMBERS_ROW = /^\d{1,3}(?:\s+\d{1,3}){2,}$/;
+  const LETTERS_ROW = /^[A-E](?:\s+[A-E]){2,}$/;
+
+  const sections: Array<{ header: string; gabarito: Map<number, string> }> = [];
+  let current: { header: string; gabarito: Map<number, string> } | null = null;
+  let pendingNumbers: number[] | null = null;
+
+  for (const line of lines) {
+    if (HEADER_LINE.test(line)) {
+      if (current && current.gabarito.size > 0) sections.push(current);
+      current = { header: line, gabarito: new Map() };
+      pendingNumbers = null;
+      continue;
+    }
+    if (!current) continue;
+    if (NUMBERS_ROW.test(line)) {
+      pendingNumbers = line.split(/\s+/).map(Number);
+      continue;
+    }
+    if (pendingNumbers && LETTERS_ROW.test(line)) {
+      const letras = line.split(/\s+/);
+      pendingNumbers.forEach((numero, idx) => {
+        if (letras[idx]) current!.gabarito.set(numero, letras[idx]);
+      });
+      pendingNumbers = null;
+      continue;
+    }
+    pendingNumbers = null;
+  }
+  if (current && current.gabarito.size > 0) sections.push(current);
+
+  return sections;
+}
+
+export type GabaritoSelector = { provaVersao?: string; cargo?: string };
+
+/** Extrai pares {numero -> letra} de um PDF de gabarito oficial (grade numerica, lista simples ou grade versionada). */
+export function parseGabaritoText(rawText: string, selector?: GabaritoSelector): Map<number, string> {
   const lines = rawText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+
+  const versionedSections = parseVersionedGrid(lines);
+  if (versionedSections.length > 0) {
+    const wantedVersao = selector?.provaVersao?.match(/\d+/)?.[0];
+    const wantedCargo = selector?.cargo ? normalize(selector.cargo) : null;
+
+    const byVersaoAndCargo = versionedSections.filter((section) => {
+      const versaoMatch = wantedVersao ? new RegExp(`PROVA\\s+0*${wantedVersao}\\b`, "i").test(section.header) : true;
+      const cargoMatch = wantedCargo ? normalize(section.header).includes(wantedCargo) : true;
+      return versaoMatch && cargoMatch;
+    });
+
+    const chosen = byVersaoAndCargo[0]
+      ?? versionedSections.find((section) => (wantedVersao ? new RegExp(`PROVA\\s+0*${wantedVersao}\\b`, "i").test(section.header) : true))
+      ?? versionedSections[0];
+    return chosen.gabarito;
+  }
+
+  const gabarito = new Map<number, string>();
 
   // Formato "1 - A" / "1. B" / "1) C", uma linha por item.
   const simpleLine = /^(\d{1,3})\s*[-–.)]\s*([A-E])$/;
 
-  // Formato "grade": uma linha so de digitos (numeros dos itens colados, sem separador,
-  // ex. "12345678000000000000") seguida de uma linha so de letras/zeros na mesma largura
-  // (ex. "CCECECCE000000000000"). Nao da pra decodificar os numeros colados de forma
-  // confiavel (numeros de 1 e 2+ digitos ficam ambiguos), mas cada POSICAO da linha de
-  // letras corresponde a um item sequencial, e os "0" finais sao so preenchimento da grade
-  // ate a largura fixa (20 no caso do CEBRASPE) - entao um contador sequencial resolve.
+  // Formato "grade CEBRASPE": uma linha so de digitos (numeros dos itens colados, sem
+  // separador, ex. "12345678000000000000") seguida de uma linha so de letras/zeros na
+  // mesma largura (ex. "CCECECCE000000000000"). Nao da pra decodificar os numeros
+  // colados de forma confiavel (numeros de 1 e 2+ digitos ficam ambiguos), mas cada
+  // POSICAO da linha de letras corresponde a um item sequencial, e os "0" finais sao so
+  // preenchimento da grade ate a largura fixa (20 no caso do CEBRASPE) - entao um
+  // contador sequencial resolve.
   const digitsOnly = /^\d+$/;
   const lettersOrPadding = /^[A-E0]+$/;
 

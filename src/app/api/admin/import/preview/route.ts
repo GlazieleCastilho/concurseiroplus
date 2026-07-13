@@ -4,7 +4,7 @@ import { toErrorResponse } from "@/lib/api-error";
 import { bulkImportSchema } from "@/schemas/app-schemas";
 import { csvRowsToImportPayload, parseCsv } from "@/lib/question-import";
 import { extractPdfText } from "@/services/question-extraction-service";
-import { applyGabarito, buildProvaDraft, parseGabaritoText, parseProvaText } from "@/lib/prova-parser";
+import { applyGabarito, buildProvaDraft, detectParsingAnomaly, parseGabaritoText, parseProvaText } from "@/lib/prova-parser";
 
 export async function POST(req: Request) {
   try {
@@ -28,16 +28,24 @@ export async function POST(req: Request) {
       if (questoes.length === 0) {
         return NextResponse.json({ error: "Nao foi possivel identificar itens numerados no PDF. Use CSV/JSON ou cadastre manualmente." }, { status: 422 });
       }
+      const anomaly = detectParsingAnomaly(text, questoes);
+      if (anomaly) {
+        return NextResponse.json({ error: anomaly }, { status: 422 });
+      }
       const gabaritoFile = form.get("gabaritoFile");
+      const cargo = form.get("cargo")?.toString();
       if (gabaritoFile instanceof File) {
         const gabaritoBuffer = Buffer.from(await gabaritoFile.arrayBuffer());
         const gabaritoText = await extractPdfText(gabaritoBuffer);
-        questoes = applyGabarito(questoes, parseGabaritoText(gabaritoText));
+        questoes = applyGabarito(
+          questoes,
+          parseGabaritoText(gabaritoText, { provaVersao: form.get("provaVersao")?.toString(), cargo })
+        );
       }
       draft = buildProvaDraft(questoes, {
         banca: form.get("banca")?.toString(),
         orgao: form.get("orgao")?.toString(),
-        cargo: form.get("cargo")?.toString(),
+        cargo,
         ano: form.get("ano") ? Number(form.get("ano")) : undefined,
       });
     } else if (name.endsWith(".csv")) {

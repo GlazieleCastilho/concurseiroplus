@@ -41,7 +41,7 @@ export function QuestionImportManager() {
   const [editableJson, setEditableJson] = useState("");
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
   const [results, setResults] = useState<ConfirmResult[] | null>(null);
-  const [pdfHints, setPdfHints] = useState({ banca: "", orgao: "", cargo: "", ano: "" });
+  const [pdfHints, setPdfHints] = useState({ banca: "", orgao: "", cargo: "", ano: "", provaVersao: "" });
   const [gabaritoFile, setGabaritoFile] = useState<File | null>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
   const jsonInputRef = useRef<HTMLInputElement>(null);
@@ -129,13 +129,15 @@ export function QuestionImportManager() {
             padroes de formatacao (item numerado, alternativas A-E ou Certo/Errado, grade de gabarito), sem IA.
             <strong> Nada e salvo automaticamente</strong>: revise o rascunho, principalmente os gabaritos, antes de
             confirmar. Funciona melhor com provas objetivas bem formatadas; se o parser nao identificar os itens,
-            use CSV/JSON ou cadastre manualmente.
+            use CSV/JSON ou cadastre manualmente. Se o gabarito trouxer varias versoes da prova (Prova 1, Prova 2...),
+            informe &ldquo;Cargo&rdquo; e &ldquo;Versao da prova&rdquo; para escolher a grade certa.
           </p>
-          <div className="grid gap-3 sm:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-5">
             <Input placeholder="Banca (ex: CESPE)" value={pdfHints.banca} onChange={(e) => setPdfHints({ ...pdfHints, banca: e.target.value })} />
             <Input placeholder="Orgao" value={pdfHints.orgao} onChange={(e) => setPdfHints({ ...pdfHints, orgao: e.target.value })} />
             <Input placeholder="Cargo" value={pdfHints.cargo} onChange={(e) => setPdfHints({ ...pdfHints, cargo: e.target.value })} />
             <Input placeholder="Ano" value={pdfHints.ano} onChange={(e) => setPdfHints({ ...pdfHints, ano: e.target.value })} />
+            <Input placeholder="Versao da prova (ex: 1)" value={pdfHints.provaVersao} onChange={(e) => setPdfHints({ ...pdfHints, provaVersao: e.target.value })} />
           </div>
           <input
             ref={gabaritoInputRef}
