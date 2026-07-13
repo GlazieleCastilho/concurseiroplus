@@ -89,6 +89,7 @@ export const provaSchema = z.object({
 export const alternativaSchema = z.object({
   letra: z.string().min(1).max(2),
   texto: z.string().min(1).max(2000),
+  imagemUrl: z.string().url().optional(),
   correta: z.boolean().default(false),
 });
 
@@ -103,6 +104,7 @@ export const questaoSchema = z
     numero: z.coerce.number().int().min(1),
     tipo: questionTypeSchema.default("OBJETIVA"),
     enunciado: z.string().min(3),
+    imagemUrl: z.string().url().optional(),
     disciplina: z.string().max(120).optional(),
     assunto: z.string().max(120).optional(),
     dificuldade: difficultySchema.default("MEDIUM"),

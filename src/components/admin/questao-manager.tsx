@@ -22,7 +22,7 @@ import type { Alternativa, Difficulty, Questao, QuestionType, TextoApoio } from 
 
 type QuestaoWithAlternativas = Questao & { alternativas: Alternativa[] };
 
-type AltForm = { letra: string; texto: string; correta: boolean };
+type AltForm = { letra: string; texto: string; correta: boolean; imagemUrl: string };
 
 const NONE_TEXTO = "__none__";
 
@@ -30,6 +30,7 @@ type QuestaoFormState = {
   numero: string;
   tipo: QuestionType;
   enunciado: string;
+  imagemUrl: string;
   disciplina: string;
   assunto: string;
   dificuldade: Difficulty;
@@ -44,16 +45,17 @@ function emptyForm(nextNumero: number): QuestaoFormState {
     numero: String(nextNumero),
     tipo: "OBJETIVA",
     enunciado: "",
+    imagemUrl: "",
     disciplina: "",
     assunto: "",
     dificuldade: "MEDIUM",
     gabarito: "",
     comentario: "",
     alternativas: [
-      { letra: "A", texto: "", correta: false },
-      { letra: "B", texto: "", correta: false },
-      { letra: "C", texto: "", correta: false },
-      { letra: "D", texto: "", correta: false },
+      { letra: "A", texto: "", correta: false, imagemUrl: "" },
+      { letra: "B", texto: "", correta: false, imagemUrl: "" },
+      { letra: "C", texto: "", correta: false, imagemUrl: "" },
+      { letra: "D", texto: "", correta: false, imagemUrl: "" },
     ],
     textoApoioId: NONE_TEXTO,
   };
@@ -88,13 +90,14 @@ export function QuestaoManager({
       numero: String(questao.numero),
       tipo: questao.tipo,
       enunciado: questao.enunciado,
+      imagemUrl: questao.imagemUrl ?? "",
       disciplina: questao.disciplina ?? "",
       assunto: questao.assunto ?? "",
       dificuldade: questao.dificuldade,
       gabarito: questao.gabarito ?? "",
       comentario: questao.comentario ?? "",
       alternativas: questao.alternativas.length
-        ? questao.alternativas.map((alt) => ({ letra: alt.letra, texto: alt.texto, correta: alt.correta }))
+        ? questao.alternativas.map((alt) => ({ letra: alt.letra, texto: alt.texto, correta: alt.correta, imagemUrl: alt.imagemUrl ?? "" }))
         : emptyForm(questao.numero).alternativas,
       textoApoioId: questao.textoApoioId ?? NONE_TEXTO,
     });
@@ -119,7 +122,7 @@ export function QuestaoManager({
     setForm((current) => {
       if (current.alternativas.length >= 6) return current;
       const nextLetra = String.fromCharCode(65 + current.alternativas.length);
-      return { ...current, alternativas: [...current.alternativas, { letra: nextLetra, texto: "", correta: false }] };
+      return { ...current, alternativas: [...current.alternativas, { letra: nextLetra, texto: "", correta: false, imagemUrl: "" }] };
     });
   }
 
@@ -134,12 +137,17 @@ export function QuestaoManager({
         numero: Number(form.numero),
         tipo: form.tipo,
         enunciado: form.enunciado,
+        imagemUrl: form.imagemUrl || undefined,
         disciplina: form.disciplina || undefined,
         assunto: form.assunto || undefined,
         dificuldade: form.dificuldade,
         gabarito: form.gabarito || undefined,
         comentario: form.comentario || undefined,
-        alternativas: form.tipo === "DISSERTATIVA" ? [] : form.alternativas.filter((alt) => alt.texto.trim().length > 0),
+        alternativas: form.tipo === "DISSERTATIVA"
+          ? []
+          : form.alternativas
+              .filter((alt) => alt.texto.trim().length > 0)
+              .map((alt) => ({ ...alt, imagemUrl: alt.imagemUrl || undefined })),
         textoApoioId: form.textoApoioId === NONE_TEXTO ? undefined : form.textoApoioId,
       };
       const url = editing ? `/api/admin/questoes/${editing.id}` : `/api/admin/provas/${provaId}/questoes`;
@@ -250,29 +258,49 @@ export function QuestaoManager({
               <Label>Enunciado</Label>
               <Textarea value={form.enunciado} onChange={(event) => setForm({ ...form, enunciado: event.target.value })} className="min-h-28" />
             </div>
+            <div className="space-y-1">
+              <Label>URL da imagem do enunciado (opcional)</Label>
+              <Input
+                value={form.imagemUrl}
+                onChange={(event) => setForm({ ...form, imagemUrl: event.target.value })}
+                placeholder="https://..."
+              />
+              {form.imagemUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={form.imagemUrl} alt="Previa da imagem do enunciado" className="max-h-40 rounded-md border border-border" />
+              )}
+            </div>
 
             {form.tipo !== "DISSERTATIVA" && (
               <div className="space-y-2">
                 <Label>Alternativas (clique em &quot;Correta&quot; para marcar o gabarito)</Label>
                 {form.alternativas.map((alt, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <span className="w-6 text-sm font-medium">{alt.letra}</span>
+                  <div key={index} className="space-y-1 rounded-md border border-border/60 p-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-6 text-sm font-medium">{alt.letra}</span>
+                      <Input
+                        value={alt.texto}
+                        onChange={(event) => updateAlternativa(index, { texto: event.target.value })}
+                        placeholder={`Texto da alternativa ${alt.letra}`}
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={alt.correta ? "default" : "outline"}
+                        className={cn(alt.correta && "bg-emerald-600 hover:bg-emerald-600/90")}
+                        onClick={() => markCorreta(index)}
+                      >
+                        Correta
+                      </Button>
+                      <Button type="button" size="sm" variant="ghost" onClick={() => removeAlternativa(index)}>Remover</Button>
+                    </div>
                     <Input
-                      value={alt.texto}
-                      onChange={(event) => updateAlternativa(index, { texto: event.target.value })}
-                      placeholder={`Texto da alternativa ${alt.letra}`}
-                      className="flex-1"
+                      value={alt.imagemUrl}
+                      onChange={(event) => updateAlternativa(index, { imagemUrl: event.target.value })}
+                      placeholder={`URL da imagem da alternativa ${alt.letra} (opcional)`}
+                      className="ml-8"
                     />
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={alt.correta ? "default" : "outline"}
-                      className={cn(alt.correta && "bg-emerald-600 hover:bg-emerald-600/90")}
-                      onClick={() => markCorreta(index)}
-                    >
-                      Correta
-                    </Button>
-                    <Button type="button" size="sm" variant="ghost" onClick={() => removeAlternativa(index)}>Remover</Button>
                   </div>
                 ))}
                 {form.alternativas.length < 6 && (
