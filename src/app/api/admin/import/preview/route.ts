@@ -4,7 +4,7 @@ import { toErrorResponse } from "@/lib/api-error";
 import { bulkImportSchema } from "@/schemas/app-schemas";
 import { csvRowsToImportPayload, parseCsv } from "@/lib/question-import";
 import { extractPdfText, extractItemPositions } from "@/services/question-extraction-service";
-import { applyGabarito, applyImages, buildProvaDraft, detectParsingAnomaly, parseGabaritoText, parseProvaText } from "@/lib/prova-parser";
+import { applyGabarito, applyImages, buildProvaDraft, detectParsingAnomaly, inferProvaHints, parseGabaritoText, parseProvaText } from "@/lib/prova-parser";
 import { assignImagesToQuestions, extractImagePlacements } from "@/lib/pdf-image-extractor";
 import { uploadQuestionImage } from "@/lib/supabase-storage";
 
@@ -65,11 +65,12 @@ export async function POST(req: Request) {
         console.error("Falha ao extrair/subir imagens do PDF:", imageError);
       }
 
+      const inferred = inferProvaHints(text);
       draft = buildProvaDraft(questoes, {
-        banca: form.get("banca")?.toString(),
+        banca: form.get("banca")?.toString() || inferred.banca,
         orgao: form.get("orgao")?.toString(),
         cargo,
-        ano: form.get("ano") ? Number(form.get("ano")) : undefined,
+        ano: form.get("ano") ? Number(form.get("ano")) : inferred.ano,
       });
     } else if (name.endsWith(".csv")) {
       const text = await file.text();
