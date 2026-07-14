@@ -137,15 +137,7 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
     }
 
     if (enunciado.length > 0) {
-      questoes.push({
-        numero: current.numero,
-        tipo: alternativas.length >= 2 ? "OBJETIVA" : "CERTO_ERRADO",
-        enunciado,
-        alternativas: alternativas.length >= 2 ? alternativas : [
-          { letra: "C", texto: "Certo", correta: false },
-          { letra: "E", texto: "Errado", correta: false },
-        ],
-      });
+      questoes.push({ numero: current.numero, tipo: "OBJETIVA", enunciado, alternativas });
     }
   }
 
@@ -164,6 +156,23 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
     }
   }
   flush();
+
+  // O tipo da questao e decidido olhando a prova inteira, nao cada questao isolada:
+  // num caderno majoritariamente objetivo (A-E), uma questao sem alternativas quase
+  // certamente e falha de parse — fabricar "Certo/Errado" nela mascararia o problema
+  // com dado inventado. Ja num caderno onde quase nenhuma questao tem alternativas
+  // (estilo CEBRASPE), itens sem alternativa SAO certo/errado de verdade.
+  const comAlternativas = questoes.filter((questao) => questao.alternativas.length >= 2).length;
+  const majoritariamenteObjetiva = comAlternativas > questoes.length / 2;
+  for (const questao of questoes) {
+    if (questao.alternativas.length >= 2) continue;
+    if (majoritariamenteObjetiva) continue; // deixa OBJETIVA sem alternativas: a validacao do rascunho aponta a questao pro admin corrigir
+    questao.tipo = "CERTO_ERRADO";
+    questao.alternativas = [
+      { letra: "C", texto: "Certo", correta: false },
+      { letra: "E", texto: "Errado", correta: false },
+    ];
+  }
 
   return questoes;
 }
@@ -327,15 +336,58 @@ export function applyImages(
 
 export type ProvaHints = { banca?: string; orgao?: string; cargo?: string; ano?: number };
 
+// Nomes de bancas organizadoras conhecidas, do mais especifico pro mais generico.
+// "CESPE" por ultimo entre os parecidos para nao capturar antes de "CEBRASPE".
+const BANCAS_CONHECIDAS = [
+  "CEBRASPE",
+  "FGV",
+  "FCC",
+  "VUNESP",
+  "FUNDATEC",
+  "CESGRANRIO",
+  "IBFC",
+  "QUADRIX",
+  "AOCP",
+  "IADES",
+  "IDECAN",
+  "CONSULPLAN",
+  "FEPESE",
+  "FAURGS",
+  "INSTITUTO AOCP",
+  "CESPE",
+];
+
+/**
+ * Infere banca e ano do texto extraido do PDF, apenas quando ha sinal explicito
+ * (nome de banca conhecida no documento; ano em "Edital ... 2021" / "Concurso Publico 2025").
+ * Nao tenta advinhar por frequencia: o corpo das provas cita anos de leis e obras
+ * (ex.: prova de 2025 cujo ano mais frequente no texto e 2021), entao qualquer
+ * heuristica estatistica marcaria a prova com o ano errado.
+ */
+export function inferProvaHints(rawText: string): Pick<ProvaHints, "banca" | "ano"> {
+  const upper = rawText.toUpperCase();
+  const banca = BANCAS_CONHECIDAS.find((nome) => new RegExp(`(^|[^A-Z])${nome}($|[^A-Z])`).test(upper));
+
+  const anoMatch = /EDITAL[^\d]{0,30}\b((?:19|20)\d{2})\b/.exec(upper) ?? /CONCURSO\s+P[ÚU]BLICO[^\d]{0,10}\b((?:19|20)\d{2})\b/.exec(upper);
+  const ano = anoMatch ? Number(anoMatch[1]) : undefined;
+
+  return { banca, ano };
+}
+
 export function buildProvaDraft(questoes: QuestaoDraft[], hints: ProvaHints) {
-  const banca = hints.banca?.trim() || "BANCA";
-  const orgao = hints.orgao?.trim() || "Orgao";
-  const cargo = hints.cargo?.trim() || "Cargo";
-  const ano = hints.ano ?? new Date().getFullYear();
+  // Sem placeholders: campo nao informado nem inferido fica vazio e reprova na
+  // validacao do rascunho (o preview lista o que falta). Placeholder silencioso
+  // ("BANCA", "Cargo") gerava o mesmo slug pra provas diferentes e o import em
+  // massa sobrescrevia uma prova com a outra.
+  const banca = hints.banca?.trim() ?? "";
+  const orgao = hints.orgao?.trim() ?? "";
+  const cargo = hints.cargo?.trim() ?? "";
+  const ano = hints.ano;
+  const titulo = banca && ano && cargo ? `${banca} ${ano} - ${cargo}` : "";
   return {
     provas: [
       {
-        titulo: `${banca} ${ano} - ${cargo}`,
+        titulo,
         orgao,
         banca,
         cargo,

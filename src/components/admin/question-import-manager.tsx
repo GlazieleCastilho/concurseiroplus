@@ -129,7 +129,10 @@ export function QuestionImportManager() {
             padroes de formatacao (item numerado, alternativas A-E ou Certo/Errado, grade de gabarito), sem IA.
             <strong> Nada e salvo automaticamente</strong>: revise o rascunho, principalmente os gabaritos, antes de
             confirmar. Funciona melhor com provas objetivas bem formatadas; se o parser nao identificar os itens,
-            use CSV/JSON ou cadastre manualmente. Se o gabarito trouxer varias versoes da prova (Prova 1, Prova 2...),
+            use CSV/JSON ou cadastre manualmente. Banca e ano sao detectados automaticamente quando o PDF traz essa
+            informacao de forma explicita; os demais campos (orgao, cargo) sao obrigatorios — sem eles o rascunho
+            aparece com pendencia de validacao, para evitar que provas diferentes recebam o mesmo identificador.
+            Se o gabarito trouxer varias versoes da prova (Prova 1, Prova 2...),
             informe &ldquo;Cargo&rdquo; e &ldquo;Versao da prova&rdquo; para escolher a grade certa. Imagens embutidas
             no PDF (charges, graficos, quadrinhos) sao extraidas e associadas automaticamente a questao/alternativa
             mais proxima na pagina — essa associacao e por posicao, entao <strong>confira sempre se a imagem caiu na
