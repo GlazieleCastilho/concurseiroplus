@@ -100,16 +100,21 @@ function findSectionTitleLines(lines: string[]): Set<string> {
 /**
  * Alguns textos de apoio do CEBRASPE trazem numeros de linha na margem (ex.: "1", "4",
  * "7", "10"... a cada 3 linhas, pra permitir que questoes referenciem "a linha 15 do
- * texto"). O pdf-parse extrai essa coluna de margem separada do texto principal, entao
- * esses numeros aparecem sozinhos em sequencia, isolados por linhas em branco - sem
- * nenhum conteudo real entre um e outro. Isso bate com o padrao de ITEM_START_ALONE e
- * faz o parser tratar cada numero de linha como se fosse um item novo, corrompendo a
+ * texto" ou citem "(R.9)" no proprio enunciado). O pdf-parse extrai essa coluna de
+ * margem separada do texto principal, entao esses numeros aparecem sozinhos numa linha
+ * - as vezes isolados por linhas em branco (edicoes mais recentes), as vezes
+ * intercalados no meio do texto corrido sem nenhuma linha em branco (edicoes mais
+ * antigas). De um jeito ou de outro, isso bate com o padrao de ITEM_START_ALONE e faz o
+ * parser tratar cada numero de linha como se fosse um item novo, corrompendo a
  * contagem (o item real de mesmo numero, mais tarde, deixa de conseguir abrir um bloco
- * novo porque "numero > lastNumero" ja falhou). Uma sequencia de 4+ numeros isolados
- * (sem nada real entre eles) com passo constante (ex.: sempre +3) e tratada como
- * anotacao de margem, nao item de verdade - diferente de um item real "sozinho na
- * linha" (formato FGV), que sempre e seguido de conteudo de verdade, nao de mais um
- * numero isolado.
+ * novo porque "numero > lastNumero" ja falhou).
+ *
+ * O sinal confiavel pra distinguir dos itens de verdade nao e "tem conteudo real entre
+ * eles ou nao" (varia por edicao), e sim o PASSO da sequencia: item real "sozinho na
+ * linha" (formato FGV) SEMPRE incrementa de 1 em 1, nunca pula. Anotacao de margem usa
+ * um passo maior que 1 (normalmente 3, uma anotacao a cada 3 linhas do texto). Uma
+ * sequencia de 4+ numeros com passo constante e MAIOR QUE 1 e tratada como anotacao de
+ * margem, nao item de verdade - independente do que tiver entre eles.
  *
  * Retorna INDICES no array de linhas, nao o texto: um documento de 120 itens
  * inevitavelmente repete valores pequenos como "24" ou "25" como numero de item de
@@ -119,27 +124,38 @@ function findSectionTitleLines(lines: string[]): Set<string> {
  */
 function findLineNumberAnnotationIndices(lines: string[]): Set<number> {
   const annotationIndices = new Set<number>();
-  let run: Array<{ numero: number; index: number }> = [];
 
-  function flushRun() {
-    if (run.length >= 4) {
-      const steps = new Set<number>();
-      for (let i = 1; i < run.length; i += 1) steps.add(run[i].numero - run[i - 1].numero);
-      if (steps.size === 1) {
-        for (const item of run) annotationIndices.add(item.index);
-      }
-    }
-    run = [];
-  }
-
+  // Passo 1: coleta TODAS as ocorrencias de "numero sozinho na linha", na ordem em que
+  // aparecem no documento, independente do que tiver entre uma e outra.
+  const aloneNumbers: Array<{ numero: number; index: number }> = [];
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i].trim();
-    if (!line) continue; // linha em branco nao quebra a sequencia isolada
+    if (!line) continue;
     const match = ITEM_START_ALONE.exec(line);
-    if (match) {
-      run.push({ numero: Number(match[1]), index: i });
+    if (match) aloneNumbers.push({ numero: Number(match[1]), index: i });
+  }
+
+  // Passo 2: acha sequencias maximas com passo constante > 1 dentro dessa lista.
+  let run: Array<{ numero: number; index: number }> = [];
+  let currentStep: number | null = null;
+  function flushRun() {
+    if (run.length >= 4 && currentStep !== null && currentStep > 1) {
+      for (const item of run) annotationIndices.add(item.index);
+    }
+    run = [];
+    currentStep = null;
+  }
+  for (const entry of aloneNumbers) {
+    if (run.length === 0) {
+      run.push(entry);
+    } else if (run.length === 1) {
+      currentStep = entry.numero - run[0].numero;
+      run.push(entry);
+    } else if (entry.numero - run[run.length - 1].numero === currentStep) {
+      run.push(entry);
     } else {
-      flushRun(); // qualquer conteudo real entre dois numeros quebra a sequencia
+      flushRun();
+      run.push(entry);
     }
   }
   flushRun();
