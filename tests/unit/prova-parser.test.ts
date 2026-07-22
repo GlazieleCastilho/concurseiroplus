@@ -108,6 +108,64 @@ describe("decisao de tipo por maioria (nao fabricar certo/errado em prova objeti
   });
 });
 
+describe("detectParsingAnomaly (nao confundir questao genuinamente longa com mesclagem)", () => {
+  it("nao recusa uma questao longa (estilo ENEM, texto de apoio embutido) com contagem normal de alternativas", () => {
+    const textoDeApoioLongo = "Lorem ipsum dolor sit amet consectetur adipiscing elit. ".repeat(90); // ~5300 chars
+    const texto = [
+      "1",
+      `${textoDeApoioLongo} Considerando o texto, assinale a alternativa correta.`,
+      "(A) alfa.",
+      "(B) beta.",
+      "(C) gama.",
+      "(D) delta.",
+      "(E) epsilon.",
+    ].join("\n");
+    const questoes = parseProvaText(texto);
+    expect(questoes[0].enunciado.length).toBeGreaterThan(2500);
+    expect(questoes[0].alternativas).toHaveLength(5);
+    expect(detectParsingAnomaly(texto, questoes)).toBeNull();
+  });
+
+  it("recusa questao longa com contagem de alternativas fora do normal (sinal real de mesclagem)", () => {
+    // Duas questoes normais (5 alternativas cada) so pra manter o caderno
+    // "majoritariamente objetiva" (maioria estrita, 1 questao malformada nao empata) e a
+    // questao 1 nao virar CERTO_ERRADO pelo fallback de tipo - o que estamos testando
+    // aqui e o detector de anomalia, nao esse fallback.
+    const textoMesclado = "Texto de duas questoes grudadas sem quebra de linha entre os itens. ".repeat(60); // ~4300 chars
+    const texto = [
+      "1",
+      textoMesclado,
+      "(A) alfa.", // so 1 alternativa reconhecida - sinal de mesclagem
+      "2",
+      "Enunciado normal e curto.",
+      "(A) a.",
+      "(B) b.",
+      "(C) c.",
+      "(D) d.",
+      "(E) e.",
+      "3",
+      "Outro enunciado normal e curto.",
+      "(A) a.",
+      "(B) b.",
+      "(C) c.",
+      "(D) d.",
+      "(E) e.",
+    ].join("\n");
+    const questoes = parseProvaText(texto);
+    expect(questoes[0].enunciado.length).toBeGreaterThan(2500);
+    expect(questoes[0].alternativas).toHaveLength(1);
+    expect(detectParsingAnomaly(texto, questoes)).toMatch(/mescladas/);
+  });
+
+  it("recusa qualquer questao acima do teto absoluto, mesmo com contagem de alternativas normal", () => {
+    const textoExtremo = "Isso e um sinal inequivoco de falha de parse independente de tudo mais. ".repeat(120); // ~8600 chars
+    const texto = ["1", textoExtremo, "(A) a.", "(B) b.", "(C) c."].join("\n");
+    const questoes = parseProvaText(texto);
+    expect(questoes[0].enunciado.length).toBeGreaterThan(8000);
+    expect(detectParsingAnomaly(texto, questoes)).not.toBeNull();
+  });
+});
+
 describe("parseGabaritoText", () => {
   it("grade multi-versao FGV: seleciona a grade certa por cargo + versao da prova", () => {
     const prova1 = parseGabaritoText(fgvGabarito, { provaVersao: "1", cargo: "Área Administrativa" });
