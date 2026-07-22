@@ -1,12 +1,11 @@
-import crypto from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { POST as checkoutPost } from "@/app/api/billing/checkout/route";
-import { POST as abacatepayWebhookPost } from "@/app/api/webhooks/abacatepay/route";
+import { POST as pagarmeWebhookPost } from "@/app/api/webhooks/pagarme/route";
 import { auditLog } from "@/lib/audit";
 import { rateLimit } from "@/lib/rate-limit";
 import { getCurrentDbUser } from "@/lib/clerk";
 import { createCheckout } from "@/services/billing-service";
-import { recordAndProcessAbacatePayWebhook } from "@/services/abacatepay-webhook-service";
+import { recordAndProcessPagarmeWebhook } from "@/services/pagarme-webhook-service";
 
 vi.mock("@/lib/clerk", () => ({
   getCurrentDbUser: vi.fn(),
@@ -24,25 +23,28 @@ vi.mock("@/services/billing-service", () => ({
   createCheckout: vi.fn(),
 }));
 
-vi.mock("@/services/abacatepay-webhook-service", () => ({
-  recordAndProcessAbacatePayWebhook: vi.fn(),
+vi.mock("@/services/pagarme-webhook-service", () => ({
+  recordAndProcessPagarmeWebhook: vi.fn(),
 }));
 
 const mockedGetCurrentDbUser = vi.mocked(getCurrentDbUser);
 const mockedRateLimit = vi.mocked(rateLimit);
 const mockedAuditLog = vi.mocked(auditLog);
 const mockedCreateCheckout = vi.mocked(createCheckout);
-const mockedRecordAndProcessWebhook = vi.mocked(recordAndProcessAbacatePayWebhook);
+const mockedRecordAndProcessWebhook = vi.mocked(recordAndProcessPagarmeWebhook);
+
+function basicAuthHeader(user: string, password: string): string {
+  return `Basic ${Buffer.from(`${user}:${password}`).toString("base64")}`;
+}
 
 describe("billing routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.ABACATEPAY_WEBHOOK_SECRET = "webhook-secret";
-    process.env.ABACATEPAY_WEBHOOK_HMAC_SECRET = "webhook-public-key";
-    process.env.ABACATEPAY_WEBHOOK_PUBLIC_KEY = "webhook-public-key";
+    process.env.PAGARME_WEBHOOK_USER = "webhook-user";
+    process.env.PAGARME_WEBHOOK_PASSWORD = "webhook-password";
   });
 
-  it("creates AbacatePay checkout without provider input", async () => {
+  it("creates Pagar.me checkout without provider input", async () => {
     const user = {
       id: "user_1",
       clerkUserId: "clerk_1",
@@ -50,7 +52,7 @@ describe("billing routes", () => {
       lastName: "Castilho",
       email: "glaziele@example.com",
       imageUrl: null,
-      abacatepayCustomerId: null,
+      pagarmeCustomerId: null,
       role: "user",
       planTier: "ESSENCIAL",
       lastLoginAt: null,
@@ -61,7 +63,7 @@ describe("billing routes", () => {
     mockedGetCurrentDbUser.mockResolvedValue(user);
     mockedRateLimit.mockResolvedValue(undefined);
     mockedAuditLog.mockResolvedValue(undefined);
-    mockedCreateCheckout.mockResolvedValue({ checkoutUrl: "https://pay.abacatepay.com/checkout_123", paymentId: "pay_123" });
+    mockedCreateCheckout.mockResolvedValue({ checkoutUrl: "https://payment-link.pagar.me/pl_123", paymentId: "pay_123" });
 
     const request = new Request("http://localhost:3000/api/billing/checkout", {
       method: "POST",
@@ -70,36 +72,35 @@ describe("billing routes", () => {
     });
 
     const response = await checkoutPost(request);
-    await expect(response.json()).resolves.toEqual({ checkoutUrl: "https://pay.abacatepay.com/checkout_123", paymentId: "pay_123" });
+    await expect(response.json()).resolves.toEqual({ checkoutUrl: "https://payment-link.pagar.me/pl_123", paymentId: "pay_123" });
     expect(response.status).toBe(200);
     expect(mockedCreateCheckout).toHaveBeenCalledWith({ user, tier: "PRO", cycle: "MENSAL" });
   });
 
-  it("rejects AbacatePay webhook with invalid signature", async () => {
-    const request = new Request("http://localhost:3000/api/webhooks/abacatepay?webhookSecret=webhook-secret", {
+  it("rejects Pagar.me webhook without valid Basic Auth", async () => {
+    const request = new Request("http://localhost:3000/api/webhooks/pagarme", {
       method: "POST",
-      headers: { "x-webhook-signature": "invalid" },
-      body: JSON.stringify({ id: "evt_1", event: "checkout.completed" }),
+      headers: { authorization: basicAuthHeader("wrong-user", "wrong-password") },
+      body: JSON.stringify({ id: "evt_1", type: "order.paid" }),
     });
 
-    const response = await abacatepayWebhookPost(request);
-    await expect(response.json()).resolves.toEqual({ error: "Invalid webhook signature" });
+    const response = await pagarmeWebhookPost(request);
+    await expect(response.json()).resolves.toEqual({ error: "Unauthorized webhook" });
     expect(response.status).toBe(401);
     expect(mockedRecordAndProcessWebhook).not.toHaveBeenCalled();
   });
 
-  it("accepts signed duplicate AbacatePay webhook idempotently", async () => {
-    const rawBody = JSON.stringify({ id: "evt_1", event: "checkout.completed", data: { checkout: { externalId: "pay_123" } } });
-    const signature = crypto.createHmac("sha256", "webhook-public-key").update(Buffer.from(rawBody, "utf8")).digest("base64");
+  it("accepts authenticated duplicate Pagar.me webhook idempotently", async () => {
+    const rawBody = JSON.stringify({ id: "evt_1", type: "order.paid", data: { metadata: { paymentId: "pay_123" } } });
     mockedRecordAndProcessWebhook.mockResolvedValue({ duplicate: true });
 
-    const request = new Request("http://localhost:3000/api/webhooks/abacatepay?webhookSecret=webhook-secret", {
+    const request = new Request("http://localhost:3000/api/webhooks/pagarme", {
       method: "POST",
-      headers: { "x-webhook-signature": signature },
+      headers: { authorization: basicAuthHeader("webhook-user", "webhook-password") },
       body: rawBody,
     });
 
-    const response = await abacatepayWebhookPost(request);
+    const response = await pagarmeWebhookPost(request);
     await expect(response.json()).resolves.toEqual({ received: true, duplicate: true });
     expect(response.status).toBe(200);
     expect(mockedRecordAndProcessWebhook).toHaveBeenCalledWith(JSON.parse(rawBody));
