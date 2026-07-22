@@ -7,6 +7,12 @@
  *    trazem numeracao de linha na margem - regressao real: essa numeracao de margem era
  *    interpretada como item novo, corrompendo item 34 (11996 chars mesclados) e perdendo
  *    33 itens (1-33) inteiros; itens 24/25/26 nao tem texto proprio, so uma figura)
+ *  - SERPRO/UnB-CESPE - Analista, Desenvolvimento de Sistemas (formato ainda mais antigo:
+ *    numeracao de linha na margem intercalada no meio do texto corrido, sem separacao por
+ *    linha em branco; os itens da prova em si nao sao numerados no texto, so implicados
+ *    por instrucoes tipo "julgue os itens de 1 a 8" - formato que este parser NAO suporta
+ *    ainda. O teste trava que o parser falha honestamente (0 questoes, sem inventar itens
+ *    a partir da numeracao de margem) em vez de produzir questoes falsas)
  * Qualquer mudanca de regex/heuristica que quebre um layout ja suportado falha aqui,
  * em vez de regredir silenciosamente em producao (ja aconteceu uma vez: um commit de
  * correcao ficou orfao num branch mergeado e o parser voltou a perder alternativas V/F).
@@ -33,6 +39,7 @@ const fgvGabarito = fixture("fgv-gabarito.txt");
 const cebraspeProva = fixture("cebraspe-prova.txt");
 const cebraspeGabarito = fixture("cebraspe-gabarito.txt");
 const prf2019Prova = fixture("prf2019-prova.txt");
+const serproProva = fixture("serpro-prova.txt");
 
 describe("parseProvaText - FGV/TJRS (numero sozinho na linha, alternativas '(A) texto')", () => {
   const questoes = parseProvaText(fgvProva);
@@ -113,6 +120,17 @@ describe("parseProvaText - CEBRASPE/PRF 2019 (textos de apoio com numeracao de l
 
   it("nao dispara falso alarme de anomalia", () => {
     expect(detectParsingAnomaly(prf2019Prova, questoes)).toBeNull();
+  });
+});
+
+describe("parseProvaText - SERPRO/UnB-CESPE (formato nao suportado: itens sem numero no texto)", () => {
+  it("falha honestamente (0 questoes) em vez de inventar itens a partir da numeracao de margem", () => {
+    // Regressao real: antes da deteccao de anotacao de margem funcionar aqui tambem
+    // (passo constante > 1, mesmo sem separacao por linha em branco), esse PDF gerava
+    // 6 "questoes" falsas a partir dos numeros de margem mal interpretados como item -
+    // pior que falhar limpo, porque parecia ter funcionado parcialmente.
+    const questoes = parseProvaText(serproProva);
+    expect(questoes).toHaveLength(0);
   });
 });
 

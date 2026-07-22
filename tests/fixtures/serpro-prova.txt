@@ -1,0 +1,779 @@
+
+
+pcimarkpci MjgwNDowMTRkOjE2OGU6OGQxYjoxMDFhOjBiNjE6Njg4MTozNjI0:U3VuLCAxMiBKdWwgMjAyNiAxOTo0MjowMCAtMDMwMA==
+www.pciconcursos.com.br
+UnB/CESPE – SERPRO 
+Cargo 5: Analista – Especialização: Desenvolvimento de Sistemas– 1 –
+CDe acordo com o comando a que cada um dos itens de 1 a 120 se refira, marque, na folha de respostas, para cada item: o campo
+designado com o código C, caso julgue o item CERTO; ou o campo designado com o código E, caso julgue o item ERRADO.
+A ausência de marcação ou a marcação de ambos os campos não serão apenadas, ou seja, não receberão pontuação negativa. Para
+as devidas marcações, use a folha de respostas, único documento válido para a correção das suas provas.
+CNos itens que avaliam Noções de Informática, a menos que seja explicitamente informado o contrário, considere que: todos os
+programas mencionados estão em configuração-padrão, em português; o mouseestá configurado para pessoas destras; expressões
+comoclicar,clique simples eclique duplo referem-se a cliques com o botão esquerdo do mouse;teclarcorresponde à operação
+de pressionar uma tecla e, rapidamente, liberá-la, acionando-a apenas uma vez. Considere também que não há restrições de
+proteção, de funcionamento e de uso em relação aos programas, arquivos, diretórios, recursos e equipamentos mencionados.
+CONHECIMENTOS BÁSICOS
+Na esteira da leitura do mundo pela palavra, vemos1
+emergir  uma  tecnologia  de  linguagem  cujo  espaço  de
+apreensão de sentido não é apenas composto por palavras,
+mas, junto com elas, encontramos sons, gráficos e diagramas,
+4
+todos  lançados  sobre  uma  mesma  superfície  perceptual,
+amalgamados  uns  com  os  outros,  formando  um  todo
+significativo  e  de  onde  sentidos  são  complexamente
+7
+disponibilizados aos navegantes do oceano digital. É assim
+o hipertexto. Com ele, ler o mundo tornou-se virtualmente
+possível, haja vista que sua natureza imaterial o faz ubíquo
+10
+por permitir que seja acessado em qualquer parte do planeta,
+a  qualquer  hora  do  dia  e  por  mais  de  um  leitor
+simultaneamente.  O  hipertexto  concretiza  a  possibilidade
+13
+de  tornar  seu  usuário  um  leitor  inserido  nas  principais
+discussões  em  curso  no  mundo  ou,  se  preferir,  fazê-lo
+adquirir apenas uma visão geral das grandes questões do ser
+16
+humano na atualidade. Certamente, o hipertexto exige do seu
+usuário muito mais que a mera decodificação das palavras
+que flutuam sobre a realidade imediata.
+19
+Antonio Carlos Xavier. Leitura, texto e hipertexto.In:
+L. A. Marcuschi e A. C. Xavier (Orgs.). Hipertexto e
+gêneros  digitais,  p.  171-2  (com  adaptações).
+A partir do texto acima, julgue os itens de 1a8.
+A idéia expressa por “uma tecnologia de linguagem” (R.2) é
+retomada, no desenvolvimento do texto, por “hipertexto”
+(
+R.9), “ele” (R.9) e “o” (R.10).
+Preservam-se as relações semânticas e a correção gramatical
+do texto bem como tornam-se mais claras as relações entre
+as  palavras  “tecnologia”  (
+R.2)  e  “espaço”  (R.2),  ao  se
+substituir o pronome “cujo” por de que o.
+Preservam-se a correção gramatical do texto e as relações
+semânticas entre as expressões “sentido” (
+R.3) e “superfície
+perceptual” (
+R.5), ao se retirar a preposição do termo “de
+onde” (
+R.7).
+Na linha 10, a flexão de feminino em “haja vista” deve-se à
+concordância com a palavra feminina “natureza”.
+O  trecho  iniciado  pela  preposição  “por”  (R.11)  fornece
+explicações para a qualidade de ubiqüidade do hipertexto,
+mencionada na oração que o antecede.
+O uso da conjunção “ou” (R.15) mostra que, no texto, estar
+“inserido  nas  principais  discussões  em  curso  no  mundo”
+(
+R.14-15) ou “adquirir apenas uma visão geral das grandes
+questões do ser humano na atualidade” (
+R.16-17) devem ser
+interpretadas como duas maneiras diferentes de se expressar
+lingüisticamente a mesma ação.
+Seria mantida a correção gramatical caso o elemento do
+fosse inserido entre “mais” e “que”, na linha 18.
+Depreende-se da argumentação do texto que a razão de a
+leitura do hipertexto ir além da “mera decodificação das
+palavras”  (
+R.18)  é  ser  ele  composto  também  por  um
+amálgama de “sons, gráficos e diagramas” (
+R.4).
+Até José Saramago abriu um blog. Até o Prêmio
+1
+Nobel de Literatura. O celebrado escritor, que completou
+86  anos  em  novembro,  intensifica  sua  aproximação  com
+o  público.  Caiu  a  última  trincheira  de  resistência  contra
+4
+a  ferramenta.  O  autor  de  Ensaio  sobre  a  Cegueira  e
+O  Evangelho  Segundo  Jesus  Cristo  decidiu  criar  “um
+espaço para comentários, reflexões, simples opiniões sobre
+7
+isto  ou  aquilo,  o  que  vier  a  talhe  de  foice”.  Se  antes  os
+blogueiros tomaram as estantes e livrarias, em uma invasão
+organizada  dos  posts  para  as  páginas,  os  escritores
+10
+descobriram  que  estavam  perdendo  espaço  e  procuraram
+recuperar o tempo perdido. Sucedendo o movimento da rede
+aos livros, a trajetória agora é dos livros para a rede.
+13
+Oblog  perdeu  seu  estigma  de  catarse  e  escrita
+sentimental para adquirir o status de uma janela fundamental
+para  a  comunicação  com  os  leitores.  São  muitos  os
+16
+ficcionistas  que  estão  adquirindo  sítios  e  realizando  uma
+verdadeira  migração  digital.  A  facilidade  de  postar,  o
+desembaraço de abrir uma página pessoal e a necessidade de
+19
+prolongar  reflexões  sobre  a  literatura  dobraram  os  mais
+empedernidos discípulos do papel e da caneta.
+Revista da Cultura, out./2008, p. 24 (com adaptações).
+Tomando por base o texto acima, julgue os itens de 9 a 15.
+	Fazendo-se  os  devidos  ajustes  nas  iniciais  maiúsculas,  é
+possível omitir a primeira ocorrência de “Até” (
+R.1), sem
+prejudicar a correção gramatical e a coerência textual; no
+entanto, a segunda ocorrência deve ser mantida para que
+sejam preservadas a correção gramatical e a coerência na
+argumentação do texto.
+
+Depreende-se da argumentação que o termo “ferramenta”
+(
+R.5) está empregado como um outro nome para designar
+“blog” (
+R.1).
+www.pciconcursos.com.br
+
+
+pcimarkpci MjgwNDowMTRkOjE2OGU6OGQxYjoxMDFhOjBiNjE6Njg4MTozNjI0:U3VuLCAxMiBKdWwgMjAyNiAxOTo0MjowMCAtMDMwMA==
+www.pciconcursos.com.br
+UnB/CESPE – SERPRO 
+Cargo 5: Analista – Especialização: Desenvolvimento de Sistemas– 2 –
+Subentende-se do desenvolvimento das idéias do texto que
+o trecho entre aspas, nas linhas de 6 a 8, é uma citação de
+palavras de José Saramago.
+Preserva-se  a  correção  gramatical  ao  se  reescrever  a
+expressão ‘a talhe de foice’ (
+R.8) com crase: à talhe de foice.
+O  desenvolvimento  das  idéias  do  texto  mostra  que,  se  a
+condição expressa pela oração iniciada por “Se” (
+R.8) não se
+tivesse realizado, os escritores não procurariam “recuperar
+o tempo perdido” (
+R.12).
+A inserção da preposição a no complemento de “Sucedendo”
+(
+R.12), escrevendo-se ao movimento, preserva a coerência
+da argumentação e atende às regras da norma culta da língua
+portuguesa.
+A relação entre as idéias das duas últimas orações do texto
+permite  que  se  substitua  o  ponto  final  após  a  palavra
+“digital” (
+R.18) pelo sinal de dois-pontos, desde que seja
+feita a substituição de “A” por a.
+Declaração sobre o uso do progresso
+científico e tecnológico no interesse
+da paz e em benefício da humanidade
+Proclamada pela Assembléia Geral das Nações Unidas em 10
+de novembro de 1975 — Resolução n.º 3.384 (XXX).
+A Assembléia Geral,
+1
+Tomando nota de que o progresso científico e tecnológico
+converteu-se  em  um  dos  fatores  mais  importantes  do
+desenvolvimento da sociedade humana,
+4
+Levando  em  consideração  que  o  progresso  científico  e
+tecnológico, ao mesmo tempo que cria possibilidades cada
+vez maiores de melhorar as condições de vida dos povos e
+7
+das nações, pode, em certos casos, dar lugar a problemas
+sociais,  assim  como  ameaçar  os  direitos  humanos  e  as
+liberdades fundamentais do indivíduo,
+10
+(...)
+Proclama solenemente que:
+Todos os Estados promoverão a cooperação internacional
+13
+com o objetivo de garantir que os resultados do progresso
+científico e tecnológico sejam usados para o fortalecimento
+da  paz  e  da  segurança  internacionais,  a  liberdade  e  a
+16
+independência, assim como para atingir o desenvolvimento
+econômico e social dos povos e tornar efetivos os direitos e
+liberdades humanas de acordo com a Carta das Nações Unidas.
+19
+(...)
+Internet: <www.mp.ma.gov.br>.
+A partir do fragmento de documento apresentado, julgue os itens
+de16 a 20.
+Como  documento  oficial,  a  declaração  acima  deve  ser
+precedida de identificação e data no seguinte padrão:
+AGNU – Declaração n.º 3.384/1975
+Nova York, 10 de novembro de 1975.
+O uso das letras iniciais maiúsculas em “Tomando” (R.2) e
+“Levando” (
+R.5) indica que as vírgulas depois de “Geral”
+(
+R.1) e “humana” (R.4) devem ser substituídas por ponto, para
+se atender às regras gramaticais da norma culta usada em
+documentos oficiais.
+Na  linha  16,  justifica-se  a  flexão  de  plural  em
+“internacionais” pela concordância desse adjetivo tanto com
+“paz” quanto com “segurança”; se a flexão fosse de singular,
+as regras gramaticais seriam atendidas, mas a clareza do
+documento seria prejudicada.
+	Por causa das ocorrências da conjunção “e” (R.15-16) no
+mesmo período sintático, o conectivo “assim como” (
+R.17)
+tem a dupla função de marcar a relação de adição entre as
+orações e deixar clara a hierarquia das relações semânticas.
+
+Diferentemente do documento declaração, o fecho de um
+documento no padrão edital deve seguir o seguinte modelo.
+Brasília, 7 de dezembro de 2008.
+Fulano da Silva Tal
+Fulano da Silva Tal 
+Diretor-presidente da BRBRBR
+No século XVIII, o Parlamento Inglês ofereceu uma
+1
+pequena fortuna a quem inventasse uma forma que permitisse
+aos  marinheiros  calcular  a  longitude  em  alto-mar.  Quem
+levou  o  prêmio  foi  John  Harrison,  um  desconhecido
+4
+relojoeiro  do  interior  da  Inglaterra.  Ele  criou  o  primeiro
+cronômetro  marítimo,  instrumento  que  revolucionou  a
+navegação.  Hoje,  uma  dezena  de  sítios  na  Internet  usa
+7
+o mesmo princípio em benefício da inovação no mundo dos
+negócios. Na maioria desses sítios, as empresas descrevem
+anonimamente um problema que não conseguem resolver e
+10
+recebem propostas de solução de cientistas, técnicos e outros
+interessados, muitos sem nenhuma formação acadêmica.
+Veja, 20/8/2008 (com adaptações).
+Julgue os seguintes itens, a respeito das estruturas lingüísticas do
+texto acima.
+Preservam-se a coerência textual e a correção gramatical ao
+se substituir “a quem” (
+R.2) por à pessoa que.
+O  emprego  do  modo  subjuntivo  em  “inventasse”  (R.2)  e
+“permitisse”  (
+R.2)  demonstra  ser  o  invento  apenas  uma
+hipótese, que as informações das orações seguintes, apoiadas
+no indicativo em “levou” (
+R.4) e “criou” (R.5), mostram como
+realizada.
+O  desenvolvimento  das  idéias  do  texto  permite  que  se
+substitua “uma dezena de” (
+R.7) pela expressão cerca de dez,
+sem prejuízo para a correção gramatical e a coerência entre
+os argumentos.
+A  expressão  “um  desconhecido  relojoeiro  do  interior  da
+Inglaterra”  (
+R.4-5)  e  o  pronome  “Ele”  (R.5)  retomam  o
+referente “John Harrison” (
+R.4).
+A argumentação do texto mostra que a expressão “o mesmo
+princípio”  (
+R.8)  refere-se  ao  princípio  científico  de
+funcionamento do cronômetro marítimo.
+www.pciconcursos.com.br
+
+
+pcimarkpci MjgwNDowMTRkOjE2OGU6OGQxYjoxMDFhOjBiNjE6Njg4MTozNjI0:U3VuLCAxMiBKdWwgMjAyNiAxOTo0MjowMCAtMDMwMA==
+www.pciconcursos.com.br
+UnB/CESPE – SERPRO 
+Cargo 5: Analista – Especialização: Desenvolvimento de Sistemas– 3 –
+Era uma vez uma rotina em que criança bem-criada1
+e  educada  era  aquela  que  tinha  horário  para  tudo  e  não
+misturava as coisas: brincar era brincar, estudar era estudar.
+Pobres dos pais que ainda alimentam alguma ilusão de ritmo
+4
+seqüencial. Cercadas de aparelhos eletrônicos que dominam
+desde cedo, as crianças da era dos estímulos constantes e
+simultâneos  são  capazes  de  executar  três,  quatro,  cinco
+7
+atividades ao mesmo tempo — e prestar pelo menos alguma
+atenção a todas elas. São crianças multitarefa e encaram isso
+com total naturalidade.
+10
+Mas a rapidez e a multiplicidade podem ter certo
+custo. Para quem tem pressa em determinar as conseqüências
+futuras das atividades simultâneas, a ciência ainda responde
+13
+em ritmo de passado. Vamos ter de esperar uma ou duas
+gerações para saber se a multitarefa será predominantemente
+positiva ou negativa na fase adulta.
+16
+Veja, 6/8/2008 (com adaptações).
+A partir do texto acima, julgue os itens que se seguem.
+Preservam-se a coerência da argumentação e o atendimento
+às regras gramaticais ao se retirar a preposição “em” do
+termo “em que” (
+R.1).
+Na linha 3, o sinal de dois-pontos depois de “coisas” tem a
+função de introduzir uma explicação, ou justificativa, para a
+idéia expressa nas orações anteriores. Essa função deixaria
+de  ser  marcada  pela  pontuação  caso  esse  sinal  fosse
+substituído pelo ponto — com o correspondente ajuste na
+letra inicial de “brincar” —, mas a coerência e a correção
+gramatical do texto seriam preservadas.
+O desenvolvimento das idéias do texto permite inferir que a
+expressão  “ritmo  seqüencial”  (
+R.4-5)  é  usada  para
+caracterizar o procedimento de não misturar as atividades.
+	A organização dos argumentos mostra que o conectivo “e”
+em  “e  encaram”  (
+R.9)  tem  o  valor  de  mas  e  por  essa
+conjunção poderia ser substituído, sem prejuízo da coerência
+ou da correção do texto.
+
+O emprego da primeira pessoa do plural em “Vamos ter”
+(
+R.14) indica que tanto o autor quanto o leitor do texto não
+estão incluídos entre o conjunto de pessoas com “pressa em
+determinar  as  conseqüências  futuras  das  atividades
+simultâneas” (
+R.12-13).
+Uma proposição é uma sentença que pode ser julgada
+verdadeira (V) ou falsa (F). As proposições são normalmente
+representadas pelas letras maiúsculas A, B, C etc. A partir de
+proposições  dadas,  podem-se  construir  novas  proposições
+compostas, mediante o emprego de símbolos lógicos chamados
+conectivos: “e”, indicado pelo símbolo lógico 
+v, e “ou”, indicado
+pelo símbolo lógico 
+w. Usa-se o modificador “não”, representado
+pelo  símbolo  lógico  ¬,  para  produzir  a  negação  de  uma
+proposição;  pode-se,  também,  construir  novas  proposições
+mediante o uso do condicional “se A então B”, representado
+por A
+6B.
+O  julgamento  de  uma  proposição  lógica  composta
+depende  do  julgamento  que  se  faz  de  suas  proposições
+componentes. Considerando os possíveis julgamentos V ou F das
+proposições  A  e  B,  tem-se  a  seguinte  tabela-verdade  para
+algumas proposições compostas.
+ABAvBAwB¬AA6B
+VVVVFV
+VFFVF
+FVFVVV
+FFFFV
+Considerando-se a proposição A, formada a partir das
+proposições B, C etc. mediante o emprego de conectivos (
+v ou
+w), ou de modificador (¬) ou de condicional (6), diz-se que A é
+uma tautologia quando A tem valor lógico V, independentemente
+dos valores lógicos de B, C etc. e diz-se que A é uma contradição
+quando A tem valor lógico F, independentemente dos valores
+lógicos de B, C etc. Uma proposição A é equivalente a uma
+proposição B quando A e B têm as tabelas-verdade iguais, isto é,
+A e B têm sempre o mesmo valor lógico.
+Com base nas informações acima, julgue os itens a seguir.
+A proposição (A
+v
+B)
+v
+ (¬A w B) é uma tautologia.
+Em relação às proposições A:  e B: 9 é par, a
+proposição composta A6B é uma contradição.
+A proposição A
+v
+B é equivalente à proposição ¬B
+v
+¬A.
+
+www.pciconcursos.com.br
+
+
+pcimarkpci MjgwNDowMTRkOjE2OGU6OGQxYjoxMDFhOjBiNjE6Njg4MTozNjI0:U3VuLCAxMiBKdWwgMjAyNiAxOTo0MjowMCAtMDMwMA==
+www.pciconcursos.com.br
+UnB/CESPE – SERPRO 
+Cargo 5: Analista – Especialização: Desenvolvimento de Sistemas– 4 –
+Doissoftware, S1 e S2, são utilizados diariamente por
+participantes de diferentes grupos de trabalho em certa empresa.
+Um desses grupos de trabalho está interessado na fabricação de
+dois  produtos,  P1  e  P2;  a  fabricação  de  cada  unidade  de  P1
+requer 2 horas de utilização de S1 e 3 horas de utilização de S2,
+enquanto a fabricação de cada unidade de P2 requer 3 horas de
+utilização de S1 e 4 horas de utilização de S2. Foi decidido que,
+por motivos estratégicos, o software S1 estará disponível a esse
+grupo de trabalho por 12 horas por dia, enquanto o software S2
+estará disponível por 9 horas diárias a esse grupo de trabalho. Os
+pesquisadores desse grupo desejam saber quantas unidades de P1
+e quantas unidades de P2 conseguem produzir nessas condições
+diariamente e observaram que uma maneira de saber isso seria
+resolver o sistema de equações lineares .
+
+
+
+=+
+=+
+943
+1232
+yx
+yx
+Com base nas informações acima, julgue os itens a seguir.
+A solução do sistema de equações lineares 
+
+
+
+=+
+=+
+943
+1232
+yx
+yx
+fornece, de fato, uma possível quantidade a ser produzida de
+P1 e P2.
+Nas condições apresentadas, não é possível produzir mais
+que três unidades diárias do produto P1.
+Uma empresa de consultoria realizou um levantamento
+estatístico para obter informações acerca do tempo (T) gasto por
+empregados de empresas brasileiras na Internet em sítios pessoais
+durante suas semanas de trabalho. Com base em uma amostra
+aleatória de 900 empregados de empresas brasileiras com um
+regime de trabalho de 44 h semanais, essa empresa de consultoria
+concluiu que cada empregado gasta, em média, 6 h semanais na
+Internet em sítios pessoais durante uma semana de trabalho; 50%
+dos empregados gastam 5 h semanais ou mais na Internet em
+sítios pessoais durante uma semana de trabalho; e o desvio padrão
+do tempo gasto na Internet em sítios pessoais durante o regime de
+trabalho é igual a 4 h semanais por empregado.
+Com base nas informações da situação hipotética acima descrita,
+julgue os itens a seguir.
+Os empregados observados no levantamento gastaram, em
+média,  mais  de  12%  do  regime  de  trabalho  semanal  na
+Internet em sítios pessoais.
+Os tempos gastos na Internet em sítios pessoais durante o
+regime  de  trabalho  pelos  empregados  observados  no
+levantamento  foram  superiores  a  2  h  e  inferiores  a  10  h
+semanais.
+A mediana da distribuição dos tempos gastos na Internet é
+superior a 5,5 h/semana.
+	Considerando  que  o  tempo  útil  semanal  do  regime  de
+trabalho seja a diferença U = 44 – T (em horas), o desvio
+padrão de U será inferior a 5 h.
+
+Considerando que a probabilidade de um empregado gastar
+mais do que 8 h semanais na Internet em sítios pessoais
+durante  seu  regime  de  trabalho  seja  igual  a  0,2  e
+considerando, também, que X seja uma variável aleatória
+que represente o número de casos de pessoas que gastam
+mais  do  que  8  h/semana  na  Internet  em  sítios  pessoais
+durante seus regimes de trabalho na amostra aleatória de
+900  empregados,  o  desvio  padrão  de  X  será  igual  ou
+inferior a 12.
+
+www.pciconcursos.com.br
+
+
+pcimarkpci MjgwNDowMTRkOjE2OGU6OGQxYjoxMDFhOjBiNjE6Njg4MTozNjI0:U3VuLCAxMiBKdWwgMjAyNiAxOTo0MjowMCAtMDMwMA==
+www.pciconcursos.com.br
+UnB/CESPE – SERPRO 
+Cargo 5: Analista – Especialização: Desenvolvimento de Sistemas– 5 –
+One frequently overlooked area in planning is technical
+reviews and inspections. A technical review requires substantial
+preparation on the part of the presenters. Documents must be
+published and distributed and presentation material organized and
+made into slides or overheads. Practice sessions are conducted by
+presenters with an audience of critics to prepare for the review.
+The  reviewers  should  read  the  material,  attend  the
+presentations, and write reports. On large projects with many
+reviews  and  walk-throughs  involving  many  participants,  a
+substantial number of labor hours can be consumed analyzing
+documents, attending meetings, and writing reports. For example,
+a system design review for one module or unit can require 150
+labor hours. When overlooked, this labor can result in a very
+large error in resource and schedule estimation.
+Many  projects  include  risk  assessment  and  risk
+management as a key part of the planning process and expect the
+plan  to  identify  specific  risk  areas.  The  plan  is  expected  to
+quantify both probability of failure and consequences of failure
+and to describe what will be done to contain development risk.
+A. Behforooz and F. Hudson. Software engineering
+fundamentals.  Ed.  Oxford  (adapted).
+Based on the text above, judge the following items.
+Technical reviews and inspections are two areas which are
+often looked over.
+The presenters should be duly prepared to take part in a
+technical review.
+Some audiovisual materials are required for the presentation
+of issues to be dealt with.
+During the practice sessions the critic’s role is to elaborate
+on the items to be reviewed.
+The reviewers must read and rewrite the material while being
+present in the meetings.
+Large projects demand patient learning to go through it. 
+A system design review can need 150 hours of work.
+In a lot of projects, it is hoped that the plan should be able to
+spot specific risky areas.
+	The plan is supposed to include the likelihood of failure,
+its  results  and  the  actions  to  be  taken  to  contain
+development risk.
+
+At the beginning of the second paragraph, “should” can be
+correctly replaced by ought to.
+CONHECIMENTOS ESPECÍFICOS
+Com  relação  à  segurança  da  informação,  julgue  os
+seguintes itens.
+Confiabilidade  é  tornar  uma  informação  disponível  no
+momento em que ela se torna necessária.
+Uma  informação  será  considerada  íntegra  quando  seu
+conteúdo não tiver sido lido por entidade não-autorizada,
+seja esta um sistema ou uma pessoa.
+Um  elemento  fundamental  a  ser  considerado  no  mundo
+eletrônico atual é a disponibilidade da informação, ou seja,
+informação para as pessoas autorizadas na hora que dela
+precisarem.
+O desenvolvimento de software seguro é uma funcionalidade
+presente em todas as ferramentas e padrões existentes no
+mercado.  Assim,  o  programador  precisa  focar  apenas  na
+criatividade e no atendimento aos requisitos do cliente, pois
+segurança, hoje, é uma questão secundária.
+Acerca dos conceitos de gerência de riscos, julgue os itens que se
+seguem.
+Para que haja segurança da informação, as ameaças devem
+ser identificadas e devem ser tomadas medidas de segurança
+para  se  reduzir  o  risco  ou  a  probabilidade  de  ocorrerem
+incidentes.
+Vulnerabilidades representam portas de entrada, fragilidade
+em ativos de informação que podem permitir a concretização
+de ameaças, colocando em risco esses ativos.
+O  impacto  causado  por  um  incidente  de  segurança  é
+proporcional ao tipo de vulnerabilidade encontrada em um
+ativo,  ou  seja,  quanto  maior  a  vulnerabilidade,  maior  o
+impacto, e vice-versa.
+Uma  das  principais  medidas  de  segurança  de  ambientes
+eletrônicos  é  a  definição  e  aplicação  de  uma  política  de
+senhas para acesso aos ativos de informação.
+A respeito das normas de segurança da informação, julgue os
+itens subseqüentes.
+	A ISO/IEC 27001:2006 é a principal norma de mercado
+acerca de aspectos operacionais tecnológicos que devem ser
+implementados nos servidores de arquivos e equipamentos
+de  conectividade,  para  controle  de  acesso  de  usuários
+maliciosos.
+
+A  norma  ISO/IEC  17799  está  voltada  à  criação  de  um
+Sistema de Gestão da Segurança da Informação mas seu
+conteúdo  não  é  mais  válido,  pois  foi  substituída
+recentemente pela nova norma 27002.
+www.pciconcursos.com.br
+
+
+pcimarkpci MjgwNDowMTRkOjE2OGU6OGQxYjoxMDFhOjBiNjE6Njg4MTozNjI0:U3VuLCAxMiBKdWwgMjAyNiAxOTo0MjowMCAtMDMwMA==
+www.pciconcursos.com.br
+UnB/CESPE – SERPRO 
+Cargo 5: Analista – Especialização: Desenvolvimento de Sistemas– 6 –
+Uma política de segurança da informação, preconizada pelas
+normas, é composta por critérios sugeridos para a gestão da
+segurança, configuração de ativos, etc., o que vai atribuir aos
+gestores a liberdade de escolher a forma mais inteligente,
+setorizada, de se adotar segurança.
+A norma ISO/IEC 15408, também conhecida por common
+criteria,  é  recomendada  para  a  avaliação  de  aspectos  de
+segurança  de  sistemas  e  produtos  de  tecnologia  da
+informação em geral.
+Considerando os modelos do ciclo de vida de software, julgue os
+itens que se seguem.
+O  modelo  em  cascata  consiste  de  fases  e  atividades  que
+devem  ser  realizadas  em  seqüência,  de  forma  que  uma
+atividade é requisito da outra.
+O  modelo  iterativo  e  o  modelo  em  espiral  possuem
+características  semelhantes:  ambos  permitem  que  as
+atividades  do  processo  sejam  planejadas  e  avaliadas  ao
+longo do ciclo de vida.
+Para a especificação de software e verificação de sistemas,
+uma alternativa que se fundamenta na matemática discreta e
+na lógica é o modelo incremental.
+O modelo orientado a reúso parte de um software existente
+para que se crie outro, no todo ou apenas em parte de seus
+componentes.
+Os modelos ágeis são muito mais rápidos e eficientes que os
+modelos incremental e iterativo, não partilhando aqueles,
+portanto, das visões adotadas por estes.
+Com relação à tecnologia de banco de dados, julgue os itens a
+seguir.
+Os  bancos  de  dados  relacionais  atualmente  funcionam
+melhor  em  plataformas  altas,  visto  que  seu  uso  em
+plataformas  baixas  sobrecarrega  o  desempenho  dos
+computadores, fazendo que o banco fique indisponível, fato
+este comum em ambientes bancários.
+	O sistema de gerenciamento de banco de dados (SGBD)
+PostgreSQL é um modelo em código aberto que tem como
+base o modelo de desenvolvimento bazar.
+
+MySQL é um SGBD relacional para sistemas proprietários
+que  não  funciona  em  sistemas  operacionais  livres  como
+o Linux.
+O XML é uma linguagem de marcação que, entre outras
+funções,  interliga  bancos  de  dados  distintos  de  maneira
+hierárquica.
+Um  dos  primeiros  SGDBs  encontrado  no  mercado  foi  o
+Adabas.  Originalmente  disponibilizado  para  mainframes
+IBM, sua única limitação é não acessar SQL ou XML, por
+motivos comerciais.
+Com relação à arquitetura de banco de dados, julgue os itens a
+seguir.
+O modelo relacional, que foi o primeiro modelo de banco de
+dados  formal,  é  embasado  na  lógica  de  predicados  e  na
+teoria dos conjuntos.
+Uma base de dados hierárquica une os registros em uma
+estrutura de dados em forma de árvore, similar ao modelo
+em rede.
+Os modelos relacional, hierárquico e em rede são modelos
+de dados lógicos com base em objetos, usados na descrição
+dos dados no nível lógico e de visões.
+O modelo em rede, similar ao hierárquico, permite apenas a
+ligação de um para um (1:1) entre os registros pai e filho.
+A associação entre uma lista de chaves primárias com uma
+chave secundária caracteriza o modelo lista invertida.
+Com  relação  a  servidores  de  webe  de  aplicação,  julgue  os
+próximos itens.
+Zope é um servidor de aplicações web em código aberto que
+armazena dados em um banco orientado a objetos chamado
+Python.
+	Apesar de ser embasado em J2EE e implementado em Java,
+uma das limitações do JBOSS é ser um servidor de aplicação
+incompatível  com  alguns  dos  sistemas  operacionais  que
+suportam Java, pois ele não oferece persistência.
+
+O Apache, um servidor web livre amplamente utilizado no
+mundo, é compatível com os sistemas operacionais Unix,
+Linux, Windows e Novell Netware.
+Tomcat  é  tanto  um  servidor  web  quanto  um  servidor  de
+aplicação,  que  implementa  as  tecnologias  JavaServlet  e
+JavServer Pages (JSP).
+Com relação às linguagens, julgue os itens a seguir.
+C++ é uma linguagem de programação orientada a objetos,
+de primeira geração.
+A  linguagem  Java,  orientada  a  objetos,  tem  como
+característica ser compilada em um código executado em
+máquina virtual.
+O Javascript expande as capacidades de uma página HTML
+e, unido ao CSS, formou o DHTML.
+Python  é  uma  linguagem  livre  de  alto  nível,  orientada  a
+objetos e de difícil leitura, pois não permite identação de
+linhas de código.
+A Ruby é uma linguagem orientada a objetos, com sintaxe de
+fácil leitura e tipagem dinâmica e forte.
+Cobol é uma linguagem de primeira geração, presente em
+sistemas corporativos e de governo, e tem a desvantagem de
+não se integrar com outras linguagens orientadas a objetos.
+As  linguagens  procedurais,  como  Cobol,  Algol  e  C,  têm
+como    característica  serem  modulares  e  permitirem  a
+reutilização de um mesmo código repetidamente em outras
+partes do programa, sem, necessariamente, copiá-lo.
+	O GIMP é uma alternativa livre aos software proprietários
+de edição de imagens bitmap, licenciado sob a licença GNU.
+www.pciconcursos.com.br
+
+
+pcimarkpci MjgwNDowMTRkOjE2OGU6OGQxYjoxMDFhOjBiNjE6Njg4MTozNjI0:U3VuLCAxMiBKdWwgMjAyNiAxOTo0MjowMCAtMDMwMA==
+www.pciconcursos.com.br
+UnB/CESPE – SERPRO 
+Cargo 5: Analista – Especialização: Desenvolvimento de Sistemas– 7 –
+	
+O  Ajax  basicamente  oferece  uma  metodologia  para
+desenvolvimento de aplicações na Web que une Javascript
+e  XML,  mas  que  só  pode  ser  executado  em  browsers
+lançados após 2001.
+	O  CSS  é  uma  linguagem  de  estilo  para  apresentação  de
+documentos HTML ou XML, suportada por todas as versões
+de navegadores, sem necessidade de teste.
+	Um novo conceito de navegador para a Web, o WebRunner
+hospeda aplicações web sem a interface tradicional de menus
+e barras de ferramentas, deixando mais espaço para que um
+programa possa funcionar em tela, sem maiores distrações.
+Com  relação  aos  frameworks  de  software,  julgue  os  itens
+subseqüentes.
+	A tecnologia Enterprise JavaBeans (EJB) é uma arquitetura
+de componentes do tipo cliente que atua na plataforma J2EE.
+	O objetivo do framework Hibernate é facilitar a integração
+entre os modelos orientados a objeto e os que usam banco de
+dados no modelo relacional. 
+	O Tiles é um componente do framework Struts que facilita
+a organização de leiautes. Apesar de ter sido desenvolvido
+para ser usado junto com o Struts, o Tiles pode também ser
+usado separadamente.
+	Oframework  Struts,  embasado  no  modelo  MVC,  é  uma
+implementação em código aberto e tem sido adotado por
+aplicaçõesweb em Java.
+	O Eclipse é um ambiente de desenvolvimento integrado,
+baseado  em  plug-insdiversos, wizards  que  orientam  a
+construção das aplicações e class browsers para visualização
+da estrutura de diretórios e arquivos do projeto.
+	O Plone é executado em Zope, foi escrito em Python e é
+usado como SGBD para portais de informação.
+		O GTK é orientado a objetos e foi escrito em Java para a
+criação de interfaces gráficas e widgets.
+
+
+O QT, um framework opensource para a programação de
+interfaces  gráficas,  foi  desenvolvido  em  C++  e  contém
+bibliotecas para facilitar a programação.
+Ainda com relação às linguagens, julgue os próximos itens.
+
+UML (universal modelling language) é uma linguagem de
+modelagem  proprietária  que  pode  ser  utilizada  no
+desenvolvimento  de  sistemas  de  maneira  intuitiva  para
+visualização de objetos.
+
+A  modelagem  de  processos  burocráticos,  ou  BPM,  é
+utilizada  para  estruturar  e  reconhecer  os  processos  e
+atividades em uma organização para que se possa melhorar
+e alinhar esses processos, otimizando-os e tornando-os mais
+eficientes, sem burocracia.
+
+A modelagem lógica de banco de dados tem como base a
+construção de um diagrama de entidade e relacionamento.
+
+LDD e LDM são linguagens usadas para definir esquemas e
+formas de manipulação de dados.
+
+PL/SQL  e  PL/Pgsql  não  são  linguagens  procedurais
+embarcadas.
+Com referência às áreas da engenharia de software, julgue os
+itens que seguem.
+
+O Swebok é um documento de referência em engenharia de
+software, organizado pelo IEEE e pela ACM, contendo um
+conjunto  de  conhecimentos  dividido  em  5  áreas  e  suas
+respectivas 6 subáreas. 
+
+O  gerenciamento  de  requisitos  inclui,  entre  outras,  as
+seguintes atividades: levantar, analisar, especificar, validar
+e prototipar requisitos funcionais e não-funcionais.
+
+O levantamento de requisitos é importante, porém não é
+fundamental, pois recomenda-se avançar o quanto antes para
+as  demais  atividades  que  permitam  uma  visualização  do
+software  e  reduzam  a  ansiedade  do  cliente  em  ver  algo
+pronto.
+
+	Na gestão de configuração de software, a manutenção pode
+ser  feita  de  maneira  proativa,  reativa,  preventiva  ou
+corretiva.
+
+Na área de projeto de software, também conhecida como
+design de software,  o software começa a ser implementado
+e validado pelos programadores.
+Com relação aos padrões de projeto, julgue os itens seguintes.
+O Singleton é um padrão que garante que uma classe tenha
+apenas uma instância.
+Alguns padrões de criação como o Prototype, o Proxy e o
+Façade não são adequados para a programação orientada a
+objetos.
+No polimorfismo, que é um tipo de padrão GRASP, um
+mesmo método pode apresentar várias formas.
+Expert é um padrão que apresenta uma interface para várias
+funcionalidades  de  uma  API  de  maneira  simples  e  fácil
+de usar.
+Adapter é um padrão estrutural utilizado para compatibilizar
+interfaces de modo que elas possam interagir.
+No  que  concerne  a  tópicos  avançados,  julgue  os  itens
+subseqüentes.
+Uma arquitetura de software orientada a serviços tem como
+característica  básica  livrar-se  das  funcionalidades
+implementadas pelas aplicações e revertê-las em serviços,
+via barramento de serviços em uma computação distribuída.
+Software de inteligência empresarial, como mineração de
+dados,  CRM  e  datawharehouse,  por  exemplo,  aplicam
+métodos de inteligência artificial e robótica avançados para
+a representação e extração da informação em grandes bases
+de dados.
+O modelo de computação em grade tem como objetivo a
+obtenção de alto desempenho de processamento distribuído
+entre diversas máquinas geograficamente próximas ou não.
+	A ISO/IEC 26300 define o esquema XML e sua semântica
+para aplicativos do padrão ODF (open document format).
+
+A  ISO/IEC  32000  representa  um  avanço  em  relação  à
+interoperabilidade  de  ambientes  digitais,  pois  especifica
+detalhes operacionais e técnicos de conversão para PDF, ou
+seja, a maneira como documentos devem ser representados
+eletronicamente para que se possa compartilhar e visualizar
+documentos em qualquer ambiente digital.
+www.pciconcursos.com.br
