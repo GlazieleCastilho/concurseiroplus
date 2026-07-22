@@ -177,22 +177,53 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
   return questoes;
 }
 
-const MAX_REASONABLE_ENUNCIADO_LENGTH = 3000;
+// Teto absoluto: nenhuma questao legitima (nem estilo ENEM com texto de apoio longo
+// embutido no proprio enunciado) deveria passar disso. Only usado como ultimo recurso,
+// independente da contagem de alternativas.
+const HARD_MAX_ENUNCIADO_LENGTH = 8000;
+
+// Teto "suspeito": sozinho nao significa nada (questoes de concurso/ENEM com texto de
+// apoio longo passam disso com frequencia) - so vira sinal de mesclagem quando combinado
+// com uma contagem de alternativas fora do normal (ver isSuspiciousAlternativaCount).
+const SUSPICIOUS_ENUNCIADO_LENGTH = 2500;
+
+// Tamanho medio de questao usado so pra estimar quantas questoes um texto desse tamanho
+// deveria render, na checagem de "poucas questoes pra um texto grande". Independente do
+// teto por questao acima, pra nao afrouxar essa checagem quando o teto for ajustado.
+const TYPICAL_QUESTAO_LENGTH_FOR_COVERAGE_CHECK = 2500;
+
+function isSuspiciousAlternativaCount(count: number): boolean {
+  // 0-1 alternativa: parser nao achou o bloco de alternativas (ou achou so uma).
+  // >6: bate no maximo do schema - normalmente sinal de duas questoes "(A)...(E)"
+  // coladas uma na outra.
+  return count === 0 || count === 1 || count > 6;
+}
 
 /**
  * Alguns layouts de PDF (ex.: bancas que nao quebram linha entre o numero do item e o
  * enunciado, ou que escrevem as alternativas "(A) ... (B) ..." dentro do mesmo paragrafo)
  * fazem o parser por linha engolir varios itens dentro de um so bloco. O resultado passa
  * a ter poucas questoes com enunciados anormalmente longos, em vez de falhar. Detectamos
- * esse padrao aqui para recusar o rascunho em vez de devolver lixo como se fosse valido.
+ * esse padrao aqui para recusar o rascunho em vez de devolver lixo como se fosse valido —
+ * mas so quando o tamanho vem acompanhado de uma contagem de alternativas estranha, pra
+ * nao recusar questoes genuinamente longas (textos de apoio embutidos, comuns em ENEM e
+ * concursos) que tem uma quantidade normal de alternativas.
  */
 export function detectParsingAnomaly(rawText: string, questoes: QuestaoDraft[]): string | null {
-  const oversized = questoes.find((questao) => questao.enunciado.length > MAX_REASONABLE_ENUNCIADO_LENGTH);
-  if (oversized) {
-    return `A questão ${oversized.numero} ficou com ${oversized.enunciado.length} caracteres, o que indica que o parser não conseguiu separar os itens corretamente neste PDF (provavelmente o layout não quebra linha entre o número do item e o texto, ou as alternativas estão escritas em formato "(A) ... (B) ..." dentro do parágrafo). Use CSV/JSON ou cadastre manualmente.`;
+  const hardOversized = questoes.find((questao) => questao.enunciado.length > HARD_MAX_ENUNCIADO_LENGTH);
+  if (hardOversized) {
+    return `A questão ${hardOversized.numero} ficou com ${hardOversized.enunciado.length} caracteres, muito acima do que qualquer questão real costuma ter — mesmo com texto de apoio longo. Isso indica que o parser não conseguiu separar os itens corretamente neste PDF. Use CSV/JSON ou cadastre manualmente.`;
   }
+
+  const suspicious = questoes.find(
+    (questao) => questao.enunciado.length > SUSPICIOUS_ENUNCIADO_LENGTH && isSuspiciousAlternativaCount(questao.alternativas.length)
+  );
+  if (suspicious) {
+    return `A questão ${suspicious.numero} ficou com ${suspicious.enunciado.length} caracteres e ${suspicious.alternativas.length} alternativa(s) — essa combinação sugere que duas ou mais questões foram mescladas por engano neste PDF (provavelmente o layout não quebra linha entre o número do item e o texto, ou as alternativas estão escritas em formato "(A) ... (B) ..." dentro do parágrafo). Use CSV/JSON ou cadastre manualmente.`;
+  }
+
   const meaningfulLength = rawText.replace(/\s+/g, " ").trim().length;
-  const expectedMinQuestoes = Math.floor(meaningfulLength / (MAX_REASONABLE_ENUNCIADO_LENGTH * 3));
+  const expectedMinQuestoes = Math.floor(meaningfulLength / (TYPICAL_QUESTAO_LENGTH_FOR_COVERAGE_CHECK * 3));
   if (expectedMinQuestoes > 0 && questoes.length > 0 && questoes.length < expectedMinQuestoes) {
     return `Foram identificadas apenas ${questoes.length} questão(ões) para um texto de ${meaningfulLength} caracteres, bem menos do que o esperado. O parser provavelmente não conseguiu segmentar os itens neste layout de PDF. Use CSV/JSON ou cadastre manualmente.`;
   }
