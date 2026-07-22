@@ -19,3 +19,6 @@ src/generated/prisma/
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+# graphify knowledge-graph output (local tooling artifact)
+graphify-out/

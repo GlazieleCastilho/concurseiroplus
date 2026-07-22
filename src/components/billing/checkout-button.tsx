@@ -26,5 +26,5 @@ export function CheckoutButton({ tier, cycle }: { tier: PlanTier; cycle: Billing
     }
   }
 
-  return <Button onClick={checkout} disabled={loading} className="w-full">{loading ? "Abrindo checkout..." : "Assinar com AbacatePay"}</Button>;
+  return <Button onClick={checkout} disabled={loading} className="w-full">{loading ? "Abrindo checkout..." : "Assinar com Pagar.me"}</Button>;
 }
