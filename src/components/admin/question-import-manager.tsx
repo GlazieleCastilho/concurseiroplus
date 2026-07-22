@@ -34,11 +34,42 @@ function safeCountFromJson(text: string): { provas: number; questoes: number } {
   }
 }
 
+function parseGabaritoInput(text: string): Map<number, string> {
+  const map = new Map<number, string>();
+  const regex = /(\d+)\s*[-:.)]\s*([A-Za-z])/g;
+  for (const match of text.matchAll(regex)) {
+    map.set(Number(match[1]), match[2].toUpperCase());
+  }
+  return map;
+}
+
+function applyGabaritoToDraft(draftText: string, gabarito: Map<number, string>): { text: string; applied: number; notFound: number[] } {
+  const draft = JSON.parse(draftText) as { provas?: Array<{ questoes?: Array<{ numero: number; alternativas?: Array<{ letra: string; correta: boolean }> }> }> };
+  let applied = 0;
+  const notFound: number[] = [];
+  for (const prova of draft.provas ?? []) {
+    for (const questao of prova.questoes ?? []) {
+      const letra = gabarito.get(questao.numero);
+      if (!letra) continue;
+      const alternativa = (questao.alternativas ?? []).find((alt) => alt.letra.toUpperCase() === letra);
+      if (!alternativa) {
+        notFound.push(questao.numero);
+        continue;
+      }
+      for (const alt of questao.alternativas ?? []) alt.correta = false;
+      alternativa.correta = true;
+      applied += 1;
+    }
+  }
+  return { text: JSON.stringify(draft, null, 2), applied, notFound };
+}
+
 export function QuestionImportManager() {
   const router = useRouter();
   const [previewLoading, setPreviewLoading] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [editableJson, setEditableJson] = useState("");
+  const [gabaritoInput, setGabaritoInput] = useState("");
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
   const [results, setResults] = useState<ConfirmResult[] | null>(null);
   const [pdfHints, setPdfHints] = useState({ banca: "", orgao: "", cargo: "", ano: "", provaVersao: "" });
@@ -93,7 +124,10 @@ export function QuestionImportManager() {
         body: JSON.stringify(parsed),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "Erro ao importar questoes");
+      if (!response.ok) {
+        const detail = Array.isArray(data.errors) && data.errors.length > 0 ? `: ${data.errors.join("; ")}` : "";
+        throw new Error((data.error ?? "Erro ao importar questoes") + detail);
+      }
       setResults(data.results);
       toast.success(`Importado: ${data.results.length} prova(s) salvas no banco.`);
       router.refresh();
@@ -101,6 +135,25 @@ export function QuestionImportManager() {
       toast.error(error instanceof Error ? error.message : "Erro ao importar questoes");
     } finally {
       setConfirmLoading(false);
+    }
+  }
+
+  function applyGabarito() {
+    const gabarito = parseGabaritoInput(gabaritoInput);
+    if (gabarito.size === 0) {
+      toast.error("Nao entendi o gabarito. Use o formato \"1-A, 2-C, 3-E\".");
+      return;
+    }
+    try {
+      const { text, applied, notFound } = applyGabaritoToDraft(editableJson, gabarito);
+      setEditableJson(text);
+      if (notFound.length > 0) {
+        toast.warning(`Gabarito aplicado em ${applied} questao(oes). Nao encontrei alternativa para a(s) questao(oes): ${notFound.join(", ")}.`);
+      } else {
+        toast.success(`Gabarito aplicado em ${applied} questao(oes).`);
+      }
+    } catch {
+      toast.error("O rascunho atual esta com JSON invalido, corrija antes de aplicar o gabarito.");
     }
   }
 
@@ -237,6 +290,21 @@ export function QuestionImportManager() {
                 {preview.errors.map((error) => <li key={error}>{error}</li>)}
               </ul>
             )}
+            <div className="space-y-2 rounded-md border p-3">
+              <Label htmlFor="gabarito-manual">Inserir gabarito manualmente</Label>
+              <p className="text-xs text-muted-foreground">
+                Formato: numero da questao + letra da alternativa correta (A-E, ou C/E para Certo/Errado). Ex:{" "}
+                <code>1-A, 2-C, 3-E, 4-D</code>
+              </p>
+              <Textarea
+                id="gabarito-manual"
+                value={gabaritoInput}
+                onChange={(event) => setGabaritoInput(event.target.value)}
+                placeholder="1-A, 2-C, 3-E, 4-D, 5-B..."
+                className="min-h-[80px] font-mono text-xs"
+              />
+              <Button type="button" variant="secondary" onClick={applyGabarito}>Aplicar gabarito ao rascunho</Button>
+            </div>
             <Label>Rascunho (edite se necessario, especialmente gabaritos)</Label>
             <Textarea
               value={editableJson}
