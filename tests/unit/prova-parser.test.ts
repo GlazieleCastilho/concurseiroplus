@@ -3,6 +3,10 @@
  * REAL extraido (via pdf-parse) dos PDFs oficiais ja validados em producao:
  *  - FGV/TJRS 2025 - Analista do Poder Judiciario, Area Administrativa (80 questoes A-E)
  *  - CEBRASPE/PRF 2021 - Policial Rodoviario Federal (120 itens certo/errado)
+ *  - CEBRASPE/PRF 2019 - Policial Rodoviario Federal (120 itens, com textos de apoio que
+ *    trazem numeracao de linha na margem - regressao real: essa numeracao de margem era
+ *    interpretada como item novo, corrompendo item 34 (11996 chars mesclados) e perdendo
+ *    33 itens (1-33) inteiros; itens 24/25/26 nao tem texto proprio, so uma figura)
  * Qualquer mudanca de regex/heuristica que quebre um layout ja suportado falha aqui,
  * em vez de regredir silenciosamente em producao (ja aconteceu uma vez: um commit de
  * correcao ficou orfao num branch mergeado e o parser voltou a perder alternativas V/F).
@@ -28,6 +32,7 @@ const fgvProva = fixture("fgv-prova.txt");
 const fgvGabarito = fixture("fgv-gabarito.txt");
 const cebraspeProva = fixture("cebraspe-prova.txt");
 const cebraspeGabarito = fixture("cebraspe-gabarito.txt");
+const prf2019Prova = fixture("prf2019-prova.txt");
 
 describe("parseProvaText - FGV/TJRS (numero sozinho na linha, alternativas '(A) texto')", () => {
   const questoes = parseProvaText(fgvProva);
@@ -74,6 +79,40 @@ describe("parseProvaText - CEBRASPE/PRF (numero + texto na mesma linha, certo/er
     expect(questoes).toHaveLength(120);
     expect(questoes.every((questao) => questao.tipo === "CERTO_ERRADO")).toBe(true);
     expect(questoes.every((questao) => questao.alternativas.map((alt) => alt.letra).join("") === "CE")).toBe(true);
+  });
+});
+
+describe("parseProvaText - CEBRASPE/PRF 2019 (textos de apoio com numeracao de linha na margem)", () => {
+  const questoes = parseProvaText(prf2019Prova);
+
+  it("encontra os 120 itens (nao perde os que ficam atras de anotacao de linha na margem)", () => {
+    expect(questoes).toHaveLength(120);
+    expect(questoes.map((questao) => questao.numero)).toEqual(Array.from({ length: 120 }, (_, i) => i + 1));
+  });
+
+  it("nao mescla o item 34 com o texto de apoio que vem antes dele (bug original: 11996 chars)", () => {
+    const questao34 = questoes.find((item) => item.numero === 34)!;
+    expect(questao34.enunciado.length).toBeLessThan(2000);
+    expect(questao34.enunciado).toContain("software as a service");
+  });
+
+  it("recupera itens 1-33, que ficavam presos atras da anotacao de margem (bug original: item ausente)", () => {
+    const questao1 = questoes.find((item) => item.numero === 1)!;
+    expect(questao1.enunciado).toContain("viceja");
+    const questao23 = questoes.find((item) => item.numero === 23)!;
+    expect(questao23.enunciado.length).toBeLessThan(1000);
+  });
+
+  it("itens so-figura (24, 25) sem texto proprio entram com placeholder em vez de sumir", () => {
+    for (const numero of [24, 25]) {
+      const questao = questoes.find((item) => item.numero === numero)!;
+      expect(questao, `item ${numero}`).toBeDefined();
+      expect(questao.enunciado).toContain("Sem texto extraído");
+    }
+  });
+
+  it("nao dispara falso alarme de anomalia", () => {
+    expect(detectParsingAnomaly(prf2019Prova, questoes)).toBeNull();
   });
 });
 
