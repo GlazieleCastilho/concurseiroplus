@@ -1,7 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 
 const BUCKET = "question-images";
-let bucketEnsured = false;
+// Promise compartilhada em vez de um boolean: um import de PDF sobe varias imagens em
+// paralelo (Promise.all), e cada uma chama ensureBucket() - sem isso, todas veem
+// "bucket nao existe" ao mesmo tempo e correm pra criar, e so a primeira ganha.
+let ensureBucketPromise: Promise<void> | null = null;
 
 function getServiceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -12,13 +15,28 @@ function getServiceClient() {
   return createClient(url, serviceRoleKey, { auth: { persistSession: false } });
 }
 
-async function ensureBucket(client: ReturnType<typeof getServiceClient>) {
-  if (bucketEnsured) return;
+async function createBucketIfMissing(client: ReturnType<typeof getServiceClient>) {
   const { data } = await client.storage.getBucket(BUCKET);
-  if (!data) {
-    await client.storage.createBucket(BUCKET, { public: true, fileSizeLimit: "5MB" });
+  if (data) return;
+
+  const { error } = await client.storage.createBucket(BUCKET, { public: true, fileSizeLimit: "5MB" });
+  // "already exists": outra invocacao serverless concorrente criou o bucket entre o
+  // getBucket() acima e este createBucket() - resultado esperado sob concorrencia entre
+  // instancias diferentes (o cache em memoria acima so protege dentro da mesma
+  // instancia), nao um erro de verdade.
+  if (error && !/already exists/i.test(error.message)) {
+    throw new Error(`Falha ao criar bucket do Supabase Storage: ${error.message}`);
   }
-  bucketEnsured = true;
+}
+
+function ensureBucket(client: ReturnType<typeof getServiceClient>): Promise<void> {
+  if (!ensureBucketPromise) {
+    ensureBucketPromise = createBucketIfMissing(client).catch((error: unknown) => {
+      ensureBucketPromise = null; // permite tentar de novo numa proxima chamada
+      throw error;
+    });
+  }
+  return ensureBucketPromise;
 }
 
 /** Sobe uma imagem (bytes) pro bucket publico do Supabase Storage e retorna a URL publica. */
