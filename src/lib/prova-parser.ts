@@ -97,11 +97,65 @@ function findSectionTitleLines(lines: string[]): Set<string> {
   return titles;
 }
 
+/**
+ * Alguns textos de apoio do CEBRASPE trazem numeros de linha na margem (ex.: "1", "4",
+ * "7", "10"... a cada 3 linhas, pra permitir que questoes referenciem "a linha 15 do
+ * texto"). O pdf-parse extrai essa coluna de margem separada do texto principal, entao
+ * esses numeros aparecem sozinhos em sequencia, isolados por linhas em branco - sem
+ * nenhum conteudo real entre um e outro. Isso bate com o padrao de ITEM_START_ALONE e
+ * faz o parser tratar cada numero de linha como se fosse um item novo, corrompendo a
+ * contagem (o item real de mesmo numero, mais tarde, deixa de conseguir abrir um bloco
+ * novo porque "numero > lastNumero" ja falhou). Uma sequencia de 4+ numeros isolados
+ * (sem nada real entre eles) com passo constante (ex.: sempre +3) e tratada como
+ * anotacao de margem, nao item de verdade - diferente de um item real "sozinho na
+ * linha" (formato FGV), que sempre e seguido de conteudo de verdade, nao de mais um
+ * numero isolado.
+ *
+ * Retorna INDICES no array de linhas, nao o texto: um documento de 120 itens
+ * inevitavelmente repete valores pequenos como "24" ou "25" como numero de item de
+ * verdade em outro ponto do mesmo PDF, entao filtrar por conteudo de string apagaria
+ * itens reais por coincidencia. Cada ocorrencia so pode ser avaliada pela posicao em
+ * que apareceu.
+ */
+function findLineNumberAnnotationIndices(lines: string[]): Set<number> {
+  const annotationIndices = new Set<number>();
+  let run: Array<{ numero: number; index: number }> = [];
+
+  function flushRun() {
+    if (run.length >= 4) {
+      const steps = new Set<number>();
+      for (let i = 1; i < run.length; i += 1) steps.add(run[i].numero - run[i - 1].numero);
+      if (steps.size === 1) {
+        for (const item of run) annotationIndices.add(item.index);
+      }
+    }
+    run = [];
+  }
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i].trim();
+    if (!line) continue; // linha em branco nao quebra a sequencia isolada
+    const match = ITEM_START_ALONE.exec(line);
+    if (match) {
+      run.push({ numero: Number(match[1]), index: i });
+    } else {
+      flushRun(); // qualquer conteudo real entre dois numeros quebra a sequencia
+    }
+  }
+  flushRun();
+
+  return annotationIndices;
+}
+
 export function parseProvaText(rawText: string): QuestaoDraft[] {
   const lines = rawText.split(/\r?\n/).map((line) => line.trimEnd());
   const repeatedHeaders = findRepeatedHeaderLines(lines);
   const trailingCredits = findTrailingCreditsLines(lines);
   const sectionTitles = findSectionTitleLines(lines);
+  // Apaga na origem (por indice, nao por conteudo): um numero pequeno como "24" ou "25"
+  // e reaproveitado como item de verdade em outro ponto do mesmo PDF, entao so a posicao
+  // exata identificada como anotacao de margem pode ser descartada com seguranca.
+  for (const index of findLineNumberAnnotationIndices(lines)) lines[index] = "";
   const questoes: QuestaoDraft[] = [];
   let current: { numero: number; linhas: string[] } | null = null;
   let lastNumero = 0;
@@ -109,11 +163,7 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
   function flush() {
     if (!current) return;
     const blockLines = current.linhas.filter(
-      (line) =>
-        !isNoise(line.trim()) &&
-        !repeatedHeaders.has(line.trim()) &&
-        !trailingCredits.has(line.trim()) &&
-        !sectionTitles.has(line.trim())
+      (line) => !isNoise(line.trim()) && !repeatedHeaders.has(line.trim()) && !trailingCredits.has(line.trim()) && !sectionTitles.has(line.trim())
     );
     const altStartIdx = blockLines.findIndex((line) => ALTERNATIVA_START.test(line.trim()));
     const stemLines = altStartIdx === -1 ? blockLines : blockLines.slice(0, altStartIdx);
@@ -136,9 +186,13 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
       if (letraAtual) alternativas.push({ letra: letraAtual, texto: textoAtual.replace(/\s+/g, " ").trim(), correta: false });
     }
 
-    if (enunciado.length > 0) {
-      questoes.push({ numero: current.numero, tipo: "OBJETIVA", enunciado, alternativas });
-    }
+    // Algumas questoes (comuns em provas com figura) nao tem nenhum texto proprio alem
+    // do comando compartilhado ja consumido pelo item anterior - ex.: "24. [julgue com
+    // base na figura]" sem mais nada. Descartar silenciosamente perderia o item (e o
+    // gabarito dele) sem o admin nem saber que ele existiu. Em vez disso, entra com um
+    // placeholder visivel que aponta pra revisao manual.
+    const enunciadoFinal = enunciado.length > 0 ? enunciado : `[Sem texto extraído — questão baseada em figura/imagem. Revisar o PDF original e completar o enunciado da questão ${current.numero}.]`;
+    questoes.push({ numero: current.numero, tipo: "OBJETIVA", enunciado: enunciadoFinal, alternativas });
   }
 
   for (const rawLine of lines) {
