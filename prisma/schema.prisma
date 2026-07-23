@@ -328,22 +328,27 @@ model WebhookEvent {
 }
 
 model Prova {
-  id            String         @id @default(cuid())
-  titulo        String
-  orgao         String
-  banca         String
-  cargo         String
-  ano           Int
-  nivel         ExamLevel
-  status        ConcursoStatus @default(PREVISTO)
-  disciplina    String?
-  dataProva     DateTime?
-  totalQuestoes Int            @default(0)
-  duracaoMin    Int            @default(240)
-  popularidade  Int            @default(0)
-  s3Key         String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  id              String         @id @default(cuid())
+  titulo          String
+  orgao           String
+  banca           String
+  cargo           String
+  ano             Int
+  nivel           ExamLevel
+  status          ConcursoStatus @default(PREVISTO)
+  disciplina      String?
+  dataProva       DateTime?
+  inscricaoInicio DateTime?
+  inscricaoFim    DateTime?
+  vagas           Int?
+  salario         String?
+  editalUrl       String?
+  totalQuestoes   Int            @default(0)
+  duracaoMin      Int            @default(240)
+  popularidade    Int            @default(0)
+  s3Key           String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   questoes    Questao[]
   simulados   Simulado[]

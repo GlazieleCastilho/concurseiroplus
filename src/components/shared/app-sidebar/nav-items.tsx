@@ -25,6 +25,7 @@ import {
     MessageCircleHeart,
     ChartLine,
     House,
+    Landmark,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -110,6 +111,11 @@ export const NavItems =() => {
             label:"Gerenciar Questoes",
             path: "/admin/questions",
             icon: BookOpen,
+        },
+        {
+            label:"Gerenciar Concursos",
+            path: "/admin/concursos",
+            icon: Landmark,
         },
         {
             label: "Gerenciar Usuarios",

@@ -11,6 +11,11 @@ export type ProvaInput = {
   status?: ConcursoStatus;
   disciplina?: string;
   dataProva?: Date;
+  inscricaoInicio?: Date;
+  inscricaoFim?: Date;
+  vagas?: number;
+  salario?: string;
+  editalUrl?: string;
   duracaoMin?: number;
 };
 
