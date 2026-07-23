@@ -1,7 +1,10 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { playAlarmSound, unlockAlarmAudio } from "@/lib/alarm-sound";
 
 type Fase = "foco" | "pausa_curta" | "pausa_longa";
+
+type Posicao = { x: number; y: number };
 
 const FASE_TO_TIPO: Record<Fase, "FOCO" | "PAUSA_CURTA" | "PAUSA_LONGA"> = {
   foco: "FOCO",
@@ -25,7 +28,11 @@ type PomodoroState = {
   config: Config;
   plannerTaskId: string | null;
   faseIniciadaEm: number | null;
+  posicao: Posicao | null;
+  minimizado: boolean;
   setPlannerTaskId: (id: string | null) => void;
+  setPosicao: (posicao: Posicao) => void;
+  setMinimizado: (minimizado: boolean) => void;
   iniciar: () => void;
   pausar: () => void;
   resetar: () => void;
@@ -65,8 +72,15 @@ export const usePomodoroStore = create<PomodoroState>()(
       config: { focoMin: 25, pausaCurtaMin: 5, pausaLongaMin: 15, ciclosAteLonga: 4, autoAvancar: false },
       plannerTaskId: null,
       faseIniciadaEm: null,
+      posicao: null,
+      minimizado: true,
       setPlannerTaskId: (id) => set({ plannerTaskId: id }),
-      iniciar: () => set((state) => ({ ativo: true, faseIniciadaEm: state.faseIniciadaEm ?? Date.now() })),
+      setPosicao: (posicao) => set({ posicao }),
+      setMinimizado: (minimizado) => set({ minimizado }),
+      iniciar: () => {
+        unlockAlarmAudio();
+        set((state) => ({ ativo: true, faseIniciadaEm: state.faseIniciadaEm ?? Date.now() }));
+      },
       pausar: () => set({ ativo: false }),
       resetar: () =>
         set((state) => {
@@ -76,6 +90,7 @@ export const usePomodoroStore = create<PomodoroState>()(
       pular: (completadoNaturalmente = false) =>
         set((state) => {
           if (state.faseIniciadaEm) registrarSessao(state, completadoNaturalmente);
+          if (completadoNaturalmente) playAlarmSound();
           const ciclos = state.fase === "foco" ? state.ciclosFeitos + 1 : state.ciclosFeitos;
           const fase: Fase = state.fase !== "foco" ? "foco" : ciclos % state.config.ciclosAteLonga === 0 ? "pausa_longa" : "pausa_curta";
           const ativo = state.config.autoAvancar;

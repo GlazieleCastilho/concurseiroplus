@@ -7,6 +7,7 @@ import { AppSidebar } from "@/components/shared/app-sidebar";
 import { SearchInput } from "@/components/shared/Search-input";
 import { Button } from "@/components/ui/button";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { PomodoroFloating } from "@/components/pomodoro/pomodoro-floating";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user } = useUser();
@@ -32,6 +33,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </header>
         <div className="flex flex-1 flex-col gap-6 overflow-auto p-4 sm:p-6">{children}</div>
       </SidebarInset>
+      {user && <PomodoroFloating />}
     </SidebarProvider>
   );
 }
