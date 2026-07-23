@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type { Difficulty, ExamLevel, QuestionType } from "@/generated/prisma";
+import type { ConcursoStatus, Difficulty, ExamLevel, QuestionType } from "@/generated/prisma";
 
 export type ProvaInput = {
   titulo: string;
@@ -8,6 +8,7 @@ export type ProvaInput = {
   cargo: string;
   ano: number;
   nivel: ExamLevel;
+  status?: ConcursoStatus;
   disciplina?: string;
   dataProva?: Date;
   duracaoMin?: number;

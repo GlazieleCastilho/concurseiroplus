@@ -71,6 +71,7 @@ export const simuladoAnswerSchema = z.object({
 });
 
 export const examLevelSchema = z.enum(["FUNDAMENTAL", "MEDIO", "SUPERIOR"]);
+export const concursoStatusSchema = z.enum(["PREVISTO", "ABERTO", "EM_ANDAMENTO", "FECHADO"]);
 export const questionTypeSchema = z.enum(["OBJETIVA", "CERTO_ERRADO", "DISSERTATIVA"]);
 export const difficultySchema = z.enum(["EASY", "MEDIUM", "HARD"]);
 
@@ -81,6 +82,7 @@ export const provaSchema = z.object({
   cargo: z.string().min(2).max(160),
   ano: z.coerce.number().int().min(1990).max(2100),
   nivel: examLevelSchema.default("SUPERIOR"),
+  status: concursoStatusSchema.default("PREVISTO"),
   disciplina: z.string().max(120).optional(),
   dataProva: z.coerce.date().optional(),
   duracaoMin: z.coerce.number().int().min(30).max(600).default(240),
