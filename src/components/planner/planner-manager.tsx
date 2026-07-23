@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -40,26 +41,12 @@ const emptyForm: TaskFormState = {
   dueAt: "",
 };
 
-const STATUS_LABELS: Record<PlannerStatus, string> = {
-  TODO: "A fazer",
-  DOING: "Fazendo",
-  DONE: "Concluida",
-  CANCELED: "Cancelada",
-};
-
-const STATUS_BADGE_CLASS: Record<PlannerStatus, string> = {
-  TODO: "bg-muted text-muted-foreground",
-  DOING: "bg-yellow-500/15 text-yellow-500",
-  DONE: "bg-green-500/15 text-green-500",
-  CANCELED: "bg-red-500/15 text-red-500",
-};
-
-const NEXT_STATUS: Record<PlannerStatus, PlannerStatus> = {
-  TODO: "DOING",
-  DOING: "DONE",
-  DONE: "TODO",
-  CANCELED: "TODO",
-};
+const COLUMNS: { status: PlannerStatus; label: string; accent: string }[] = [
+  { status: "TODO", label: "A fazer", accent: "border-t-muted-foreground" },
+  { status: "DOING", label: "Fazendo", accent: "border-t-yellow-500" },
+  { status: "DONE", label: "Concluida", accent: "border-t-green-500" },
+  { status: "CANCELED", label: "Cancelada", accent: "border-t-red-500" },
+];
 
 function toDateInputValue(date: Date | null | undefined): string {
   if (!date) return "";
@@ -74,9 +61,9 @@ export function PlannerManager({ initialTasks }: { initialTasks: PlannerTask[] }
   const [form, setForm] = useState<TaskFormState>(emptyForm);
   const [saving, setSaving] = useState(false);
 
-  function openCreate() {
+  function openCreate(status: PlannerStatus = "TODO") {
     setEditing(null);
-    setForm(emptyForm);
+    setForm({ ...emptyForm, status });
     setOpen(true);
   }
 
@@ -93,6 +80,34 @@ export function PlannerManager({ initialTasks }: { initialTasks: PlannerTask[] }
       dueAt: toDateInputValue(task.dueAt),
     });
     setOpen(true);
+  }
+
+  async function updateStatus(taskId: string, status: PlannerStatus) {
+    const response = await fetch(`/api/planner/${taskId}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error ?? "Erro ao atualizar status");
+    return data.task as PlannerTask;
+  }
+
+  async function handleDragEnd(result: DropResult) {
+    const { destination, source, draggableId } = result;
+    if (!destination) return;
+    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+
+    const novoStatus = destination.droppableId as PlannerStatus;
+    const previous = tasks;
+    setTasks((current) => current.map((task) => (task.id === draggableId ? { ...task, status: novoStatus } : task)));
+    try {
+      const updated = await updateStatus(draggableId, novoStatus);
+      setTasks((current) => current.map((task) => (task.id === updated.id ? updated : task)));
+    } catch (error) {
+      setTasks(previous);
+      toast.error(error instanceof Error ? error.message : "Erro ao mover tarefa");
+    }
   }
 
   async function save() {
@@ -130,22 +145,6 @@ export function PlannerManager({ initialTasks }: { initialTasks: PlannerTask[] }
     }
   }
 
-  async function cycleStatus(task: PlannerTask) {
-    const nextStatus = NEXT_STATUS[task.status];
-    try {
-      const response = await fetch(`/api/planner/${task.id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ status: nextStatus }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "Erro ao atualizar status");
-      setTasks((current) => current.map((item) => (item.id === task.id ? data.task : item)));
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao atualizar status");
-    }
-  }
-
   async function remove(task: PlannerTask) {
     if (!confirm(`Excluir a tarefa "${task.title}"?`)) return;
     try {
@@ -161,102 +160,127 @@ export function PlannerManager({ initialTasks }: { initialTasks: PlannerTask[] }
 
   return (
     <div className="space-y-3">
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <Button onClick={openCreate}>+ Nova tarefa</Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editing ? "Editar tarefa" : "Nova tarefa"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <Label>Titulo</Label>
-              <Input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="Revisar direito constitucional" />
+      <div className="flex justify-end">
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={() => openCreate()}>+ Nova tarefa</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{editing ? "Editar tarefa" : "Nova tarefa"}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label>Titulo</Label>
+                <Input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="Revisar direito constitucional" />
+              </div>
+              <div className="space-y-1">
+                <Label>Descricao</Label>
+                <Textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} />
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label>Disciplina</Label>
+                  <Input value={form.discipline} onChange={(event) => setForm({ ...form, discipline: event.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <Label>Meta</Label>
+                  <Input value={form.goal} onChange={(event) => setForm({ ...form, goal: event.target.value })} placeholder="2 capitulos" />
+                </div>
+                <div className="space-y-1">
+                  <Label>Status</Label>
+                  <Select value={form.status} onValueChange={(value) => setForm({ ...form, status: value as PlannerStatus })}>
+                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {COLUMNS.map((column) => (
+                        <SelectItem key={column.status} value={column.status}>{column.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Recorrencia</Label>
+                  <Select value={form.recurrence} onValueChange={(value) => setForm({ ...form, recurrence: value as PlannerRecurrence })}>
+                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="NONE">Nenhuma</SelectItem>
+                      <SelectItem value="DAILY">Diaria</SelectItem>
+                      <SelectItem value="WEEKLY">Semanal</SelectItem>
+                      <SelectItem value="MONTHLY">Mensal</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Inicio</Label>
+                  <Input type="date" value={form.startsAt} onChange={(event) => setForm({ ...form, startsAt: event.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <Label>Prazo</Label>
+                  <Input type="date" value={form.dueAt} onChange={(event) => setForm({ ...form, dueAt: event.target.value })} />
+                </div>
+              </div>
             </div>
-            <div className="space-y-1">
-              <Label>Descricao</Label>
-              <Textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} />
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1">
-                <Label>Disciplina</Label>
-                <Input value={form.discipline} onChange={(event) => setForm({ ...form, discipline: event.target.value })} />
-              </div>
-              <div className="space-y-1">
-                <Label>Meta</Label>
-                <Input value={form.goal} onChange={(event) => setForm({ ...form, goal: event.target.value })} placeholder="2 capitulos" />
-              </div>
-              <div className="space-y-1">
-                <Label>Status</Label>
-                <Select value={form.status} onValueChange={(value) => setForm({ ...form, status: value as PlannerStatus })}>
-                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="TODO">A fazer</SelectItem>
-                    <SelectItem value="DOING">Fazendo</SelectItem>
-                    <SelectItem value="DONE">Concluida</SelectItem>
-                    <SelectItem value="CANCELED">Cancelada</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label>Recorrencia</Label>
-                <Select value={form.recurrence} onValueChange={(value) => setForm({ ...form, recurrence: value as PlannerRecurrence })}>
-                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="NONE">Nenhuma</SelectItem>
-                    <SelectItem value="DAILY">Diaria</SelectItem>
-                    <SelectItem value="WEEKLY">Semanal</SelectItem>
-                    <SelectItem value="MONTHLY">Mensal</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label>Inicio</Label>
-                <Input type="date" value={form.startsAt} onChange={(event) => setForm({ ...form, startsAt: event.target.value })} />
-              </div>
-              <div className="space-y-1">
-                <Label>Prazo</Label>
-                <Input type="date" value={form.dueAt} onChange={(event) => setForm({ ...form, dueAt: event.target.value })} />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button onClick={save} disabled={saving || !form.title}>{saving ? "Salvando..." : "Salvar"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+              <Button onClick={save} disabled={saving || !form.title}>{saving ? "Salvando..." : "Salvar"}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
 
-      {tasks.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Nenhuma tarefa cadastrada ainda.</p>
-      ) : (
-        tasks.map((task) => (
-          <div key={task.id} className="rounded-md border border-border p-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <strong>{task.title}</strong>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => cycleStatus(task)}
-                  className={`rounded-full px-2 py-1 text-xs font-medium ${STATUS_BADGE_CLASS[task.status]}`}
-                  title="Clique para mudar o status"
-                >
-                  {STATUS_LABELS[task.status]}
-                </button>
-                <Button size="sm" variant="outline" onClick={() => openEdit(task)}>Editar</Button>
-                <Button size="sm" variant="destructive" onClick={() => remove(task)}>Excluir</Button>
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {COLUMNS.map((column) => {
+            const columnTasks = tasks.filter((task) => task.status === column.status);
+            return (
+              <div key={column.status} className={`rounded-md border-t-4 bg-muted/20 p-2 ${column.accent}`}>
+                <div className="mb-2 flex items-center justify-between px-1">
+                  <h3 className="text-sm font-semibold">{column.label}</h3>
+                  <span className="text-xs text-muted-foreground">{columnTasks.length}</span>
+                </div>
+                <Droppable droppableId={column.status}>
+                  {(provided) => (
+                    <div ref={provided.innerRef} {...provided.droppableProps} className="min-h-[80px] space-y-2">
+                      {columnTasks.map((task, index) => (
+                        <Draggable key={task.id} draggableId={task.id} index={index}>
+                          {(dragProvided, snapshot) => (
+                            <div
+                              ref={dragProvided.innerRef}
+                              {...dragProvided.draggableProps}
+                              {...dragProvided.dragHandleProps}
+                              className={`rounded-md border border-border bg-card p-3 text-sm shadow-sm ${snapshot.isDragging ? "ring-2 ring-accent" : ""}`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <strong>{task.title}</strong>
+                              </div>
+                              {task.description && <p className="mt-1 line-clamp-3 text-xs text-muted-foreground">{task.description}</p>}
+                              <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                {task.discipline && <span>{task.discipline}</span>}
+                                {task.dueAt && <span>Prazo: {new Date(task.dueAt).toLocaleDateString("pt-BR")}</span>}
+                              </div>
+                              <div className="mt-2 flex justify-end gap-2">
+                                <Button size="sm" variant="outline" onClick={() => openEdit(task)}>Editar</Button>
+                                <Button size="sm" variant="destructive" onClick={() => remove(task)}>Excluir</Button>
+                              </div>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                      {columnTasks.length === 0 && (
+                        <p className="px-1 text-xs text-muted-foreground">Arraste tarefas para ca.</p>
+                      )}
+                    </div>
+                  )}
+                </Droppable>
+                <Button variant="ghost" size="sm" className="mt-2 w-full" onClick={() => openCreate(column.status)}>
+                  + tarefa
+                </Button>
               </div>
-            </div>
-            {task.description && <p className="mt-2 text-sm text-muted-foreground">{task.description}</p>}
-            <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
-              {task.discipline && <span>Disciplina: {task.discipline}</span>}
-              {task.goal && <span>Meta: {task.goal}</span>}
-              {task.dueAt && <span>Prazo: {new Date(task.dueAt).toLocaleDateString("pt-BR")}</span>}
-            </div>
-          </div>
-        ))
-      )}
+            );
+          })}
+        </div>
+      </DragDropContext>
     </div>
   );
 }

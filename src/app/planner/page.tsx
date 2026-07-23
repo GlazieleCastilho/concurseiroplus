@@ -14,14 +14,16 @@ export default async function PlannerPage() {
         <p className="text-sm text-muted-foreground">Calendario, metas, recorrencia e foco</p>
         <h1 className="font-display text-3xl font-bold">Planner</h1>
       </div>
-      <section className="grid gap-4 xl:grid-cols-[1fr_360px]">
+      <section className="grid gap-4">
         <Card>
           <CardHeader><CardTitle>Tarefas</CardTitle></CardHeader>
           <CardContent>
             <PlannerManager initialTasks={tasks} />
           </CardContent>
         </Card>
-        <PomodoroTimer tasks={tasks} />
+        <div className="max-w-md">
+          <PomodoroTimer tasks={tasks} />
+        </div>
       </section>
     </AppShell>
   );
