@@ -7,7 +7,11 @@ import { simuladoStartSchema } from "@/schemas/app-schemas";
 export async function POST(req: Request) {
   try {
     const user = await getCurrentDbUser();
-    const body = simuladoStartSchema.parse(await req.json());
+    const parsed = simuladoStartSchema.safeParse(await req.json());
+    if (!parsed.success) {
+      return NextResponse.json({ error: "provaId invalido" }, { status: 400 });
+    }
+    const body = parsed.data;
     const prova = await prisma.prova.findUnique({
       where: { id: body.provaId },
       include: { questoes: true },

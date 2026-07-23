@@ -60,7 +60,7 @@ export const postSchema = z.object({
 });
 
 export const simuladoStartSchema = z.object({
-  provaId: z.string().cuid(),
+  provaId: z.string().min(1),
 });
 
 export const simuladoAnswerSchema = z.object({
