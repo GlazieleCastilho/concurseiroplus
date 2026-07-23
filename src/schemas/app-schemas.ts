@@ -48,6 +48,15 @@ export const plannerTaskSchema = z.object({
   dueAt: z.coerce.date().optional(),
 });
 
+export const pomodoroSessionSchema = z.object({
+  tipo: z.enum(["FOCO", "PAUSA_CURTA", "PAUSA_LONGA"]),
+  duracaoMin: z.coerce.number().int().min(1).max(180),
+  completado: z.boolean().default(false),
+  startedAt: z.coerce.date(),
+  endedAt: z.coerce.date().optional(),
+  plannerTaskId: z.string().cuid().optional(),
+});
+
 export const supportTicketSchema = z.object({
   subject: z.string().min(5).max(160),
   message: z.string().min(20).max(4000),
