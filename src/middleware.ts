@@ -10,7 +10,7 @@ const isPublicRoute = createRouteMatcher([
   "/sitemap.xml",
 ]);
 
-const isAdminRoute = createRouteMatcher(["/admin(.*)", "/api/admin(.*)"]);
+const isAdminPageRoute = createRouteMatcher(["/admin(.*)"]);
 
 function withSecurityHeaders(response: NextResponse): NextResponse {
   const isDev = process.env.NODE_ENV !== "production";
@@ -41,7 +41,7 @@ function withSecurityHeaders(response: NextResponse): NextResponse {
 }
 
 export default clerkMiddleware(async (auth, req) => {
-  if (isAdminRoute(req)) {
+  if (isAdminPageRoute(req)) {
     const { sessionClaims } = await auth();
     const role = sessionClaims?.metadata?.role;
     if (role !== "admin" && role !== "super_admin") {
