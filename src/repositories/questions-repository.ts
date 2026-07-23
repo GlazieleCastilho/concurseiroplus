@@ -145,45 +145,48 @@ export async function bulkImportProvas(provas: ProvaImportInput[]) {
     const { questoes, textosApoio = [], ...provaData } = provaInput;
     const id = provaSlug(provaData);
 
-    const result = await prisma.$transaction(async (tx) => {
-      const prova = await tx.prova.upsert({
-        where: { id },
-        update: provaData,
-        create: { id, ...provaData },
-      });
-
-      const textoApoioIdByChave = new Map<string, string>();
-      for (const texto of textosApoio) {
-        const registro = await tx.textoApoio.upsert({
-          where: { provaId_chave: { provaId: prova.id, chave: texto.chave } },
-          update: { titulo: texto.titulo, conteudo: texto.conteudo },
-          create: { provaId: prova.id, chave: texto.chave, titulo: texto.titulo, conteudo: texto.conteudo },
+    const result = await prisma.$transaction(
+      async (tx) => {
+        const prova = await tx.prova.upsert({
+          where: { id },
+          update: provaData,
+          create: { id, ...provaData },
         });
-        textoApoioIdByChave.set(texto.chave, registro.id);
-      }
 
-      for (const questao of questoes) {
-        const data = {
-          tipo: questao.tipo,
-          enunciado: questao.enunciado,
-          imagemUrl: questao.imagemUrl,
-          disciplina: questao.disciplina,
-          assunto: questao.assunto,
-          dificuldade: questao.dificuldade,
-          gabarito: resolveGabarito(questao.alternativas, questao.gabarito),
-          comentario: questao.comentario,
-          textoApoioId: questao.textoApoioChave ? textoApoioIdByChave.get(questao.textoApoioChave) : undefined,
-        };
-        await tx.questao.upsert({
-          where: { provaId_numero: { provaId: prova.id, numero: questao.numero } },
-          update: { ...data, alternativas: { deleteMany: {}, create: questao.alternativas } },
-          create: { ...data, provaId: prova.id, numero: questao.numero, alternativas: { create: questao.alternativas } },
-        });
-      }
+        const textoApoioIdByChave = new Map<string, string>();
+        for (const texto of textosApoio) {
+          const registro = await tx.textoApoio.upsert({
+            where: { provaId_chave: { provaId: prova.id, chave: texto.chave } },
+            update: { titulo: texto.titulo, conteudo: texto.conteudo },
+            create: { provaId: prova.id, chave: texto.chave, titulo: texto.titulo, conteudo: texto.conteudo },
+          });
+          textoApoioIdByChave.set(texto.chave, registro.id);
+        }
 
-      await tx.prova.update({ where: { id: prova.id }, data: { totalQuestoes: questoes.length } });
-      return { provaId: prova.id, titulo: prova.titulo, questoesCriadas: questoes.length };
-    });
+        for (const questao of questoes) {
+          const data = {
+            tipo: questao.tipo,
+            enunciado: questao.enunciado,
+            imagemUrl: questao.imagemUrl,
+            disciplina: questao.disciplina,
+            assunto: questao.assunto,
+            dificuldade: questao.dificuldade,
+            gabarito: resolveGabarito(questao.alternativas, questao.gabarito),
+            comentario: questao.comentario,
+            textoApoioId: questao.textoApoioChave ? textoApoioIdByChave.get(questao.textoApoioChave) : undefined,
+          };
+          await tx.questao.upsert({
+            where: { provaId_numero: { provaId: prova.id, numero: questao.numero } },
+            update: { ...data, alternativas: { deleteMany: {}, create: questao.alternativas } },
+            create: { ...data, provaId: prova.id, numero: questao.numero, alternativas: { create: questao.alternativas } },
+          });
+        }
+
+        await tx.prova.update({ where: { id: prova.id }, data: { totalQuestoes: questoes.length } });
+        return { provaId: prova.id, titulo: prova.titulo, questoesCriadas: questoes.length };
+      },
+      { maxWait: 10_000, timeout: 60_000 }
+    );
 
     results.push(result);
   }
