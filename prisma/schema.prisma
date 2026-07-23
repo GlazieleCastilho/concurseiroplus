@@ -204,6 +204,7 @@ model User {
   rankings         Ranking[]
   supportTickets   SupportTicket[]
   auditLogs        AuditLog[]
+  courseProgress   CourseProgress[]
 
   @@index([role])
   @@index([planTier])
@@ -733,6 +734,7 @@ model Course {
   discountPrice    Float?
   status           CourseStatus     @default(DRAFT)
   difficulty       CourseDifficulty @default(MEDIUM)
+  requiredTier     PlanTier         @default(ESSENCIAL)
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
@@ -770,8 +772,23 @@ model CourseLesson {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
+  progress CourseProgress[]
+
   @@unique([moduleId, order])
   @@map("course_lessons")
+}
+
+model CourseProgress {
+  id          String       @id @default(cuid())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId    String
+  lesson      CourseLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  completedAt DateTime     @default(now())
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+  @@map("course_progress")
 }
 
 model SupportTicket {

@@ -48,6 +48,37 @@ export const plannerTaskSchema = z.object({
   dueAt: z.coerce.date().optional(),
 });
 
+export const courseSchema = z.object({
+  title: z.string().min(3).max(160),
+  slug: z
+    .string()
+    .min(3)
+    .max(160)
+    .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "Use apenas letras minusculas, numeros e hifen"),
+  description: z.string().min(10).max(4000),
+  shortDescription: z.string().max(240).optional(),
+  thumbnail: z.string().url(),
+  price: z.coerce.number().min(0).default(0),
+  discountPrice: z.coerce.number().min(0).optional(),
+  status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]).default("DRAFT"),
+  difficulty: z.enum(["EASY", "MEDIUM", "HARD"]).default("MEDIUM"),
+  requiredTier: z.enum(["ESSENCIAL", "PRO", "ELITE"]).default("ESSENCIAL"),
+});
+
+export const courseModuleSchema = z.object({
+  title: z.string().min(3).max(160),
+  description: z.string().max(2000).optional(),
+  order: z.coerce.number().int().min(1),
+});
+
+export const courseLessonSchema = z.object({
+  title: z.string().min(3).max(160),
+  description: z.string().max(2000).optional(),
+  videoId: z.string().max(40).optional(),
+  durationInMs: z.coerce.number().int().min(0).default(0),
+  order: z.coerce.number().int().min(1),
+});
+
 export const pomodoroSessionSchema = z.object({
   tipo: z.enum(["FOCO", "PAUSA_CURTA", "PAUSA_LONGA"]),
   duracaoMin: z.coerce.number().int().min(1).max(180),
