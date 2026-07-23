@@ -85,6 +85,11 @@ export const provaSchema = z.object({
   status: concursoStatusSchema.default("PREVISTO"),
   disciplina: z.string().max(120).optional(),
   dataProva: z.coerce.date().optional(),
+  inscricaoInicio: z.coerce.date().optional(),
+  inscricaoFim: z.coerce.date().optional(),
+  vagas: z.coerce.number().int().min(0).optional(),
+  salario: z.string().max(120).optional(),
+  editalUrl: z.string().url().optional().or(z.literal("")),
   duracaoMin: z.coerce.number().int().min(30).max(600).default(240),
 });
 
