@@ -334,7 +334,7 @@ model Prova {
   banca           String
   cargo           String
   ano             Int
-  nivel           ExamLevel
+  nivel           ExamLevel[]    @default([SUPERIOR])
   status          ConcursoStatus @default(PREVISTO)
   disciplina      String?
   dataProva       DateTime?

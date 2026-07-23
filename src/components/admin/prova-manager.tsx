@@ -21,13 +21,20 @@ import type { ConcursoStatus, ExamLevel, Prova } from "@/generated/prisma";
 
 type ProvaWithCount = Prova & { _count: { questoes: number } };
 
+const NIVEL_OPTIONS: ExamLevel[] = ["FUNDAMENTAL", "MEDIO", "SUPERIOR"];
+const NIVEL_LABELS: Record<ExamLevel, string> = {
+  FUNDAMENTAL: "Fundamental",
+  MEDIO: "Medio",
+  SUPERIOR: "Superior",
+};
+
 type ProvaFormState = {
   titulo: string;
   orgao: string;
   banca: string;
   cargo: string;
   ano: string;
-  nivel: ExamLevel;
+  nivel: ExamLevel[];
   status: ConcursoStatus;
   duracaoMin: string;
 };
@@ -38,7 +45,7 @@ const emptyForm: ProvaFormState = {
   banca: "",
   cargo: "",
   ano: String(new Date().getFullYear()),
-  nivel: "SUPERIOR",
+  nivel: ["SUPERIOR"],
   status: "PREVISTO",
   duracaoMin: "240",
 };
@@ -168,16 +175,28 @@ export function ProvaManager({ initialProvas }: { initialProvas: ProvaWithCount[
                     <Label>Ano</Label>
                     <Input type="number" value={form.ano} onChange={(event) => setForm({ ...form, ano: event.target.value })} />
                   </div>
-                  <div className="space-y-1">
-                    <Label>Nivel</Label>
-                    <Select value={form.nivel} onValueChange={(value) => setForm({ ...form, nivel: value as ExamLevel })}>
-                      <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="FUNDAMENTAL">Fundamental</SelectItem>
-                        <SelectItem value="MEDIO">Medio</SelectItem>
-                        <SelectItem value="SUPERIOR">Superior</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="space-y-1 sm:col-span-2">
+                    <Label>Nivel (selecione um ou mais)</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {NIVEL_OPTIONS.map((nivel) => {
+                        const selected = form.nivel.includes(nivel);
+                        return (
+                          <button
+                            key={nivel}
+                            type="button"
+                            onClick={() =>
+                              setForm((current) => ({
+                                ...current,
+                                nivel: selected ? current.nivel.filter((item) => item !== nivel) : [...current.nivel, nivel],
+                              }))
+                            }
+                            className={`rounded-md border px-3 py-1.5 text-sm ${selected ? "border-accent bg-accent/10" : "border-border"}`}
+                          >
+                            {NIVEL_LABELS[nivel]}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                   <div className="space-y-1">
                     <Label>Duracao (min)</Label>
@@ -199,7 +218,7 @@ export function ProvaManager({ initialProvas }: { initialProvas: ProvaWithCount[
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-                <Button onClick={save} disabled={saving || !form.titulo || !form.orgao || !form.banca || !form.cargo}>
+                <Button onClick={save} disabled={saving || !form.titulo || !form.orgao || !form.banca || !form.cargo || form.nivel.length === 0}>
                   {saving ? "Salvando..." : "Salvar"}
                 </Button>
               </DialogFooter>

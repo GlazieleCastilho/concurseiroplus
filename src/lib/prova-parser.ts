@@ -493,7 +493,7 @@ export function buildProvaDraft(questoes: QuestaoDraft[], hints: ProvaHints) {
         banca,
         cargo,
         ano,
-        nivel: "SUPERIOR" as const,
+        nivel: ["SUPERIOR"] as const,
         duracaoMin: 240,
         questoes: questoes.map((questao) => ({
           numero: questao.numero,

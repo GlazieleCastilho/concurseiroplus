@@ -81,7 +81,7 @@ export const provaSchema = z.object({
   banca: z.string().min(2).max(80),
   cargo: z.string().min(2).max(160),
   ano: z.coerce.number().int().min(1990).max(2100),
-  nivel: examLevelSchema.default("SUPERIOR"),
+  nivel: z.array(examLevelSchema).min(1).default(["SUPERIOR"]),
   status: concursoStatusSchema.default("PREVISTO"),
   disciplina: z.string().max(120).optional(),
   dataProva: z.coerce.date().optional(),

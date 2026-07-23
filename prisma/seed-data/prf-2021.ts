@@ -2,6 +2,7 @@
  * Prova real: CEBRASPE - PRF 2021 - Policial Rodoviario Federal (Edital PRF n.1/2021).
  * Gabarito conferido item a item contra o gabarito oficial preliminar publicado pela banca.
  */
+import type { ExamLevel } from "../../src/generated/prisma";
 
 const gabaritoRaw =
   "C C E C E C C E " +
@@ -38,7 +39,7 @@ export const prf2021Prova = {
   banca: "CEBRASPE",
   cargo: "Policial Rodoviario Federal",
   ano: 2021,
-  nivel: "SUPERIOR" as const,
+  nivel: ["SUPERIOR"] satisfies ExamLevel[],
   duracaoMin: 300,
 };
 
