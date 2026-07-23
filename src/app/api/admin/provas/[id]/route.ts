@@ -8,8 +8,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   try {
     await requireRole(["admin", "super_admin"]);
     const { id } = await params;
-    const body = provaSchema.partial().parse(await req.json());
-    const prova = await updateProva(id, body);
+    const parsed = provaSchema.partial().safeParse(await req.json());
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join("; ") }, { status: 400 });
+    }
+    const prova = await updateProva(id, parsed.data);
     return NextResponse.json({ prova });
   } catch (error) {
     return toErrorResponse(error, "Erro ao editar prova");

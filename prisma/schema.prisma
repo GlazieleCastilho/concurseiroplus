@@ -82,6 +82,13 @@ enum ExamLevel {
   SUPERIOR
 }
 
+enum ConcursoStatus {
+  PREVISTO
+  ABERTO
+  EM_ANDAMENTO
+  FECHADO
+}
+
 enum QuestionType {
   OBJETIVA
   CERTO_ERRADO
@@ -166,18 +173,18 @@ enum TicketStatus {
 }
 
 model User {
-  id          String   @id @default(uuid())
-  clerkUserId String   @unique
-  firstName   String
-  lastName    String?
-  email       String   @unique
-  imageUrl    String?
-  pagarmeCustomerId String? @unique
-  role        Role     @default(user)
-  planTier    PlanTier @default(ESSENCIAL)
-  lastLoginAt DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                String    @id @default(uuid())
+  clerkUserId       String    @unique
+  firstName         String
+  lastName          String?
+  email             String    @unique
+  imageUrl          String?
+  pagarmeCustomerId String?   @unique
+  role              Role      @default(user)
+  planTier          PlanTier  @default(ESSENCIAL)
+  lastLoginAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   subscriptions    Subscription[]
   payments         Payment[]
@@ -204,22 +211,22 @@ model User {
 }
 
 model Plan {
-  id             String       @id @default(cuid())
-  tier           PlanTier
-  cycle          BillingCycle
-  name           String
-  description    String
-  priceCents     Int
-  currency       String       @default("BRL")
-  essayLimit     Int?
-  discursiveLimit Int?
-  skillsLimit    Int?
-  features       Json
-  externalProductId String?   @unique
-  pagarmePlanId      String?  @unique
-  active         Boolean      @default(true)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id                String       @id @default(cuid())
+  tier              PlanTier
+  cycle             BillingCycle
+  name              String
+  description       String
+  priceCents        Int
+  currency          String       @default("BRL")
+  essayLimit        Int?
+  discursiveLimit   Int?
+  skillsLimit       Int?
+  features          Json
+  externalProductId String?      @unique
+  pagarmePlanId     String?      @unique
+  active            Boolean      @default(true)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
 
   subscriptions Subscription[]
   payments      Payment[]
@@ -281,24 +288,24 @@ model Payment {
 }
 
 model Invoice {
-  id                String        @id @default(cuid())
+  id                String          @id @default(cuid())
   userId            String
-  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   subscriptionId    String?
-  subscription      Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  subscription      Subscription?   @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
   paymentId         String?
-  payment           Payment?      @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  payment           Payment?        @relation(fields: [paymentId], references: [id], onDelete: SetNull)
   provider          PaymentProvider
-  status            InvoiceStatus @default(OPEN)
+  status            InvoiceStatus   @default(OPEN)
   number            String?
   amountDueCents    Int
-  amountPaidCents   Int           @default(0)
+  amountPaidCents   Int             @default(0)
   hostedInvoiceUrl  String?
-  externalInvoiceId String?       @unique
+  externalInvoiceId String?         @unique
   dueDate           DateTime?
   paidAt            DateTime?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
   @@index([userId, status])
   @@map("invoices")
@@ -321,21 +328,22 @@ model WebhookEvent {
 }
 
 model Prova {
-  id              String      @id @default(cuid())
-  titulo          String
-  orgao           String
-  banca           String
-  cargo           String
-  ano             Int
-  nivel           ExamLevel
-  disciplina      String?
-  dataProva       DateTime?
-  totalQuestoes   Int         @default(0)
-  duracaoMin      Int         @default(240)
-  popularidade    Int         @default(0)
-  s3Key           String?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  id            String         @id @default(cuid())
+  titulo        String
+  orgao         String
+  banca         String
+  cargo         String
+  ano           Int
+  nivel         ExamLevel
+  status        ConcursoStatus @default(PREVISTO)
+  disciplina    String?
+  dataProva     DateTime?
+  totalQuestoes Int            @default(0)
+  duracaoMin    Int            @default(240)
+  popularidade  Int            @default(0)
+  s3Key         String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   questoes    Questao[]
   simulados   Simulado[]
@@ -495,16 +503,16 @@ model Redacao {
 }
 
 model RedacaoFeedback {
-  id               String   @id @default(cuid())
-  redacaoId        String   @unique
-  redacao          Redacao  @relation(fields: [redacaoId], references: [id], onDelete: Cascade)
-  criterios        Json
-  trechos          Json
-  sugestoes        Json
-  versaoMelhorada  String   @db.Text
-  feedbackGeral    String   @db.Text
-  rawResponse      Json?
-  createdAt        DateTime @default(now())
+  id              String   @id @default(cuid())
+  redacaoId       String   @unique
+  redacao         Redacao  @relation(fields: [redacaoId], references: [id], onDelete: Cascade)
+  criterios       Json
+  trechos         Json
+  sugestoes       Json
+  versaoMelhorada String   @db.Text
+  feedbackGeral   String   @db.Text
+  rawResponse     Json?
+  createdAt       DateTime @default(now())
 
   @@map("redacao_feedbacks")
 }
@@ -692,17 +700,17 @@ model Like {
 }
 
 model Ranking {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  period      String
-  score       Float
-  position    Int
-  questions   Int      @default(0)
-  essays      Int      @default(0)
-  focusMinutes Int     @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  period       String
+  score        Float
+  position     Int
+  questions    Int      @default(0)
+  essays       Int      @default(0)
+  focusMinutes Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@unique([userId, period])
   @@index([period, position])
@@ -730,14 +738,14 @@ model Course {
 }
 
 model CourseModule {
-  id          String         @id @default(cuid())
+  id          String   @id @default(cuid())
   courseId    String
-  course      Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   title       String
   description String?
   order       Int
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   lessons CourseLesson[]
 
@@ -762,32 +770,32 @@ model CourseLesson {
 }
 
 model SupportTicket {
-  id          String       @id @default(cuid())
-  userId      String
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  subject     String
-  message     String       @db.Text
-  status      TicketStatus @default(OPEN)
-  priority    String       @default("normal")
-  response    String?      @db.Text
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id        String       @id @default(cuid())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject   String
+  message   String       @db.Text
+  status    TicketStatus @default(OPEN)
+  priority  String       @default("normal")
+  response  String?      @db.Text
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 
   @@index([status, createdAt])
   @@map("support_tickets")
 }
 
 model AuditLog {
-  id         String   @id @default(cuid())
-  userId     String?
-  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  action     String
-  entity     String
-  entityId   String?
-  ipAddress  String?
-  userAgent  String?
-  metadata   Json?
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String
+  entityId  String?
+  ipAddress String?
+  userAgent String?
+  metadata  Json?
+  createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
   @@index([entity, entityId])

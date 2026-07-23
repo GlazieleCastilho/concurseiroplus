@@ -17,8 +17,11 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     await requireRole(["admin", "super_admin"]);
-    const body = provaSchema.parse(await req.json());
-    const prova = await createProva(body);
+    const parsed = provaSchema.safeParse(await req.json());
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join("; ") }, { status: 400 });
+    }
+    const prova = await createProva(parsed.data);
     return NextResponse.json({ prova }, { status: 201 });
   } catch (error) {
     return toErrorResponse(error, "Erro ao criar prova");
