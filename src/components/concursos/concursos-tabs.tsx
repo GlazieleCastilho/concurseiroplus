@@ -35,7 +35,7 @@ export function ConcursosTabs({ provas }: { provas: Prova[] }) {
                   <CardHeader><CardTitle>{prova.orgao} · {prova.cargo}</CardTitle></CardHeader>
                   <CardContent className="space-y-1 text-sm text-muted-foreground">
                     <p>Banca: {prova.banca}</p>
-                    <p>Nivel: {prova.nivel}</p>
+                    <p>Nivel: {prova.nivel.join(", ")}</p>
                     <p>Data da prova: {prova.dataProva ? prova.dataProva.toLocaleDateString("pt-BR") : "A definir"}</p>
                     {prova.vagas != null && <p>Vagas: {prova.vagas}</p>}
                     {prova.salario && <p>Salario: {prova.salario}</p>}

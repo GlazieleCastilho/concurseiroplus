@@ -33,7 +33,7 @@ export default async function SimuladosPage() {
                   <span>Cargo: {prova.cargo}</span>
                   <span>Ano: {prova.ano}</span>
                   <span>Questoes: {prova._count.questoes}</span>
-                  <span>Nivel: {prova.nivel}</span>
+                  <span>Nivel: {prova.nivel.join(", ")}</span>
                   <span>Tempo: {prova.duracaoMin} min</span>
                 </div>
                 <StartSimuladoButton provaId={prova.id} />

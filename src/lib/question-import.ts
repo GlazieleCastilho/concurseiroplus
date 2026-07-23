@@ -110,7 +110,7 @@ export function csvRowsToImportPayload(rows: CsvRow[]): unknown {
           banca: row.banca,
           cargo: row.cargo,
           ano: row.ano,
-          nivel: row.nivel || "SUPERIOR",
+          nivel: (row.nivel || "SUPERIOR").split(/[/;]+/).map((value) => value.trim()).filter(Boolean),
           duracaoMin: row.duracaoMin || "240",
         },
         questoes: [],

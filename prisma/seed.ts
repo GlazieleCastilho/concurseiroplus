@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { PrismaClient } from "../src/generated/prisma";
+import { PrismaClient, type ExamLevel } from "../src/generated/prisma";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { planExternalProductId } from "../src/lib/billing-period";
@@ -67,9 +67,9 @@ async function seedSkills() {
 
 async function seedProvas() {
   const provas = [
-    { titulo: "Receita Federal 2024 - Auditor Fiscal", orgao: "Receita Federal", banca: "FGV", cargo: "Auditor Fiscal", ano: 2024, nivel: "SUPERIOR" as const, disciplina: "Direito Tributario", duracaoMin: 240 },
-    { titulo: "TRT 2023 - Analista Judiciario", orgao: "TRT", banca: "FCC", cargo: "Analista Judiciario", ano: 2023, nivel: "SUPERIOR" as const, disciplina: "Direito Constitucional", duracaoMin: 210 },
-    { titulo: "Policia Federal 2021 - Agente", orgao: "Policia Federal", banca: "CESPE", cargo: "Agente", ano: 2021, nivel: "SUPERIOR" as const, disciplina: "Conhecimentos Gerais", duracaoMin: 240 },
+    { titulo: "Receita Federal 2024 - Auditor Fiscal", orgao: "Receita Federal", banca: "FGV", cargo: "Auditor Fiscal", ano: 2024, nivel: ["SUPERIOR"] satisfies ExamLevel[], disciplina: "Direito Tributario", duracaoMin: 240 },
+    { titulo: "TRT 2023 - Analista Judiciario", orgao: "TRT", banca: "FCC", cargo: "Analista Judiciario", ano: 2023, nivel: ["SUPERIOR"] satisfies ExamLevel[], disciplina: "Direito Constitucional", duracaoMin: 210 },
+    { titulo: "Policia Federal 2021 - Agente", orgao: "Policia Federal", banca: "CESPE", cargo: "Agente", ano: 2021, nivel: ["SUPERIOR"] satisfies ExamLevel[], disciplina: "Conhecimentos Gerais", duracaoMin: 240 },
   ];
 
   for (const prova of provas) {

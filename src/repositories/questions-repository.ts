@@ -7,7 +7,7 @@ export type ProvaInput = {
   banca: string;
   cargo: string;
   ano: number;
-  nivel: ExamLevel;
+  nivel: ExamLevel[];
   status?: ConcursoStatus;
   disciplina?: string;
   dataProva?: Date;
