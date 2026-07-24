@@ -6,7 +6,7 @@ import { ProvaManager } from "@/components/admin/prova-manager";
 
 export default async function AdminQuestionsPage() {
   await requireRole(["admin", "super_admin"]);
-  const provas = await listProvas();
+  const provas = await listProvas("QUESTOES");
 
   return (
     <AppShell>
