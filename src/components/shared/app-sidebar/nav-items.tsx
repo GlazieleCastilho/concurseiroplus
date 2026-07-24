@@ -26,6 +26,7 @@ import {
     ChartLine,
     House,
     Landmark,
+    GraduationCap,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -116,6 +117,11 @@ export const NavItems =() => {
             label:"Gerenciar Concursos",
             path: "/admin/concursos",
             icon: Landmark,
+        },
+        {
+            label:"Gerenciar Cursos",
+            path: "/admin/courses",
+            icon: GraduationCap,
         },
         {
             label: "Gerenciar Usuarios",
