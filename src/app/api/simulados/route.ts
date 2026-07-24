@@ -18,6 +18,17 @@ export async function POST(req: Request) {
     });
     if (!prova) return NextResponse.json({ error: "Prova nao encontrada" }, { status: 404 });
     const now = new Date();
+
+    // Evita criar um simulado duplicado (ex: duplo clique, retry de rede) que
+    // fragmentaria as respostas ja salvas entre dois simuladoId diferentes.
+    const existente = await prisma.simulado.findFirst({
+      where: { userId: user.id, provaId: prova.id, status: "EM_ANDAMENTO", expiradoEm: { gt: now } },
+      orderBy: { createdAt: "desc" },
+    });
+    if (existente) {
+      return NextResponse.json({ id: existente.id });
+    }
+
     const expiradoEm = new Date(now.getTime() + prova.duracaoMin * 60 * 1000);
     const simulado = await prisma.simulado.create({
       data: {
