@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     const body = parsed.data;
     const prova = await prisma.prova.findUnique({
       where: { id: body.provaId },
-      include: { questoes: true },
+      include: { questoes: { orderBy: { numero: "asc" } } },
     });
     if (!prova) return NextResponse.json({ error: "Prova nao encontrada" }, { status: 404 });
     const now = new Date();
@@ -29,6 +29,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ id: existente.id });
     }
 
+    if (prova.questoes.length === 0) {
+      return NextResponse.json({ error: "Esta prova ainda nao tem questoes cadastradas" }, { status: 422 });
+    }
+
     const expiradoEm = new Date(now.getTime() + prova.duracaoMin * 60 * 1000);
     const simulado = await prisma.simulado.create({
       data: {
@@ -40,6 +44,9 @@ export async function POST(req: Request) {
         totalQuestoes: prova.questoes.length,
         iniciadoEm: now,
         expiradoEm,
+        questoes: {
+          create: prova.questoes.map((questao, index) => ({ questaoId: questao.id, ordem: index + 1 })),
+        },
       },
     });
     await auditLog({ userId: user.id, action: "simulado.iniciar", entity: "Simulado", entityId: simulado.id });

@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { AppShell } from "@/components/shared/app-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { getCurrentDbUser } from "@/lib/clerk";
 import { getFeaturedProvas } from "@/repositories/catalog-repository";
 import { StartSimuladoButton } from "@/components/simulados/start-simulado-button";
@@ -11,9 +13,14 @@ export default async function SimuladosPage() {
 
   return (
     <AppShell>
-      <div>
-        <p className="text-sm text-muted-foreground">Banco de provas com cronometro, auto save e revisao</p>
-        <h1 className="font-display text-3xl font-bold">Simulados</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-sm text-muted-foreground">Banco de provas com cronometro, auto save e revisao</p>
+          <h1 className="font-display text-3xl font-bold">Simulados</h1>
+        </div>
+        <Link href="/simulados/personalizado">
+          <Button variant="outline">Montar simulado personalizado</Button>
+        </Link>
       </div>
       <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
         {provas.map((prova) => {

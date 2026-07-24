@@ -10,7 +10,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     const simulado = await prisma.simulado.findFirst({
       where: { id, userId: user.id },
       include: {
-        prova: { include: { questoes: true } },
+        questoes: { include: { questao: true } },
         respostas: true,
       },
     });
@@ -19,7 +19,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       return NextResponse.json({ error: "Simulado ja foi finalizado" }, { status: 409 });
     }
 
-    const questoes = simulado.prova?.questoes ?? [];
+    const questoes = simulado.questoes.map((item) => item.questao);
     const respostaByQuestaoId = new Map(simulado.respostas.map((resposta) => [resposta.questaoId, resposta]));
 
     let acertos = 0;

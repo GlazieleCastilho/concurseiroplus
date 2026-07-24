@@ -402,6 +402,7 @@ model Questao {
 
   alternativas Alternativa[]
   respostas    Resposta[]
+  emSimulados  SimuladoQuestao[]
 
   @@unique([provaId, numero])
   @@index([disciplina, dificuldade])
@@ -446,10 +447,24 @@ model Simulado {
   respostas  Resposta[]
   resultados Resultado[]
   redacoes   Redacao[]
+  questoes   SimuladoQuestao[]
 
   @@index([userId, status])
   @@index([provaId, status])
   @@map("simulados")
+}
+
+model SimuladoQuestao {
+  id         String   @id @default(cuid())
+  simuladoId String
+  simulado   Simulado @relation(fields: [simuladoId], references: [id], onDelete: Cascade)
+  questaoId  String
+  questao    Questao  @relation(fields: [questaoId], references: [id], onDelete: Cascade)
+  ordem      Int
+
+  @@unique([simuladoId, questaoId])
+  @@unique([simuladoId, ordem])
+  @@map("simulado_questoes")
 }
 
 model Resposta {

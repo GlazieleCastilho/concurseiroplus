@@ -103,6 +103,13 @@ export const simuladoStartSchema = z.object({
   provaId: z.string().min(1),
 });
 
+export const customSimuladoSchema = z.object({
+  disciplinas: z.array(z.string().min(1)).max(50).default([]),
+  bancas: z.array(z.string().min(1)).max(50).default([]),
+  anos: z.array(z.coerce.number().int()).max(50).default([]),
+  quantidade: z.coerce.number().int().min(5).max(120).default(20),
+});
+
 export const simuladoAnswerSchema = z.object({
   questaoId: z.string().cuid(),
   alternativaId: z.string().cuid().optional(),
