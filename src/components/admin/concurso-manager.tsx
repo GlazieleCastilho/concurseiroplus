@@ -124,6 +124,7 @@ export function ConcursoManager({ initialProvas }: { initialProvas: ProvaWithCou
         ano: Number(form.ano),
         nivel: form.nivel,
         status: form.status,
+        origem: "CONCURSO" as const,
         dataProva: form.dataProva || undefined,
         inscricaoInicio: form.inscricaoInicio || undefined,
         inscricaoFim: form.inscricaoFim || undefined,

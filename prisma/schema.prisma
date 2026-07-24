@@ -89,6 +89,11 @@ enum ConcursoStatus {
   FECHADO
 }
 
+enum ProvaOrigem {
+  QUESTOES
+  CONCURSO
+}
+
 enum QuestionType {
   OBJETIVA
   CERTO_ERRADO
@@ -337,6 +342,7 @@ model Prova {
   ano             Int
   nivel           ExamLevel[]    @default([SUPERIOR])
   status          ConcursoStatus @default(PREVISTO)
+  origem          ProvaOrigem    @default(QUESTOES)
   disciplina      String?
   dataProva       DateTime?
   inscricaoInicio DateTime?

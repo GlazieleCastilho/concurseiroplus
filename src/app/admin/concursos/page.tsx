@@ -6,7 +6,7 @@ import { ConcursoManager } from "@/components/admin/concurso-manager";
 
 export default async function AdminConcursosPage() {
   await requireRole(["admin", "super_admin"]);
-  const provas = await listProvas();
+  const provas = await listProvas("CONCURSO");
 
   return (
     <AppShell>
