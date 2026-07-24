@@ -2,6 +2,10 @@ import { prisma } from "@/lib/prisma";
 
 export async function getFeaturedProvas() {
   return prisma.prova.findMany({
+    // Simulados sao para praticar com provas que ja tem banco de questoes
+    // importado; editais cadastrados em /admin/concursos (previstos/abertos/
+    // em andamento, geralmente sem questoes ainda) nao devem aparecer aqui.
+    where: { questoes: { some: {} } },
     orderBy: [{ dataProva: "asc" }, { popularidade: "desc" }],
     take: 12,
     include: { _count: { select: { questoes: true, simulados: true } } },
