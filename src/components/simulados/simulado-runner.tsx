@@ -54,7 +54,8 @@ export function SimuladoRunner({
     setFinalizing(true);
     try {
       const response = await fetch(`/api/simulados/${simuladoId}/finalizar`, { method: "POST" });
-      const data = await response.json();
+      const data = await response.json().catch(() => null);
+      if (!data) throw new Error(`Erro ao finalizar simulado (status ${response.status}). Tente novamente.`);
       if (!response.ok) throw new Error(data.error ?? "Erro ao finalizar simulado");
       setResultado(data.resultado);
       toast.success(`Simulado finalizado: ${data.resultado.acertos}/${questoes.length} acertos.`);
