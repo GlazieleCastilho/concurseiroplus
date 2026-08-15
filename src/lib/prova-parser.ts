@@ -17,15 +17,122 @@ type QuestaoDraft = {
 };
 
 const NOISE_LINE = /^(pcimarkpci\b|www\.\S+$|--\s*\d+\s+of\s+\d+\s*--$|espa[cç]o livre$|.*P[ÁA]GINA\s+\d+\s*$)/i;
-// Numero do item seguido de texto na mesma linha (ex.: CEBRASPE "9 Observe a charge...").
-export const ITEM_START_INLINE = /^(\d{1,3})[ \t]+(\S.*)$/;
-// Numero do item sozinho na linha, com o enunciado comecando na linha seguinte (ex.: FGV).
-export const ITEM_START_ALONE = /^(\d{1,3})\s*$/;
+// Numero do item seguido de texto na mesma linha.
+// Aceita formatos comuns como:
+//   9 Observe a charge...
+//   9. Observe a charge...
+//   9) Observe a charge...
+//
+// O lookahead evita tratar linhas de instrucoes como:
+//   01 - Voce recebeu do fiscal...
+// como se fossem questoes.
+export const ITEM_START_INLINE = /^(\d{1,3})(?:[.)]\s*|[ \t]+)(?![-–—]\s)(\S.*)$/;
+
+// Numero do item sozinho na linha, com o enunciado comecando na linha seguinte.
+// Aceita tambem o numero seguido de ponto ou parenteses, comum em alguns PDFs.
+export const ITEM_START_ALONE = /^(\d{1,3})\s*[.)]?\s*$/;
 // Alternativa "A) texto", "A. texto" ou "(A) texto" (com ou sem parenteses).
 export const ALTERNATIVA_START = /^\(?([A-E])[).]\s+(.*)$/;
 
 function isNoise(line: string): boolean {
   return NOISE_LINE.test(line.trim());
+}
+
+// Linhas numeradas com hifen/travessao no inicio do caderno normalmente sao
+// instrucoes ao candidato, e nao questoes. Ex.: "01 - Voce recebeu...".
+// Mantemos essa regra separada do regex principal para nao bloquear formatos
+// legitimos de questao que usam numero + texto.
+const EXAM_INSTRUCTION_LINE = /^\d{1,3}\s*[-–—]\s+\S/;
+
+function isExamInstructionLine(line: string): boolean {
+  return EXAM_INSTRUCTION_LINE.test(line.trim());
+}
+
+function isAllCapsLine(line: string): boolean {
+  const trimmed = line.trim();
+  return trimmed.length > 0 && trimmed === trimmed.toUpperCase() && /[A-ZÀ-Ú]/.test(trimmed);
+}
+
+/**
+ * Encontra o primeiro item real da prova.
+ *
+ * Alguns PDFs colocam, antes das questoes, uma pagina de instrucoes numeradas
+ * (01, 02, 03...) e tambem o numero da propria pagina como uma linha isolada.
+ * Como ambos podem coincidir com ITEM_START_INLINE/ITEM_START_ALONE, nao basta
+ * olhar apenas para o numero.
+ *
+ * A primeira questao real costuma ser o item 1 e vem acompanhada de texto de
+ * enunciado. Para evitar confundir o numero da pagina ou uma instrucao com a
+ * questao 1, procuramos o primeiro "1" que tenha uma linha de conteudo plausivel
+ * logo depois. Se houver alternativas A-E proximas, o sinal fica ainda mais forte.
+ */
+function findFirstQuestionIndex(lines: string[], repeatedHeaders: Set<string>): number {
+  const MAX_LOOKAHEAD = 80;
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i].trim();
+    if (!line || isNoise(line) || repeatedHeaders.has(line)) continue;
+    if (isExamInstructionLine(line)) continue;
+
+    const inlineMatch = ITEM_START_INLINE.exec(line);
+    const aloneMatch = inlineMatch ? null : ITEM_START_ALONE.exec(line);
+    const numero = inlineMatch ? Number(inlineMatch[1]) : aloneMatch ? Number(aloneMatch[1]) : null;
+
+    // As provas deste tipo normalmente comecam no item 1. Usamos esse marco
+    // apenas para atravessar o material inicial (instrucoes/cabecalhos).
+    if (numero !== 1) continue;
+
+    // Se for uma questao inline, o texto depois do numero ja fornece o contexto.
+    if (inlineMatch) {
+      const texto = inlineMatch[2].trim();
+      if (texto && !isExamInstructionLine(line)) return i;
+    }
+
+    // Para o formato de numero isolado, precisamos diferenciar o numero da pagina
+    // de uma questao real. O numero da pagina 1 costuma aparecer antes dos cabecalhos
+    // e, mais adiante, surge novamente o numero 1 da primeira questao. Se encontramos
+    // outro item 1 antes de qualquer alternativa, o candidato atual era pagina/cabecalho.
+    let sawPlausibleContent = false;
+    let sawAlternative = false;
+
+    for (let j = i + 1; j < Math.min(lines.length, i + MAX_LOOKAHEAD); j += 1) {
+      const next = lines[j].trim();
+      if (!next || isNoise(next) || repeatedHeaders.has(next)) continue;
+      if (isExamInstructionLine(next)) continue;
+
+      const nextInline = ITEM_START_INLINE.exec(next);
+      const nextAlone = nextInline ? null : ITEM_START_ALONE.exec(next);
+      const nextNumero = nextInline ? Number(nextInline[1]) : nextAlone ? Number(nextAlone[1]) : null;
+
+      if (ALTERNATIVA_START.test(next)) {
+        sawAlternative = true;
+        break;
+      }
+
+      if (nextNumero !== null) {
+        // Outro item 1 antes das alternativas indica que o primeiro "1" era
+        // provavelmente o numero da pagina, nao o inicio da prova.
+        if (nextNumero === 1) {
+          sawPlausibleContent = false;
+          sawAlternative = false;
+          break;
+        }
+        // Um outro numero diferente de 1 tambem indica que este candidato
+        // provavelmente nao e o inicio da primeira questao.
+        break;
+      }
+
+      // Cabecalhos institucionais/disciplinas em caixa alta nao contam como
+      // enunciado da questao. Continuamos procurando por conteudo real.
+      if (!isAllCapsLine(next)) sawPlausibleContent = true;
+    }
+
+    if (sawAlternative || sawPlausibleContent) return i;
+  }
+
+  // Fallback para PDFs incomuns que nao possuem um marcador claro de inicio.
+  // Retornar 0 preserva o comportamento anterior em vez de descartar o documento.
+  return 0;
 }
 
 /**
@@ -168,10 +275,17 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
   const repeatedHeaders = findRepeatedHeaderLines(lines);
   const trailingCredits = findTrailingCreditsLines(lines);
   const sectionTitles = findSectionTitleLines(lines);
+
+  // Encontra o primeiro item real ANTES de apagar os numeros de margem.
+  // Isso evita que a heuristica de anotacoes de linha remova justamente o primeiro
+  // numero da prova antes de sabermos onde o caderno de questoes realmente comeca.
+  const firstQuestionIndex = findFirstQuestionIndex(lines, repeatedHeaders);
+
   // Apaga na origem (por indice, nao por conteudo): um numero pequeno como "24" ou "25"
   // e reaproveitado como item de verdade em outro ponto do mesmo PDF, entao so a posicao
   // exata identificada como anotacao de margem pode ser descartada com seguranca.
   for (const index of findLineNumberAnnotationIndices(lines)) lines[index] = "";
+
   const questoes: QuestaoDraft[] = [];
   let current: { numero: number; linhas: string[] } | null = null;
   let lastNumero = 0;
@@ -211,12 +325,24 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
     questoes.push({ numero: current.numero, tipo: "OBJETIVA", enunciado: enunciadoFinal, alternativas });
   }
 
-  for (const rawLine of lines) {
+  // Ignora todo o material que vem antes do primeiro item real. Isso e essencial
+  // para PDFs como o da Cesgranrio/Petrobras analisado: a primeira pagina possui
+  // instrucoes "01 - ...", "02 - ..." ate "12 - ...". Sem esta barreira, o parser
+  // transforma essas instrucoes em questoes 1..12 e, quando chega a pagina 2, as
+  // questoes reais 1..12 ficam menores que lastNumero e sao anexadas a "questao 12".
+  for (let lineIndex = firstQuestionIndex; lineIndex < lines.length; lineIndex += 1) {
+    const rawLine = lines[lineIndex];
     const line = rawLine.trim();
+
     if (!line || isNoise(line) || repeatedHeaders.has(line) || trailingCredits.has(line) || sectionTitles.has(line)) continue;
+
+    // Linhas de instrucao com hifen nao casam com ITEM_START_INLINE. Se ja estivermos
+    // dentro de uma questao, elas permanecem como texto do bloco em vez de abrirem um item.
+
     const inlineMatch = ITEM_START_INLINE.exec(rawLine);
     const aloneMatch = inlineMatch ? null : ITEM_START_ALONE.exec(line);
     const numero = inlineMatch ? Number(inlineMatch[1]) : aloneMatch ? Number(aloneMatch[1]) : null;
+
     if (numero !== null && numero > lastNumero && numero <= lastNumero + 30) {
       flush();
       lastNumero = numero;
