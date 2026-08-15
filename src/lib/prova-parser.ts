@@ -54,84 +54,253 @@ function isAllCapsLine(line: string): boolean {
 }
 
 /**
- * Encontra o primeiro item real da prova.
+ * Encontra o início real da primeira questão da prova.
  *
- * Alguns PDFs colocam, antes das questoes, uma pagina de instrucoes numeradas
- * (01, 02, 03...) e tambem o numero da propria pagina como uma linha isolada.
- * Como ambos podem coincidir com ITEM_START_INLINE/ITEM_START_ALONE, nao basta
- * olhar apenas para o numero.
+ * Não podemos simplesmente procurar o primeiro "1", porque o PDF
+ * pode conter:
  *
- * A primeira questao real costuma ser o item 1 e vem acompanhada de texto de
- * enunciado. Para evitar confundir o numero da pagina ou uma instrucao com a
- * questao 1, procuramos o primeiro "1" que tenha uma linha de conteudo plausivel
- * logo depois. Se houver alternativas A-E proximas, o sinal fica ainda mais forte.
+ *   1
+ *   LEIA ATENTAMENTE AS INSTRUÇÕES...
+ *
+ * onde o "1" é apenas o número da página.
+ *
+ * Também podem existir instruções numeradas:
+ *
+ *   01 - Você recebeu...
+ *   02 - Verifique...
+ *   03 - ...
+ *
+ * A primeira questão real normalmente possui:
+ *
+ *   1
+ *   Enunciado...
+ *   (A) ...
+ *   (B) ...
+ *   (C) ...
+ *   (D) ...
+ *   (E) ...
+ *
+ * Portanto, para o formato de questão objetiva, exigimos evidências
+ * suficientes de que o número encontrado realmente inicia uma questão.
  */
-function findFirstQuestionIndex(lines: string[], repeatedHeaders: Set<string>): number {
-  const MAX_LOOKAHEAD = 80;
+function findFirstQuestionIndex(
+  lines: string[],
+  repeatedHeaders: Set<string>
+): number {
+  const MAX_LOOKAHEAD = 120;
+
+  // Aceita:
+  // (A) texto
+  // A) texto
+  // A. texto
+  //
+  // O "i" permite A/a.
+  const alternativePattern = /^\(?([A-E])[\).]\s+/i;
+
+  // Também precisamos reconhecer alternativas que possam ter sido
+  // colocadas na mesma linha pelo PDF:
+  //
+  // (A) texto (B) texto (C) texto...
+  const inlineAlternativePattern = /\(?([A-E])[\).]\s+/gi;
 
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i].trim();
-    if (!line || isNoise(line) || repeatedHeaders.has(line)) continue;
-    if (isExamInstructionLine(line)) continue;
+
+    // Ignora linhas vazias, ruído e cabeçalhos repetidos.
+    if (
+      !line ||
+      isNoise(line) ||
+      repeatedHeaders.has(line)
+    ) {
+      continue;
+    }
+
+    // Uma linha como:
+    //
+    // 01 - Você recebeu...
+    //
+    // é instrução, não questão.
+    if (isExamInstructionLine(line)) {
+      continue;
+    }
 
     const inlineMatch = ITEM_START_INLINE.exec(line);
-    const aloneMatch = inlineMatch ? null : ITEM_START_ALONE.exec(line);
-    const numero = inlineMatch ? Number(inlineMatch[1]) : aloneMatch ? Number(aloneMatch[1]) : null;
+    const aloneMatch = inlineMatch
+      ? null
+      : ITEM_START_ALONE.exec(line);
 
-    // As provas deste tipo normalmente comecam no item 1. Usamos esse marco
-    // apenas para atravessar o material inicial (instrucoes/cabecalhos).
-    if (numero !== 1) continue;
+    const numero = inlineMatch
+      ? Number(inlineMatch[1])
+      : aloneMatch
+        ? Number(aloneMatch[1])
+        : null;
 
-    // Se for uma questao inline, o texto depois do numero ja fornece o contexto.
+    // A primeira questão normalmente é a questão 1.
+    if (numero !== 1) {
+      continue;
+    }
+
+    /*
+     * Caso 1:
+     *
+     * 1 Enunciado da questão...
+     *
+     * Se o texto estiver na mesma linha, já temos um candidato.
+     * Porém ainda precisamos verificar se existem alternativas
+     * posteriormente.
+     */
+    let alternativeCount = 0;
+    let hasQuestionText = false;
+
     if (inlineMatch) {
-      const texto = inlineMatch[2].trim();
-      if (texto && !isExamInstructionLine(line)) return i;
+      const questionText = inlineMatch[2].trim();
+
+      if (
+        questionText &&
+        !isExamInstructionLine(line)
+      ) {
+        hasQuestionText = true;
+      }
     }
 
-    // Para o formato de numero isolado, precisamos diferenciar o numero da pagina
-    // de uma questao real. O numero da pagina 1 costuma aparecer antes dos cabecalhos
-    // e, mais adiante, surge novamente o numero 1 da primeira questao. Se encontramos
-    // outro item 1 antes de qualquer alternativa, o candidato atual era pagina/cabecalho.
-    let sawPlausibleContent = false;
-    let sawAlternative = false;
-
-    for (let j = i + 1; j < Math.min(lines.length, i + MAX_LOOKAHEAD); j += 1) {
+    /*
+     * Caso 2:
+     *
+     * 1
+     * Enunciado...
+     *
+     * Aqui precisamos olhar as linhas seguintes.
+     */
+    for (
+      let j = i + 1;
+      j < Math.min(lines.length, i + MAX_LOOKAHEAD);
+      j += 1
+    ) {
       const next = lines[j].trim();
-      if (!next || isNoise(next) || repeatedHeaders.has(next)) continue;
-      if (isExamInstructionLine(next)) continue;
 
+      if (
+        !next ||
+        isNoise(next) ||
+        repeatedHeaders.has(next)
+      ) {
+        continue;
+      }
+
+      // Instruções não fazem parte da questão.
+      if (isExamInstructionLine(next)) {
+        continue;
+      }
+
+      /*
+       * Se encontramos outro número isolado antes das alternativas,
+       * este candidato provavelmente não era uma questão.
+       *
+       * Exemplo da primeira página:
+       *
+       * 1              <- número da página
+       * LEIA...
+       * 01 - ...
+       * 02 - ...
+       *
+       * Não devemos transformar isso em questão 1.
+       */
       const nextInline = ITEM_START_INLINE.exec(next);
-      const nextAlone = nextInline ? null : ITEM_START_ALONE.exec(next);
-      const nextNumero = nextInline ? Number(nextInline[1]) : nextAlone ? Number(nextAlone[1]) : null;
+      const nextAlone = nextInline
+        ? null
+        : ITEM_START_ALONE.exec(next);
 
-      if (ALTERNATIVA_START.test(next)) {
-        sawAlternative = true;
+      const nextNumero = nextInline
+        ? Number(nextInline[1])
+        : nextAlone
+          ? Number(nextAlone[1])
+          : null;
+
+      if (
+        nextNumero !== null &&
+        nextNumero !== 1
+      ) {
         break;
       }
 
-      if (nextNumero !== null) {
-        // Outro item 1 antes das alternativas indica que o primeiro "1" era
-        // provavelmente o numero da pagina, nao o inicio da prova.
-        if (nextNumero === 1) {
-          sawPlausibleContent = false;
-          sawAlternative = false;
-          break;
+      if (
+        nextNumero === 1 &&
+        j > i + 1
+      ) {
+        // Encontramos outro "1" antes de encontrar alternativas.
+        // O candidato atual provavelmente era o número da página.
+        break;
+      }
+
+      /*
+       * Procura alternativas.
+       *
+       * Primeiro verificamos se a linha inteira começa com
+       * uma alternativa.
+       */
+      const alternativeMatch =
+        alternativePattern.exec(next);
+
+      if (alternativeMatch) {
+        alternativeCount += 1;
+
+        if (alternativeCount >= 3) {
+          return i;
         }
-        // Um outro numero diferente de 1 tambem indica que este candidato
-        // provavelmente nao e o inicio da primeira questao.
-        break;
+
+        continue;
       }
 
-      // Cabecalhos institucionais/disciplinas em caixa alta nao contam como
-      // enunciado da questao. Continuamos procurando por conteudo real.
-      if (!isAllCapsLine(next)) sawPlausibleContent = true;
+      /*
+       * Agora verificamos alternativas que foram colocadas na
+       * mesma linha pelo extrator do PDF.
+       *
+       * Exemplo:
+       *
+       * (A) texto (B) texto (C) texto (D) texto (E) texto
+       */
+      inlineAlternativePattern.lastIndex = 0;
+
+      const inlineAlternatives =
+        next.match(inlineAlternativePattern);
+
+      if (inlineAlternatives) {
+        alternativeCount += inlineAlternatives.length;
+
+        if (alternativeCount >= 3) {
+          return i;
+        }
+      }
+
+      /*
+       * Se encontramos conteúdo textual normal, significa que
+       * provavelmente estamos dentro do enunciado da questão.
+       */
+      if (!isAllCapsLine(next)) {
+        hasQuestionText = true;
+      }
     }
 
-    if (sawAlternative || sawPlausibleContent) return i;
+    /*
+     * Para provas objetivas, queremos evidência forte.
+     *
+     * Três alternativas já são suficientes para diferenciar
+     * uma questão real das instruções da primeira página.
+     */
+    if (
+      hasQuestionText &&
+      alternativeCount >= 3
+    ) {
+      return i;
+    }
   }
 
-  // Fallback para PDFs incomuns que nao possuem um marcador claro de inicio.
-  // Retornar 0 preserva o comportamento anterior em vez de descartar o documento.
+  /*
+   * Fallback:
+   *
+   * Se nenhum marcador confiável foi encontrado, preservamos
+   * o comportamento anterior e deixamos o parser começar do
+   * início do documento.
+   */
   return 0;
 }
 
