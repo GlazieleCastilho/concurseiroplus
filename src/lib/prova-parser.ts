@@ -5,15 +5,40 @@
  * Cobre o caso comum; o admin sempre revisa o rascunho antes de confirmar o import.
  */
 
-type AlternativaDraft = { letra: string; texto: string; correta: boolean; imagemUrl?: string };
+export type MaterialApoioTipo = "TEXTO" | "IMAGEM" | "TABELA" | "FIGURA";
 
-type QuestaoDraft = {
+export type MaterialApoioDraft = {
+  tipo: MaterialApoioTipo;
+  titulo?: string;
+  conteudo?: string;
+  imagemUrl?: string;
+};
+
+export type ContextoApoioDraft = {
+  id: string;
+  materiais: MaterialApoioDraft[];
+  questoes: number[];
+};
+
+export type AlternativaDraft = { letra: string; texto: string; correta: boolean; imagemUrl?: string };
+
+export type QuestaoDraft = {
   numero: number;
   tipo: "OBJETIVA" | "CERTO_ERRADO";
   enunciado: string;
   imagemUrl?: string;
   gabarito?: string;
   alternativas: AlternativaDraft[];
+  /** Contexto textual/visual compartilhado por esta questão, quando houver. */
+  contextoApoioId?: string;
+  /** Permite que uma questão use mais de um contexto, por exemplo Text I + Text II. */
+  contextoApoioIds?: string[];
+  /** Material diretamente ligado à questão, por exemplo uma figura exclusiva. */
+  materiaisApoio?: MaterialApoioDraft[];
+};
+
+type QuestaoDraftComContextos = QuestaoDraft[] & {
+  contextosApoio?: ContextoApoioDraft[];
 };
 
 const NOISE_LINE = /^(pcimarkpci\b|www\.\S+$|--\s*\d+\s+of\s+\d+\s*--$|espa[cç]o livre$|.*P[ÁA]GINA\s+\d+\s*$)/i;
@@ -439,28 +464,245 @@ function findLineNumberAnnotationIndices(lines: string[]): Set<number> {
   return annotationIndices;
 }
 
+
+/**
+ * Marcadores de materiais de apoio que aparecem como blocos independentes no PDF.
+ *
+ * Exemplos reais:
+ *   Texto I
+ *   Texto II
+ *   Text I
+ *   Text II
+ *   Figura 1
+ *   Tabela 1
+ *   Quadro 1
+ *   Gráfico 1
+ *   Imagem 1
+ *
+ * O parser nao assume que um texto serve apenas para uma questao. O contexto
+ * permanece ativo ate aparecer outro marcador de material ou ate o fim da prova.
+ */
+const SUPPORT_MATERIAL_MARKER = /^(texto|text|figura|tabela|quadro|gr[aá]fico|imagem)(?:\s+([IVXLCDM]+|\d+))?\s*$/i;
+
+function detectSupportMaterialMarker(line: string): { tipo: MaterialApoioTipo; titulo: string } | null {
+  const trimmed = line.trim();
+  const match = SUPPORT_MATERIAL_MARKER.exec(trimmed);
+  if (!match) return null;
+
+  const base = normalizeSupportLabel(match[1]);
+  const suffix = match[2] ? ` ${match[2]}` : "";
+
+  if (base === "texto" || base === "text") {
+    return { tipo: "TEXTO", titulo: `${trimmed}` };
+  }
+  if (base === "tabela") return { tipo: "TABELA", titulo: trimmed };
+  if (base === "quadro") return { tipo: "TABELA", titulo: trimmed };
+  if (base === "grafico") return { tipo: "FIGURA", titulo: trimmed };
+  if (base === "imagem") return { tipo: "IMAGEM", titulo: trimmed };
+  return { tipo: "FIGURA", titulo: `${base}${suffix}`.trim() };
+}
+
+function normalizeSupportLabel(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function makeContextId(index: number): string {
+  return `contexto-apoio-${index + 1}`;
+}
+
+/**
+ * Extrai os blocos de material de apoio sem duplicar o texto nas questoes.
+ *
+ * Regra deliberadamente conservadora:
+ * - "Texto I" inicia um material de texto;
+ * - "Texto II" inicia outro material, mas ambos podem pertencer ao mesmo contexto;
+ * - o contexto continua valendo para as questoes seguintes ate outro marcador;
+ * - o texto anterior a primeira questao e preservado quando estiver dentro de um
+ *   marcador de apoio, em vez de ser descartado junto com instrucoes da prova.
+ *
+ * A lista de questoes e recebida para determinar quais numeros foram realmente
+ * identificados pelo parser. Isso evita associar cabeçalhos/instrucoes a um contexto.
+ */
+function extractSupportContexts(
+  lines: string[],
+  firstQuestionIndex: number,
+  questionNumbers: number[],
+  repeatedHeaders: Set<string>,
+  trailingCredits: Set<string>,
+  sectionTitles: Set<string>
+): ContextoApoioDraft[] {
+  const annotationIndices = findLineNumberAnnotationIndices(lines);
+  const working = lines.map((line, index) => {
+    if (index < firstQuestionIndex && annotationIndices.has(index)) return "";
+    return line;
+  });
+
+  const contexts: ContextoApoioDraft[] = [];
+  let currentMaterial: MaterialApoioDraft | null = null;
+  let currentContext: ContextoApoioDraft | null = null;
+  let contextCounter = 0;
+  let currentQuestionNumber: number | null = null;
+
+  function startContext(): ContextoApoioDraft {
+    const context: ContextoApoioDraft = {
+      id: makeContextId(contextCounter++),
+      materiais: [],
+      questoes: [],
+    };
+    contexts.push(context);
+    return context;
+  }
+
+  function ensureContext(): ContextoApoioDraft {
+    if (!currentContext) {
+      currentContext = startContext();
+    }
+    return currentContext;
+  }
+
+  function flushMaterial() {
+    if (!currentMaterial) return;
+    const text = (currentMaterial.conteudo ?? "").replace(/\s+/g, " ").trim();
+    if (text) {
+      currentMaterial.conteudo = text;
+      ensureContext().materiais.push(currentMaterial);
+    }
+    currentMaterial = null;
+  }
+
+  for (let i = 0; i < working.length; i += 1) {
+    const raw = working[i];
+    const line = raw.trim();
+    if (!line) continue;
+    if (isNoise(line) || repeatedHeaders.has(line) || trailingCredits.has(line) || sectionTitles.has(line)) continue;
+
+    if (annotationIndices.has(i)) continue;
+
+    const marker = detectSupportMaterialMarker(line);
+    if (marker) {
+      flushMaterial();
+
+      // Se ja houve questoes no contexto anterior, um novo marcador normalmente
+      // inicia outro bloco de apoio. Se ainda nao houve nenhuma questao, varios
+      // materiais consecutivos (Texto I + Texto II + Figura) ficam no mesmo contexto.
+      if (!currentContext || currentContext.questoes.length > 0) {
+        currentContext = startContext();
+      }
+
+      currentMaterial = {
+        tipo: marker.tipo,
+        titulo: marker.titulo,
+        conteudo: "",
+      };
+      continue;
+    }
+
+    const inlineMatch = ITEM_START_INLINE.exec(raw);
+    const aloneMatch = inlineMatch ? null : ITEM_START_ALONE.exec(line);
+    const numero = inlineMatch ? Number(inlineMatch[1]) : aloneMatch ? Number(aloneMatch[1]) : null;
+
+    if (i >= firstQuestionIndex && numero !== null && questionNumbers.includes(numero) && !annotationIndices.has(i)) {
+      flushMaterial();
+      currentQuestionNumber = numero;
+      if (!currentContext) {
+        currentContext = startContext();
+      }
+
+      if (!currentContext.questoes.includes(numero)) {
+        currentContext.questoes.push(numero);
+      }
+      continue;
+    }
+
+    if (currentMaterial) {
+      if (!isExamInstructionLine(line)) {
+        currentMaterial.conteudo = currentMaterial.conteudo
+          ? `${currentMaterial.conteudo} ${line}`
+          : line;
+      }
+      continue;
+    }
+
+    void currentQuestionNumber;
+  }
+
+  flushMaterial();
+
+  const validNumbers = new Set(questionNumbers);
+  return contexts
+    .map((context) => ({
+      ...context,
+      questoes: context.questoes.filter((numero) => validNumbers.has(numero)),
+      materiais: context.materiais.filter((material) => Boolean(material.conteudo || material.imagemUrl)),
+    }))
+    .filter((context) => context.materiais.length > 0);
+}
+
+function normalizeContextReference(value: string): string {
+  return normalizeSupportLabel(value)
+    .replace(/\btexto\b/g, "text")
+    .replace(/\btext\b/g, "text");
+}
+
+function materialTitleMatchesReference(title: string, questionText: string): boolean {
+  const titleNorm = normalizeContextReference(title);
+  const questionNorm = normalizeContextReference(questionText);
+  if (!titleNorm || !questionNorm) return false;
+
+  const match = /^(text|texto)\s+([ivxlcdm]+|\d+)$/i.exec(title.trim());
+  if (!match) return false;
+
+  const numeral = match[2].toLowerCase();
+  return new RegExp(`\\btext(?:o)?\\s+${numeral}\\b`, "i").test(questionText);
+}
+
+function attachContextReferences(
+  questoes: QuestaoDraft[],
+  contextosApoio: ContextoApoioDraft[]
+) {
+  const byQuestion = new Map<number, ContextoApoioDraft[]>();
+  for (const context of contextosApoio) {
+    for (const numero of context.questoes) {
+      const list = byQuestion.get(numero) ?? [];
+      list.push(context);
+      byQuestion.set(numero, list);
+    }
+  }
+
+  for (const questao of questoes) {
+    const direct = byQuestion.get(questao.numero) ?? [];
+    const referenced = contextosApoio.filter((context) =>
+      context.materiais.some((material) =>
+        material.titulo ? materialTitleMatchesReference(material.titulo, questao.enunciado) : false
+      )
+    );
+
+    const all = [...direct, ...referenced].filter(
+      (context, index, array) => array.findIndex((item) => item.id === context.id) === index
+    );
+
+    if (all.length > 0) {
+      questao.contextoApoioId = all[0].id;
+      questao.contextoApoioIds = all.map((context) => context.id);
+    }
+  }
+}
+
 export function parseProvaText(rawText: string): QuestaoDraft[] {
   const lines = rawText.split(/\r?\n/).map((line) => line.trimEnd());
   const repeatedHeaders = findRepeatedHeaderLines(lines);
   const trailingCredits = findTrailingCreditsLines(lines);
   const sectionTitles = findSectionTitleLines(lines);
 
-  // Encontra o primeiro item real ANTES de apagar os numeros de margem.
-  // Isso evita que a heuristica de anotacoes de linha remova justamente o primeiro
-  // numero da prova antes de sabermos onde o caderno de questoes realmente comeca.
+  // Encontra o primeiro item real antes de apagar os numeros de margem.
   const firstQuestionIndex = findFirstQuestionIndex(lines, repeatedHeaders);
 
-  // Apaga na origem (por indice, nao por conteudo): um numero pequeno como "24" ou "25"
-  // e reaproveitado como item de verdade em outro ponto do mesmo PDF, entao so a posicao
-  // exata identificada como anotacao de margem pode ser descartada com seguranca.
-  // exata identificada como anotacao de margem pode ser descartada com seguranca.
+  // Os numeros de margem sao removidos somente antes do primeiro item real.
+  // Depois dele, um numero isolado pode ser uma questao legitima.
   for (const index of findLineNumberAnnotationIndices(lines)) {
-    // Nunca apaga números a partir do primeiro item real da prova.
-    // Depois que a primeira questão foi encontrada, números isolados
-    // podem ser números reais de questões (1, 2, 3, ...).
-    //
-    // A heurística de números de margem deve atuar somente no material
-    // que aparece antes do início real da prova.
     if (index < firstQuestionIndex) {
       lines[index] = "";
     }
@@ -472,9 +714,15 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
 
   function flush() {
     if (!current) return;
+
     const blockLines = current.linhas.filter(
-      (line) => !isNoise(line.trim()) && !repeatedHeaders.has(line.trim()) && !trailingCredits.has(line.trim()) && !sectionTitles.has(line.trim())
+      (line) =>
+        !isNoise(line.trim()) &&
+        !repeatedHeaders.has(line.trim()) &&
+        !trailingCredits.has(line.trim()) &&
+        !sectionTitles.has(line.trim())
     );
+
     const altStartIdx = blockLines.findIndex((line) => ALTERNATIVA_START.test(line.trim()));
     const stemLines = altStartIdx === -1 ? blockLines : blockLines.slice(0, altStartIdx);
     const enunciado = stemLines.join(" ").replace(/\s+/g, " ").trim();
@@ -483,41 +731,54 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
     if (altStartIdx !== -1) {
       let letraAtual: string | null = null;
       let textoAtual = "";
+
       for (const line of blockLines.slice(altStartIdx)) {
         const match = ALTERNATIVA_START.exec(line.trim());
         if (match) {
-          if (letraAtual) alternativas.push({ letra: letraAtual, texto: textoAtual.replace(/\s+/g, " ").trim(), correta: false });
+          if (letraAtual) {
+            alternativas.push({
+              letra: letraAtual,
+              texto: textoAtual.replace(/\s+/g, " ").trim(),
+              correta: false,
+            });
+          }
           letraAtual = match[1];
           textoAtual = match[2];
         } else if (letraAtual) {
           textoAtual += ` ${line.trim()}`;
         }
       }
-      if (letraAtual) alternativas.push({ letra: letraAtual, texto: textoAtual.replace(/\s+/g, " ").trim(), correta: false });
+
+      if (letraAtual) {
+        alternativas.push({
+          letra: letraAtual,
+          texto: textoAtual.replace(/\s+/g, " ").trim(),
+          correta: false,
+        });
+      }
     }
 
-    // Algumas questoes (comuns em provas com figura) nao tem nenhum texto proprio alem
-    // do comando compartilhado ja consumido pelo item anterior - ex.: "24. [julgue com
-    // base na figura]" sem mais nada. Descartar silenciosamente perderia o item (e o
-    // gabarito dele) sem o admin nem saber que ele existiu. Em vez disso, entra com um
-    // placeholder visivel que aponta pra revisao manual.
-    const enunciadoFinal = enunciado.length > 0 ? enunciado : `[Sem texto extraído — questão baseada em figura/imagem. Revisar o PDF original e completar o enunciado da questão ${current.numero}.]`;
-    questoes.push({ numero: current.numero, tipo: "OBJETIVA", enunciado: enunciadoFinal, alternativas });
+    const enunciadoFinal =
+      enunciado.length > 0
+        ? enunciado
+        : `[Sem texto extraído — questão baseada em figura/imagem. Revisar o PDF original e completar o enunciado da questão ${current.numero}.]`;
+
+    questoes.push({
+      numero: current.numero,
+      tipo: "OBJETIVA",
+      enunciado: enunciadoFinal,
+      alternativas,
+    });
   }
 
-  // Ignora todo o material que vem antes do primeiro item real. Isso e essencial
-  // para PDFs como o da Cesgranrio/Petrobras analisado: a primeira pagina possui
-  // instrucoes "01 - ...", "02 - ..." ate "12 - ...". Sem esta barreira, o parser
-  // transforma essas instrucoes em questoes 1..12 e, quando chega a pagina 2, as
-  // questoes reais 1..12 ficam menores que lastNumero e sao anexadas a "questao 12".
+  // Mantemos a regra atual de começar no primeiro item real. O contexto de apoio
+  // é extraído separadamente, inclusive antes desse índice, para que Texto I/II
+  // não seja descartado.
   for (let lineIndex = firstQuestionIndex; lineIndex < lines.length; lineIndex += 1) {
     const rawLine = lines[lineIndex];
     const line = rawLine.trim();
 
     if (!line || isNoise(line) || repeatedHeaders.has(line) || trailingCredits.has(line) || sectionTitles.has(line)) continue;
-
-    // Linhas de instrucao com hifen nao casam com ITEM_START_INLINE. Se ja estivermos
-    // dentro de uma questao, elas permanecem como texto do bloco em vez de abrirem um item.
 
     const inlineMatch = ITEM_START_INLINE.exec(rawLine);
     const aloneMatch = inlineMatch ? null : ITEM_START_ALONE.exec(line);
@@ -533,22 +794,38 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
   }
   flush();
 
-  // O tipo da questao e decidido olhando a prova inteira, nao cada questao isolada:
-  // num caderno majoritariamente objetivo (A-E), uma questao sem alternativas quase
-  // certamente e falha de parse — fabricar "Certo/Errado" nela mascararia o problema
-  // com dado inventado. Ja num caderno onde quase nenhuma questao tem alternativas
-  // (estilo CEBRASPE), itens sem alternativa SAO certo/errado de verdade.
   const comAlternativas = questoes.filter((questao) => questao.alternativas.length >= 2).length;
   const majoritariamenteObjetiva = comAlternativas > questoes.length / 2;
   for (const questao of questoes) {
     if (questao.alternativas.length >= 2) continue;
-    if (majoritariamenteObjetiva) continue; // deixa OBJETIVA sem alternativas: a validacao do rascunho aponta a questao pro admin corrigir
+    if (majoritariamenteObjetiva) continue;
     questao.tipo = "CERTO_ERRADO";
     questao.alternativas = [
       { letra: "C", texto: "Certo", correta: false },
       { letra: "E", texto: "Errado", correta: false },
     ];
   }
+
+  // Materiais de apoio sao mantidos fora do enunciado e podem ser compartilhados
+  // por varias questoes. A estrutura e anexada ao array para manter compatibilidade
+  // com todos os chamadores existentes que esperam apenas QuestaoDraft[].
+  const questionNumbers = questoes.map((questao) => questao.numero);
+  const contextosApoio = extractSupportContexts(
+    rawText.split(/\r?\n/).map((line) => line.trimEnd()),
+    firstQuestionIndex,
+    questionNumbers,
+    repeatedHeaders,
+    trailingCredits,
+    sectionTitles
+  );
+
+  const questoesComContextos = questoes as QuestaoDraftComContextos;
+  questoesComContextos.contextosApoio = contextosApoio;
+
+  // Liga cada questao ao(s) contexto(s) pelo numero e por referencias explicitas
+  // no enunciado, como "Comparing Texts I and II". Assim uma questao pode usar
+  // dois textos sem duplicar o conteudo dentro do enunciado.
+  attachContextReferences(questoes, contextosApoio);
 
   return questoes;
 }
@@ -734,10 +1011,32 @@ export function applyImages(
   return questoes.map((questao) => {
     const questaoImage = assignments.find((a) => a.numero === questao.numero && a.letra === null);
     const alternativas = questao.alternativas.map((alt) => {
-      const altImage = assignments.find((a) => a.numero === questao.numero && a.letra?.toUpperCase() === alt.letra.toUpperCase());
+      const altImage = assignments.find(
+        (a) => a.numero === questao.numero && a.letra?.toUpperCase() === alt.letra.toUpperCase()
+      );
       return altImage ? { ...alt, imagemUrl: altImage.url } : alt;
     });
-    return questaoImage ? { ...questao, imagemUrl: questaoImage.url, alternativas } : { ...questao, alternativas };
+
+    const materiaisApoio = [...(questao.materiaisApoio ?? [])];
+    if (questaoImage) {
+      const jaExiste = materiaisApoio.some(
+        (material) => material.tipo === "IMAGEM" && material.imagemUrl === questaoImage.url
+      );
+      if (!jaExiste) {
+        materiaisApoio.push({
+          tipo: "IMAGEM",
+          titulo: "Imagem associada à questão",
+          imagemUrl: questaoImage.url,
+        });
+      }
+    }
+
+    return {
+      ...questao,
+      imagemUrl: questaoImage?.url ?? questao.imagemUrl,
+      alternativas,
+      materiaisApoio: materiaisApoio.length > 0 ? materiaisApoio : questao.materiaisApoio,
+    };
   });
 }
 
@@ -782,6 +1081,8 @@ export function inferProvaHints(rawText: string): Pick<ProvaHints, "banca" | "an
 }
 
 export function buildProvaDraft(questoes: QuestaoDraft[], hints: ProvaHints) {
+  const contextosApoio = (questoes as QuestaoDraftComContextos).contextosApoio ?? [];
+
   // Sem placeholders: campo nao informado nem inferido fica vazio e reprova na
   // validacao do rascunho (o preview lista o que falta). Placeholder silencioso
   // ("BANCA", "Cargo") gerava o mesmo slug pra provas diferentes e o import em
@@ -801,6 +1102,7 @@ export function buildProvaDraft(questoes: QuestaoDraft[], hints: ProvaHints) {
         ano,
         nivel: ["SUPERIOR"] as const,
         duracaoMin: 240,
+        contextosApoio,
         questoes: questoes.map((questao) => ({
           numero: questao.numero,
           tipo: questao.tipo,
@@ -809,6 +1111,9 @@ export function buildProvaDraft(questoes: QuestaoDraft[], hints: ProvaHints) {
           dificuldade: "MEDIUM" as const,
           gabarito: questao.gabarito,
           alternativas: questao.alternativas,
+          contextoApoioId: questao.contextoApoioId,
+          contextoApoioIds: questao.contextoApoioIds,
+          materiaisApoio: questao.materiaisApoio,
         })),
       },
     ],
