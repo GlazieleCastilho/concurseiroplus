@@ -95,13 +95,13 @@ function findFirstQuestionIndex(
   // A. texto
   //
   // O "i" permite A/a.
-  const alternativePattern = /^\(?([A-E])[\).]\s+/i;
+  const alternativePattern = /^\(?([A-E])[\).]\s+/;
 
   // Também precisamos reconhecer alternativas que possam ter sido
   // colocadas na mesma linha pelo PDF:
   //
   // (A) texto (B) texto (C) texto...
-  const inlineAlternativePattern = /\(?([A-E])[\).]\s+/gi;
+  const inlineAlternativePattern = /(?:^|\s)\(?([A-E])[\).]\s+/g;
 
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i].trim();
@@ -453,7 +453,18 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
   // Apaga na origem (por indice, nao por conteudo): um numero pequeno como "24" ou "25"
   // e reaproveitado como item de verdade em outro ponto do mesmo PDF, entao so a posicao
   // exata identificada como anotacao de margem pode ser descartada com seguranca.
-  for (const index of findLineNumberAnnotationIndices(lines)) lines[index] = "";
+  // exata identificada como anotacao de margem pode ser descartada com seguranca.
+  for (const index of findLineNumberAnnotationIndices(lines)) {
+    // Nunca apaga números a partir do primeiro item real da prova.
+    // Depois que a primeira questão foi encontrada, números isolados
+    // podem ser números reais de questões (1, 2, 3, ...).
+    //
+    // A heurística de números de margem deve atuar somente no material
+    // que aparece antes do início real da prova.
+    if (index < firstQuestionIndex) {
+      lines[index] = "";
+    }
+  }
 
   const questoes: QuestaoDraft[] = [];
   let current: { numero: number; linhas: string[] } | null = null;
