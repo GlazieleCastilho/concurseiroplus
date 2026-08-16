@@ -5,7 +5,12 @@
  * Cobre o caso comum; o admin sempre revisa o rascunho antes de confirmar o import.
  */
 
-type AlternativaDraft = { letra: string; texto: string; correta: boolean; imagemUrl?: string };
+type AlternativaDraft = {
+  letra: string;
+  texto: string;
+  correta: boolean;
+  imagemUrl?: string;
+};
 
 type QuestaoDraft = {
   numero: number;
@@ -16,7 +21,8 @@ type QuestaoDraft = {
   alternativas: AlternativaDraft[];
 };
 
-const NOISE_LINE = /^(pcimarkpci\b|www\.\S+$|--\s*\d+\s+of\s+\d+\s*--$|espa[cç]o livre$|.*P[ÁA]GINA\s+\d+\s*$)/i;
+const NOISE_LINE =
+  /^(pcimarkpci\b|www\.\S+$|--\s*\d+\s+of\s+\d+\s*--$|espa[cç]o livre$|.*P[ÁA]GINA\s+\d+\s*$)/i;
 // Numero do item seguido de texto na mesma linha.
 // Aceita formatos comuns como:
 //   9 Observe a charge...
@@ -26,7 +32,8 @@ const NOISE_LINE = /^(pcimarkpci\b|www\.\S+$|--\s*\d+\s+of\s+\d+\s*--$|espa[cç]
 // O lookahead evita tratar linhas de instrucoes como:
 //   01 - Voce recebeu do fiscal...
 // como se fossem questoes.
-export const ITEM_START_INLINE = /^(\d{1,3})(?:[.)]\s*|[ \t]+)(?![-–—]\s)(\S.*)$/;
+export const ITEM_START_INLINE =
+  /^(\d{1,3})(?:[.)]\s*|[ \t]+)(?![-–—]\s)(\S.*)$/;
 
 // Numero do item sozinho na linha, com o enunciado comecando na linha seguinte.
 // Aceita tambem o numero seguido de ponto ou parenteses, comum em alguns PDFs.
@@ -50,7 +57,11 @@ function isExamInstructionLine(line: string): boolean {
 
 function isAllCapsLine(line: string): boolean {
   const trimmed = line.trim();
-  return trimmed.length > 0 && trimmed === trimmed.toUpperCase() && /[A-ZÀ-Ú]/.test(trimmed);
+  return (
+    trimmed.length > 0 &&
+    trimmed === trimmed.toUpperCase() &&
+    /[A-ZÀ-Ú]/.test(trimmed)
+  );
 }
 
 /**
@@ -66,7 +77,10 @@ function isAllCapsLine(line: string): boolean {
  * questao 1, procuramos o primeiro "1" que tenha uma linha de conteudo plausivel
  * logo depois. Se houver alternativas A-E proximas, o sinal fica ainda mais forte.
  */
-function findFirstQuestionIndex(lines: string[], repeatedHeaders: Set<string>): number {
+function findFirstQuestionIndex(
+  lines: string[],
+  repeatedHeaders: Set<string>,
+): number {
   const MAX_LOOKAHEAD = 80;
 
   for (let i = 0; i < lines.length; i += 1) {
@@ -76,7 +90,11 @@ function findFirstQuestionIndex(lines: string[], repeatedHeaders: Set<string>): 
 
     const inlineMatch = ITEM_START_INLINE.exec(line);
     const aloneMatch = inlineMatch ? null : ITEM_START_ALONE.exec(line);
-    const numero = inlineMatch ? Number(inlineMatch[1]) : aloneMatch ? Number(aloneMatch[1]) : null;
+    const numero = inlineMatch
+      ? Number(inlineMatch[1])
+      : aloneMatch
+        ? Number(aloneMatch[1])
+        : null;
 
     // As provas deste tipo normalmente comecam no item 1. Usamos esse marco
     // apenas para atravessar o material inicial (instrucoes/cabecalhos).
@@ -102,7 +120,11 @@ function findFirstQuestionIndex(lines: string[], repeatedHeaders: Set<string>): 
 
       const nextInline = ITEM_START_INLINE.exec(next);
       const nextAlone = nextInline ? null : ITEM_START_ALONE.exec(next);
-      const nextNumero = nextInline ? Number(nextInline[1]) : nextAlone ? Number(nextAlone[1]) : null;
+      const nextNumero = nextInline
+        ? Number(nextInline[1])
+        : nextAlone
+          ? Number(nextAlone[1])
+          : null;
 
       if (ALTERNATIVA_START.test(next)) {
         sawAlternative = true;
@@ -173,7 +195,11 @@ function findTrailingCreditsLines(lines: string[]): Set<string> {
   for (let i = lines.length - 1; i >= 0; i -= 1) {
     const line = lines[i].trim();
     if (!line) continue;
-    const looksLikeRealContent = line.length > 40 || /[.?!:;]$/.test(line) || ALTERNATIVA_START.test(line) || ITEM_START_ALONE.test(line);
+    const looksLikeRealContent =
+      line.length > 40 ||
+      /[.?!:;]$/.test(line) ||
+      ALTERNATIVA_START.test(line) ||
+      ITEM_START_ALONE.test(line);
     if (looksLikeRealContent) break;
     trailing.add(line);
   }
@@ -195,7 +221,10 @@ function findSectionTitleLines(lines: string[]): Set<string> {
       const candidate = lines[j].trim();
       if (!candidate) continue;
       const looksLikeRealContent =
-        candidate.length > 60 || /[.?!:;]$/.test(candidate) || ALTERNATIVA_START.test(candidate) || ITEM_START_ALONE.test(candidate);
+        candidate.length > 60 ||
+        /[.?!:;]$/.test(candidate) ||
+        ALTERNATIVA_START.test(candidate) ||
+        ITEM_START_ALONE.test(candidate);
       if (looksLikeRealContent) break;
       titles.add(candidate);
       break;
@@ -293,10 +322,17 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
   function flush() {
     if (!current) return;
     const blockLines = current.linhas.filter(
-      (line) => !isNoise(line.trim()) && !repeatedHeaders.has(line.trim()) && !trailingCredits.has(line.trim()) && !sectionTitles.has(line.trim())
+      (line) =>
+        !isNoise(line.trim()) &&
+        !repeatedHeaders.has(line.trim()) &&
+        !trailingCredits.has(line.trim()) &&
+        !sectionTitles.has(line.trim()),
     );
-    const altStartIdx = blockLines.findIndex((line) => ALTERNATIVA_START.test(line.trim()));
-    const stemLines = altStartIdx === -1 ? blockLines : blockLines.slice(0, altStartIdx);
+    const altStartIdx = blockLines.findIndex((line) =>
+      ALTERNATIVA_START.test(line.trim()),
+    );
+    const stemLines =
+      altStartIdx === -1 ? blockLines : blockLines.slice(0, altStartIdx);
     const enunciado = stemLines.join(" ").replace(/\s+/g, " ").trim();
 
     const alternativas: AlternativaDraft[] = [];
@@ -306,14 +342,24 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
       for (const line of blockLines.slice(altStartIdx)) {
         const match = ALTERNATIVA_START.exec(line.trim());
         if (match) {
-          if (letraAtual) alternativas.push({ letra: letraAtual, texto: textoAtual.replace(/\s+/g, " ").trim(), correta: false });
+          if (letraAtual)
+            alternativas.push({
+              letra: letraAtual,
+              texto: textoAtual.replace(/\s+/g, " ").trim(),
+              correta: false,
+            });
           letraAtual = match[1];
           textoAtual = match[2];
         } else if (letraAtual) {
           textoAtual += ` ${line.trim()}`;
         }
       }
-      if (letraAtual) alternativas.push({ letra: letraAtual, texto: textoAtual.replace(/\s+/g, " ").trim(), correta: false });
+      if (letraAtual)
+        alternativas.push({
+          letra: letraAtual,
+          texto: textoAtual.replace(/\s+/g, " ").trim(),
+          correta: false,
+        });
     }
 
     // Algumas questoes (comuns em provas com figura) nao tem nenhum texto proprio alem
@@ -321,8 +367,16 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
     // base na figura]" sem mais nada. Descartar silenciosamente perderia o item (e o
     // gabarito dele) sem o admin nem saber que ele existiu. Em vez disso, entra com um
     // placeholder visivel que aponta pra revisao manual.
-    const enunciadoFinal = enunciado.length > 0 ? enunciado : `[Sem texto extraído — questão baseada em figura/imagem. Revisar o PDF original e completar o enunciado da questão ${current.numero}.]`;
-    questoes.push({ numero: current.numero, tipo: "OBJETIVA", enunciado: enunciadoFinal, alternativas });
+    const enunciadoFinal =
+      enunciado.length > 0
+        ? enunciado
+        : `[Sem texto extraído — questão baseada em figura/imagem. Revisar o PDF original e completar o enunciado da questão ${current.numero}.]`;
+    questoes.push({
+      numero: current.numero,
+      tipo: "OBJETIVA",
+      enunciado: enunciadoFinal,
+      alternativas,
+    });
   }
 
   // Ignora todo o material que vem antes do primeiro item real. Isso e essencial
@@ -330,18 +384,33 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
   // instrucoes "01 - ...", "02 - ..." ate "12 - ...". Sem esta barreira, o parser
   // transforma essas instrucoes em questoes 1..12 e, quando chega a pagina 2, as
   // questoes reais 1..12 ficam menores que lastNumero e sao anexadas a "questao 12".
-  for (let lineIndex = firstQuestionIndex; lineIndex < lines.length; lineIndex += 1) {
+  for (
+    let lineIndex = firstQuestionIndex;
+    lineIndex < lines.length;
+    lineIndex += 1
+  ) {
     const rawLine = lines[lineIndex];
     const line = rawLine.trim();
 
-    if (!line || isNoise(line) || repeatedHeaders.has(line) || trailingCredits.has(line) || sectionTitles.has(line)) continue;
+    if (
+      !line ||
+      isNoise(line) ||
+      repeatedHeaders.has(line) ||
+      trailingCredits.has(line) ||
+      sectionTitles.has(line)
+    )
+      continue;
 
     // Linhas de instrucao com hifen nao casam com ITEM_START_INLINE. Se ja estivermos
     // dentro de uma questao, elas permanecem como texto do bloco em vez de abrirem um item.
 
     const inlineMatch = ITEM_START_INLINE.exec(rawLine);
     const aloneMatch = inlineMatch ? null : ITEM_START_ALONE.exec(line);
-    const numero = inlineMatch ? Number(inlineMatch[1]) : aloneMatch ? Number(aloneMatch[1]) : null;
+    const numero = inlineMatch
+      ? Number(inlineMatch[1])
+      : aloneMatch
+        ? Number(aloneMatch[1])
+        : null;
 
     if (numero !== null && numero > lastNumero && numero <= lastNumero + 30) {
       flush();
@@ -358,7 +427,9 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
   // certamente e falha de parse — fabricar "Certo/Errado" nela mascararia o problema
   // com dado inventado. Ja num caderno onde quase nenhuma questao tem alternativas
   // (estilo CEBRASPE), itens sem alternativa SAO certo/errado de verdade.
-  const comAlternativas = questoes.filter((questao) => questao.alternativas.length >= 2).length;
+  const comAlternativas = questoes.filter(
+    (questao) => questao.alternativas.length >= 2,
+  ).length;
   const majoritariamenteObjetiva = comAlternativas > questoes.length / 2;
   for (const questao of questoes) {
     if (questao.alternativas.length >= 2) continue;
@@ -405,22 +476,35 @@ function isSuspiciousAlternativaCount(count: number): boolean {
  * nao recusar questoes genuinamente longas (textos de apoio embutidos, comuns em ENEM e
  * concursos) que tem uma quantidade normal de alternativas.
  */
-export function detectParsingAnomaly(rawText: string, questoes: QuestaoDraft[]): string | null {
-  const hardOversized = questoes.find((questao) => questao.enunciado.length > HARD_MAX_ENUNCIADO_LENGTH);
+export function detectParsingAnomaly(
+  rawText: string,
+  questoes: QuestaoDraft[],
+): string | null {
+  const hardOversized = questoes.find(
+    (questao) => questao.enunciado.length > HARD_MAX_ENUNCIADO_LENGTH,
+  );
   if (hardOversized) {
     return `A questão ${hardOversized.numero} ficou com ${hardOversized.enunciado.length} caracteres, muito acima do que qualquer questão real costuma ter — mesmo com texto de apoio longo. Isso indica que o parser não conseguiu separar os itens corretamente neste PDF. Use CSV/JSON ou cadastre manualmente.`;
   }
 
   const suspicious = questoes.find(
-    (questao) => questao.enunciado.length > SUSPICIOUS_ENUNCIADO_LENGTH && isSuspiciousAlternativaCount(questao.alternativas.length)
+    (questao) =>
+      questao.enunciado.length > SUSPICIOUS_ENUNCIADO_LENGTH &&
+      isSuspiciousAlternativaCount(questao.alternativas.length),
   );
   if (suspicious) {
     return `A questão ${suspicious.numero} ficou com ${suspicious.enunciado.length} caracteres e ${suspicious.alternativas.length} alternativa(s) — essa combinação sugere que duas ou mais questões foram mescladas por engano neste PDF (provavelmente o layout não quebra linha entre o número do item e o texto, ou as alternativas estão escritas em formato "(A) ... (B) ..." dentro do parágrafo). Use CSV/JSON ou cadastre manualmente.`;
   }
 
   const meaningfulLength = rawText.replace(/\s+/g, " ").trim().length;
-  const expectedMinQuestoes = Math.floor(meaningfulLength / (TYPICAL_QUESTAO_LENGTH_FOR_COVERAGE_CHECK * 3));
-  if (expectedMinQuestoes > 0 && questoes.length > 0 && questoes.length < expectedMinQuestoes) {
+  const expectedMinQuestoes = Math.floor(
+    meaningfulLength / (TYPICAL_QUESTAO_LENGTH_FOR_COVERAGE_CHECK * 3),
+  );
+  if (
+    expectedMinQuestoes > 0 &&
+    questoes.length > 0 &&
+    questoes.length < expectedMinQuestoes
+  ) {
     return `Foram identificadas apenas ${questoes.length} questão(ões) para um texto de ${meaningfulLength} caracteres, bem menos do que o esperado. O parser provavelmente não conseguiu segmentar os itens neste layout de PDF. Use CSV/JSON ou cadastre manualmente.`;
   }
   return null;
@@ -439,7 +523,9 @@ function normalize(text: string): string {
  * cabecalho e formatados como pares de linhas "1 2 3 ... 20" / "B C A ... D".
  * Extrai cada bloco encontrado, mapeado pelo texto do cabecalho que o precede.
  */
-function parseVersionedGrid(lines: string[]): Array<{ header: string; gabarito: Map<number, string> }> {
+function parseVersionedGrid(
+  lines: string[],
+): Array<{ header: string; gabarito: Map<number, string> }> {
   const HEADER_LINE = /PROVA\s+0*(\d{1,2})\b/i;
   const NUMBERS_ROW = /^\d{1,3}(?:\s+\d{1,3}){2,}$/;
   const LETTERS_ROW = /^[A-E](?:\s+[A-E]){2,}$/;
@@ -478,8 +564,14 @@ function parseVersionedGrid(lines: string[]): Array<{ header: string; gabarito: 
 export type GabaritoSelector = { provaVersao?: string; cargo?: string };
 
 /** Extrai pares {numero -> letra} de um PDF de gabarito oficial (grade numerica, lista simples ou grade versionada). */
-export function parseGabaritoText(rawText: string, selector?: GabaritoSelector): Map<number, string> {
-  const lines = rawText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+export function parseGabaritoText(
+  rawText: string,
+  selector?: GabaritoSelector,
+): Map<number, string> {
+  const lines = rawText
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
 
   const versionedSections = parseVersionedGrid(lines);
   if (versionedSections.length > 0) {
@@ -487,14 +579,25 @@ export function parseGabaritoText(rawText: string, selector?: GabaritoSelector):
     const wantedCargo = selector?.cargo ? normalize(selector.cargo) : null;
 
     const byVersaoAndCargo = versionedSections.filter((section) => {
-      const versaoMatch = wantedVersao ? new RegExp(`PROVA\\s+0*${wantedVersao}\\b`, "i").test(section.header) : true;
-      const cargoMatch = wantedCargo ? normalize(section.header).includes(wantedCargo) : true;
+      const versaoMatch = wantedVersao
+        ? new RegExp(`PROVA\\s+0*${wantedVersao}\\b`, "i").test(section.header)
+        : true;
+      const cargoMatch = wantedCargo
+        ? normalize(section.header).includes(wantedCargo)
+        : true;
       return versaoMatch && cargoMatch;
     });
 
-    const chosen = byVersaoAndCargo[0]
-      ?? versionedSections.find((section) => (wantedVersao ? new RegExp(`PROVA\\s+0*${wantedVersao}\\b`, "i").test(section.header) : true))
-      ?? versionedSections[0];
+    const chosen =
+      byVersaoAndCargo[0] ??
+      versionedSections.find((section) =>
+        wantedVersao
+          ? new RegExp(`PROVA\\s+0*${wantedVersao}\\b`, "i").test(
+              section.header,
+            )
+          : true,
+      ) ??
+      versionedSections[0];
     return chosen.gabarito;
   }
 
@@ -522,7 +625,12 @@ export function parseGabaritoText(rawText: string, selector?: GabaritoSelector):
       continue;
     }
     const next = lines[i + 1];
-    if (digitsOnly.test(line) && next && lettersOrPadding.test(next) && /[A-E]/.test(next)) {
+    if (
+      digitsOnly.test(line) &&
+      next &&
+      lettersOrPadding.test(next) &&
+      /[A-E]/.test(next)
+    ) {
       const semPadding = next.replace(/0+$/, "");
       for (const letra of semPadding) {
         sequential += 1;
@@ -534,14 +642,20 @@ export function parseGabaritoText(rawText: string, selector?: GabaritoSelector):
   return gabarito;
 }
 
-export function applyGabarito(questoes: QuestaoDraft[], gabarito: Map<number, string>): QuestaoDraft[] {
+export function applyGabarito(
+  questoes: QuestaoDraft[],
+  gabarito: Map<number, string>,
+): QuestaoDraft[] {
   return questoes.map((questao) => {
     const letra = gabarito.get(questao.numero);
     if (!letra) return questao;
     return {
       ...questao,
       gabarito: letra,
-      alternativas: questao.alternativas.map((alt) => ({ ...alt, correta: alt.letra.toUpperCase() === letra.toUpperCase() })),
+      alternativas: questao.alternativas.map((alt) => ({
+        ...alt,
+        correta: alt.letra.toUpperCase() === letra.toUpperCase(),
+      })),
     };
   });
 }
@@ -549,19 +663,32 @@ export function applyGabarito(questoes: QuestaoDraft[], gabarito: Map<number, st
 /** Aplica URLs de imagem extraidas do PDF as questoes/alternativas correspondentes. */
 export function applyImages(
   questoes: QuestaoDraft[],
-  assignments: Array<{ numero: number; letra: string | null; url: string }>
+  assignments: Array<{ numero: number; letra: string | null; url: string }>,
 ): QuestaoDraft[] {
   return questoes.map((questao) => {
-    const questaoImage = assignments.find((a) => a.numero === questao.numero && a.letra === null);
+    const questaoImage = assignments.find(
+      (a) => a.numero === questao.numero && a.letra === null,
+    );
     const alternativas = questao.alternativas.map((alt) => {
-      const altImage = assignments.find((a) => a.numero === questao.numero && a.letra?.toUpperCase() === alt.letra.toUpperCase());
+      const altImage = assignments.find(
+        (a) =>
+          a.numero === questao.numero &&
+          a.letra?.toUpperCase() === alt.letra.toUpperCase(),
+      );
       return altImage ? { ...alt, imagemUrl: altImage.url } : alt;
     });
-    return questaoImage ? { ...questao, imagemUrl: questaoImage.url, alternativas } : { ...questao, alternativas };
+    return questaoImage
+      ? { ...questao, imagemUrl: questaoImage.url, alternativas }
+      : { ...questao, alternativas };
   });
 }
 
-export type ProvaHints = { banca?: string; orgao?: string; cargo?: string; ano?: number };
+export type ProvaHints = {
+  banca?: string;
+  orgao?: string;
+  cargo?: string;
+  ano?: number;
+};
 
 // Nomes de bancas organizadoras conhecidas, do mais especifico pro mais generico.
 // "CESPE" por ultimo entre os parecidos para nao capturar antes de "CEBRASPE".
@@ -591,11 +718,17 @@ const BANCAS_CONHECIDAS = [
  * (ex.: prova de 2025 cujo ano mais frequente no texto e 2021), entao qualquer
  * heuristica estatistica marcaria a prova com o ano errado.
  */
-export function inferProvaHints(rawText: string): Pick<ProvaHints, "banca" | "ano"> {
+export function inferProvaHints(
+  rawText: string,
+): Pick<ProvaHints, "banca" | "ano"> {
   const upper = rawText.toUpperCase();
-  const banca = BANCAS_CONHECIDAS.find((nome) => new RegExp(`(^|[^A-Z])${nome}($|[^A-Z])`).test(upper));
+  const banca = BANCAS_CONHECIDAS.find((nome) =>
+    new RegExp(`(^|[^A-Z])${nome}($|[^A-Z])`).test(upper),
+  );
 
-  const anoMatch = /EDITAL[^\d]{0,30}\b((?:19|20)\d{2})\b/.exec(upper) ?? /CONCURSO\s+P[ÚU]BLICO[^\d]{0,10}\b((?:19|20)\d{2})\b/.exec(upper);
+  const anoMatch =
+    /EDITAL[^\d]{0,30}\b((?:19|20)\d{2})\b/.exec(upper) ??
+    /CONCURSO\s+P[ÚU]BLICO[^\d]{0,10}\b((?:19|20)\d{2})\b/.exec(upper);
   const ano = anoMatch ? Number(anoMatch[1]) : undefined;
 
   return { banca, ano };
