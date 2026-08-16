@@ -5,43 +5,24 @@
  * Cobre o caso comum; o admin sempre revisa o rascunho antes de confirmar o import.
  */
 
-export type MaterialApoioTipo = "TEXTO" | "IMAGEM" | "TABELA" | "FIGURA";
-
-export type MaterialApoioDraft = {
-  tipo: MaterialApoioTipo;
-  titulo?: string;
-  conteudo?: string;
+type AlternativaDraft = {
+  letra: string;
+  texto: string;
+  correta: boolean;
   imagemUrl?: string;
 };
 
-export type ContextoApoioDraft = {
-  id: string;
-  materiais: MaterialApoioDraft[];
-  questoes: number[];
-};
-
-export type AlternativaDraft = { letra: string; texto: string; correta: boolean; imagemUrl?: string };
-
-export type QuestaoDraft = {
+type QuestaoDraft = {
   numero: number;
   tipo: "OBJETIVA" | "CERTO_ERRADO";
   enunciado: string;
   imagemUrl?: string;
   gabarito?: string;
   alternativas: AlternativaDraft[];
-  /** Contexto textual/visual compartilhado por esta questão, quando houver. */
-  contextoApoioId?: string;
-  /** Permite que uma questão use mais de um contexto, por exemplo Text I + Text II. */
-  contextoApoioIds?: string[];
-  /** Material diretamente ligado à questão, por exemplo uma figura exclusiva. */
-  materiaisApoio?: MaterialApoioDraft[];
 };
 
-type QuestaoDraftComContextos = QuestaoDraft[] & {
-  contextosApoio?: ContextoApoioDraft[];
-};
-
-const NOISE_LINE = /^(pcimarkpci\b|www\.\S+$|--\s*\d+\s+of\s+\d+\s*--$|espa[cç]o livre$|.*P[ÁA]GINA\s+\d+\s*$)/i;
+const NOISE_LINE =
+  /^(pcimarkpci\b|www\.\S+$|--\s*\d+\s+of\s+\d+\s*--$|espa[cç]o livre$|.*P[ÁA]GINA\s+\d+\s*$)/i;
 // Numero do item seguido de texto na mesma linha.
 // Aceita formatos comuns como:
 //   9 Observe a charge...
@@ -51,7 +32,8 @@ const NOISE_LINE = /^(pcimarkpci\b|www\.\S+$|--\s*\d+\s+of\s+\d+\s*--$|espa[cç]
 // O lookahead evita tratar linhas de instrucoes como:
 //   01 - Voce recebeu do fiscal...
 // como se fossem questoes.
-export const ITEM_START_INLINE = /^(\d{1,3})(?:[.)]\s*|[ \t]+)(?![-–—]\s)(\S.*)$/;
+export const ITEM_START_INLINE =
+  /^(\d{1,3})(?:[.)]\s*|[ \t]+)(?![-–—]\s)(\S.*)$/;
 
 // Numero do item sozinho na linha, com o enunciado comecando na linha seguinte.
 // Aceita tambem o numero seguido de ponto ou parenteses, comum em alguns PDFs.
@@ -75,257 +57,103 @@ function isExamInstructionLine(line: string): boolean {
 
 function isAllCapsLine(line: string): boolean {
   const trimmed = line.trim();
-  return trimmed.length > 0 && trimmed === trimmed.toUpperCase() && /[A-ZÀ-Ú]/.test(trimmed);
+  return (
+    trimmed.length > 0 &&
+    trimmed === trimmed.toUpperCase() &&
+    /[A-ZÀ-Ú]/.test(trimmed)
+  );
 }
 
 /**
- * Encontra o início real da primeira questão da prova.
+ * Encontra o primeiro item real da prova.
  *
- * Não podemos simplesmente procurar o primeiro "1", porque o PDF
- * pode conter:
+ * Alguns PDFs colocam, antes das questoes, uma pagina de instrucoes numeradas
+ * (01, 02, 03...) e tambem o numero da propria pagina como uma linha isolada.
+ * Como ambos podem coincidir com ITEM_START_INLINE/ITEM_START_ALONE, nao basta
+ * olhar apenas para o numero.
  *
- *   1
- *   LEIA ATENTAMENTE AS INSTRUÇÕES...
- *
- * onde o "1" é apenas o número da página.
- *
- * Também podem existir instruções numeradas:
- *
- *   01 - Você recebeu...
- *   02 - Verifique...
- *   03 - ...
- *
- * A primeira questão real normalmente possui:
- *
- *   1
- *   Enunciado...
- *   (A) ...
- *   (B) ...
- *   (C) ...
- *   (D) ...
- *   (E) ...
- *
- * Portanto, para o formato de questão objetiva, exigimos evidências
- * suficientes de que o número encontrado realmente inicia uma questão.
+ * A primeira questao real costuma ser o item 1 e vem acompanhada de texto de
+ * enunciado. Para evitar confundir o numero da pagina ou uma instrucao com a
+ * questao 1, procuramos o primeiro "1" que tenha uma linha de conteudo plausivel
+ * logo depois. Se houver alternativas A-E proximas, o sinal fica ainda mais forte.
  */
 function findFirstQuestionIndex(
   lines: string[],
-  repeatedHeaders: Set<string>
+  repeatedHeaders: Set<string>,
 ): number {
-  const MAX_LOOKAHEAD = 120;
-
-  // Aceita:
-  // (A) texto
-  // A) texto
-  // A. texto
-  //
-  // O "i" permite A/a.
-  const alternativePattern = /^\(?([A-E])[\).]\s+/;
-
-  // Também precisamos reconhecer alternativas que possam ter sido
-  // colocadas na mesma linha pelo PDF:
-  //
-  // (A) texto (B) texto (C) texto...
-  const inlineAlternativePattern = /(?:^|\s)\(?([A-E])[\).]\s+/g;
+  const MAX_LOOKAHEAD = 80;
 
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i].trim();
-
-    // Ignora linhas vazias, ruído e cabeçalhos repetidos.
-    if (
-      !line ||
-      isNoise(line) ||
-      repeatedHeaders.has(line)
-    ) {
-      continue;
-    }
-
-    // Uma linha como:
-    //
-    // 01 - Você recebeu...
-    //
-    // é instrução, não questão.
-    if (isExamInstructionLine(line)) {
-      continue;
-    }
+    if (!line || isNoise(line) || repeatedHeaders.has(line)) continue;
+    if (isExamInstructionLine(line)) continue;
 
     const inlineMatch = ITEM_START_INLINE.exec(line);
-    const aloneMatch = inlineMatch
-      ? null
-      : ITEM_START_ALONE.exec(line);
-
+    const aloneMatch = inlineMatch ? null : ITEM_START_ALONE.exec(line);
     const numero = inlineMatch
       ? Number(inlineMatch[1])
       : aloneMatch
         ? Number(aloneMatch[1])
         : null;
 
-    // A primeira questão normalmente é a questão 1.
-    if (numero !== 1) {
-      continue;
-    }
+    // As provas deste tipo normalmente comecam no item 1. Usamos esse marco
+    // apenas para atravessar o material inicial (instrucoes/cabecalhos).
+    if (numero !== 1) continue;
 
-    /*
-     * Caso 1:
-     *
-     * 1 Enunciado da questão...
-     *
-     * Se o texto estiver na mesma linha, já temos um candidato.
-     * Porém ainda precisamos verificar se existem alternativas
-     * posteriormente.
-     */
-    let alternativeCount = 0;
-    let hasQuestionText = false;
-
+    // Se for uma questao inline, o texto depois do numero ja fornece o contexto.
     if (inlineMatch) {
-      const questionText = inlineMatch[2].trim();
-
-      if (
-        questionText &&
-        !isExamInstructionLine(line)
-      ) {
-        hasQuestionText = true;
-      }
+      const texto = inlineMatch[2].trim();
+      if (texto && !isExamInstructionLine(line)) return i;
     }
 
-    /*
-     * Caso 2:
-     *
-     * 1
-     * Enunciado...
-     *
-     * Aqui precisamos olhar as linhas seguintes.
-     */
-    for (
-      let j = i + 1;
-      j < Math.min(lines.length, i + MAX_LOOKAHEAD);
-      j += 1
-    ) {
+    // Para o formato de numero isolado, precisamos diferenciar o numero da pagina
+    // de uma questao real. O numero da pagina 1 costuma aparecer antes dos cabecalhos
+    // e, mais adiante, surge novamente o numero 1 da primeira questao. Se encontramos
+    // outro item 1 antes de qualquer alternativa, o candidato atual era pagina/cabecalho.
+    let sawPlausibleContent = false;
+    let sawAlternative = false;
+
+    for (let j = i + 1; j < Math.min(lines.length, i + MAX_LOOKAHEAD); j += 1) {
       const next = lines[j].trim();
+      if (!next || isNoise(next) || repeatedHeaders.has(next)) continue;
+      if (isExamInstructionLine(next)) continue;
 
-      if (
-        !next ||
-        isNoise(next) ||
-        repeatedHeaders.has(next)
-      ) {
-        continue;
-      }
-
-      // Instruções não fazem parte da questão.
-      if (isExamInstructionLine(next)) {
-        continue;
-      }
-
-      /*
-       * Se encontramos outro número isolado antes das alternativas,
-       * este candidato provavelmente não era uma questão.
-       *
-       * Exemplo da primeira página:
-       *
-       * 1              <- número da página
-       * LEIA...
-       * 01 - ...
-       * 02 - ...
-       *
-       * Não devemos transformar isso em questão 1.
-       */
       const nextInline = ITEM_START_INLINE.exec(next);
-      const nextAlone = nextInline
-        ? null
-        : ITEM_START_ALONE.exec(next);
-
+      const nextAlone = nextInline ? null : ITEM_START_ALONE.exec(next);
       const nextNumero = nextInline
         ? Number(nextInline[1])
         : nextAlone
           ? Number(nextAlone[1])
           : null;
 
-      if (
-        nextNumero !== null &&
-        nextNumero !== 1
-      ) {
+      if (ALTERNATIVA_START.test(next)) {
+        sawAlternative = true;
         break;
       }
 
-      if (
-        nextNumero === 1 &&
-        j > i + 1
-      ) {
-        // Encontramos outro "1" antes de encontrar alternativas.
-        // O candidato atual provavelmente era o número da página.
+      if (nextNumero !== null) {
+        // Outro item 1 antes das alternativas indica que o primeiro "1" era
+        // provavelmente o numero da pagina, nao o inicio da prova.
+        if (nextNumero === 1) {
+          sawPlausibleContent = false;
+          sawAlternative = false;
+          break;
+        }
+        // Um outro numero diferente de 1 tambem indica que este candidato
+        // provavelmente nao e o inicio da primeira questao.
         break;
       }
 
-      /*
-       * Procura alternativas.
-       *
-       * Primeiro verificamos se a linha inteira começa com
-       * uma alternativa.
-       */
-      const alternativeMatch =
-        alternativePattern.exec(next);
-
-      if (alternativeMatch) {
-        alternativeCount += 1;
-
-        if (alternativeCount >= 3) {
-          return i;
-        }
-
-        continue;
-      }
-
-      /*
-       * Agora verificamos alternativas que foram colocadas na
-       * mesma linha pelo extrator do PDF.
-       *
-       * Exemplo:
-       *
-       * (A) texto (B) texto (C) texto (D) texto (E) texto
-       */
-      inlineAlternativePattern.lastIndex = 0;
-
-      const inlineAlternatives =
-        next.match(inlineAlternativePattern);
-
-      if (inlineAlternatives) {
-        alternativeCount += inlineAlternatives.length;
-
-        if (alternativeCount >= 3) {
-          return i;
-        }
-      }
-
-      /*
-       * Se encontramos conteúdo textual normal, significa que
-       * provavelmente estamos dentro do enunciado da questão.
-       */
-      if (!isAllCapsLine(next)) {
-        hasQuestionText = true;
-      }
+      // Cabecalhos institucionais/disciplinas em caixa alta nao contam como
+      // enunciado da questao. Continuamos procurando por conteudo real.
+      if (!isAllCapsLine(next)) sawPlausibleContent = true;
     }
 
-    /*
-     * Para provas objetivas, queremos evidência forte.
-     *
-     * Três alternativas já são suficientes para diferenciar
-     * uma questão real das instruções da primeira página.
-     */
-    if (
-      hasQuestionText &&
-      alternativeCount >= 3
-    ) {
-      return i;
-    }
+    if (sawAlternative || sawPlausibleContent) return i;
   }
 
-  /*
-   * Fallback:
-   *
-   * Se nenhum marcador confiável foi encontrado, preservamos
-   * o comportamento anterior e deixamos o parser começar do
-   * início do documento.
-   */
+  // Fallback para PDFs incomuns que nao possuem um marcador claro de inicio.
+  // Retornar 0 preserva o comportamento anterior em vez de descartar o documento.
   return 0;
 }
 
@@ -367,7 +195,11 @@ function findTrailingCreditsLines(lines: string[]): Set<string> {
   for (let i = lines.length - 1; i >= 0; i -= 1) {
     const line = lines[i].trim();
     if (!line) continue;
-    const looksLikeRealContent = line.length > 40 || /[.?!:;]$/.test(line) || ALTERNATIVA_START.test(line) || ITEM_START_ALONE.test(line);
+    const looksLikeRealContent =
+      line.length > 40 ||
+      /[.?!:;]$/.test(line) ||
+      ALTERNATIVA_START.test(line) ||
+      ITEM_START_ALONE.test(line);
     if (looksLikeRealContent) break;
     trailing.add(line);
   }
@@ -389,7 +221,10 @@ function findSectionTitleLines(lines: string[]): Set<string> {
       const candidate = lines[j].trim();
       if (!candidate) continue;
       const looksLikeRealContent =
-        candidate.length > 60 || /[.?!:;]$/.test(candidate) || ALTERNATIVA_START.test(candidate) || ITEM_START_ALONE.test(candidate);
+        candidate.length > 60 ||
+        /[.?!:;]$/.test(candidate) ||
+        ALTERNATIVA_START.test(candidate) ||
+        ITEM_START_ALONE.test(candidate);
       if (looksLikeRealContent) break;
       titles.add(candidate);
       break;
@@ -464,249 +299,21 @@ function findLineNumberAnnotationIndices(lines: string[]): Set<number> {
   return annotationIndices;
 }
 
-
-/**
- * Marcadores de materiais de apoio que aparecem como blocos independentes no PDF.
- *
- * Exemplos reais:
- *   Texto I
- *   Texto II
- *   Text I
- *   Text II
- *   Figura 1
- *   Tabela 1
- *   Quadro 1
- *   Gráfico 1
- *   Imagem 1
- *
- * O parser nao assume que um texto serve apenas para uma questao. O contexto
- * permanece ativo ate aparecer outro marcador de material ou ate o fim da prova.
- */
-const SUPPORT_MATERIAL_MARKER = /^(texto|text|figura|tabela|quadro|gr[aá]fico|imagem)(?:\s+([IVXLCDM]+|\d+))?\s*$/i;
-
-function detectSupportMaterialMarker(line: string): { tipo: MaterialApoioTipo; titulo: string } | null {
-  const trimmed = line.trim();
-  const match = SUPPORT_MATERIAL_MARKER.exec(trimmed);
-  if (!match) return null;
-
-  const base = normalizeSupportLabel(match[1]);
-  const suffix = match[2] ? ` ${match[2]}` : "";
-
-  if (base === "texto" || base === "text") {
-    return { tipo: "TEXTO", titulo: `${trimmed}` };
-  }
-  if (base === "tabela") return { tipo: "TABELA", titulo: trimmed };
-  if (base === "quadro") return { tipo: "TABELA", titulo: trimmed };
-  if (base === "grafico") return { tipo: "FIGURA", titulo: trimmed };
-  if (base === "imagem") return { tipo: "IMAGEM", titulo: trimmed };
-  return { tipo: "FIGURA", titulo: `${base}${suffix}`.trim() };
-}
-
-function normalizeSupportLabel(value: string): string {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-}
-
-function makeContextId(index: number): string {
-  return `contexto-apoio-${index + 1}`;
-}
-
-/**
- * Extrai os blocos de material de apoio sem duplicar o texto nas questoes.
- *
- * Regra deliberadamente conservadora:
- * - "Texto I" inicia um material de texto;
- * - "Texto II" inicia outro material, mas ambos podem pertencer ao mesmo contexto;
- * - o contexto continua valendo para as questoes seguintes ate outro marcador;
- * - o texto anterior a primeira questao e preservado quando estiver dentro de um
- *   marcador de apoio, em vez de ser descartado junto com instrucoes da prova.
- *
- * A lista de questoes e recebida para determinar quais numeros foram realmente
- * identificados pelo parser. Isso evita associar cabeçalhos/instrucoes a um contexto.
- */
-function extractSupportContexts(
-  lines: string[],
-  firstQuestionIndex: number,
-  questionNumbers: number[],
-  repeatedHeaders: Set<string>,
-  trailingCredits: Set<string>,
-  sectionTitles: Set<string>
-): ContextoApoioDraft[] {
-  const annotationIndices = findLineNumberAnnotationIndices(lines);
-  const working = lines.map((line, index) => {
-    if (index < firstQuestionIndex && annotationIndices.has(index)) return "";
-    return line;
-  });
-
-  const contexts: ContextoApoioDraft[] = [];
-  let currentMaterial: MaterialApoioDraft | null = null;
-  let currentContext: ContextoApoioDraft | null = null;
-  let contextCounter = 0;
-  let currentQuestionNumber: number | null = null;
-
-  function startContext(): ContextoApoioDraft {
-    const context: ContextoApoioDraft = {
-      id: makeContextId(contextCounter++),
-      materiais: [],
-      questoes: [],
-    };
-    contexts.push(context);
-    return context;
-  }
-
-  function ensureContext(): ContextoApoioDraft {
-    if (!currentContext) {
-      currentContext = startContext();
-    }
-    return currentContext;
-  }
-
-  function flushMaterial() {
-    if (!currentMaterial) return;
-    const text = (currentMaterial.conteudo ?? "").replace(/\s+/g, " ").trim();
-    if (text) {
-      currentMaterial.conteudo = text;
-      ensureContext().materiais.push(currentMaterial);
-    }
-    currentMaterial = null;
-  }
-
-  for (let i = 0; i < working.length; i += 1) {
-    const raw = working[i];
-    const line = raw.trim();
-    if (!line) continue;
-    if (isNoise(line) || repeatedHeaders.has(line) || trailingCredits.has(line) || sectionTitles.has(line)) continue;
-
-    if (annotationIndices.has(i)) continue;
-
-    const marker = detectSupportMaterialMarker(line);
-    if (marker) {
-      flushMaterial();
-
-      // Se ja houve questoes no contexto anterior, um novo marcador normalmente
-      // inicia outro bloco de apoio. Se ainda nao houve nenhuma questao, varios
-      // materiais consecutivos (Texto I + Texto II + Figura) ficam no mesmo contexto.
-      if (!currentContext || currentContext.questoes.length > 0) {
-        currentContext = startContext();
-      }
-
-      currentMaterial = {
-        tipo: marker.tipo,
-        titulo: marker.titulo,
-        conteudo: "",
-      };
-      continue;
-    }
-
-    const inlineMatch = ITEM_START_INLINE.exec(raw);
-    const aloneMatch = inlineMatch ? null : ITEM_START_ALONE.exec(line);
-    const numero = inlineMatch ? Number(inlineMatch[1]) : aloneMatch ? Number(aloneMatch[1]) : null;
-
-    if (i >= firstQuestionIndex && numero !== null && questionNumbers.includes(numero) && !annotationIndices.has(i)) {
-      flushMaterial();
-      currentQuestionNumber = numero;
-      if (!currentContext) {
-        currentContext = startContext();
-      }
-
-      if (!currentContext.questoes.includes(numero)) {
-        currentContext.questoes.push(numero);
-      }
-      continue;
-    }
-
-    if (currentMaterial) {
-      if (!isExamInstructionLine(line)) {
-        currentMaterial.conteudo = currentMaterial.conteudo
-          ? `${currentMaterial.conteudo} ${line}`
-          : line;
-      }
-      continue;
-    }
-
-    void currentQuestionNumber;
-  }
-
-  flushMaterial();
-
-  const validNumbers = new Set(questionNumbers);
-  return contexts
-    .map((context) => ({
-      ...context,
-      questoes: context.questoes.filter((numero) => validNumbers.has(numero)),
-      materiais: context.materiais.filter((material) => Boolean(material.conteudo || material.imagemUrl)),
-    }))
-    .filter((context) => context.materiais.length > 0);
-}
-
-function normalizeContextReference(value: string): string {
-  return normalizeSupportLabel(value)
-    .replace(/\btexto\b/g, "text")
-    .replace(/\btext\b/g, "text");
-}
-
-function materialTitleMatchesReference(title: string, questionText: string): boolean {
-  const titleNorm = normalizeContextReference(title);
-  const questionNorm = normalizeContextReference(questionText);
-  if (!titleNorm || !questionNorm) return false;
-
-  const match = /^(text|texto)\s+([ivxlcdm]+|\d+)$/i.exec(title.trim());
-  if (!match) return false;
-
-  const numeral = match[2].toLowerCase();
-  return new RegExp(`\\btext(?:o)?\\s+${numeral}\\b`, "i").test(questionText);
-}
-
-function attachContextReferences(
-  questoes: QuestaoDraft[],
-  contextosApoio: ContextoApoioDraft[]
-) {
-  const byQuestion = new Map<number, ContextoApoioDraft[]>();
-  for (const context of contextosApoio) {
-    for (const numero of context.questoes) {
-      const list = byQuestion.get(numero) ?? [];
-      list.push(context);
-      byQuestion.set(numero, list);
-    }
-  }
-
-  for (const questao of questoes) {
-    const direct = byQuestion.get(questao.numero) ?? [];
-    const referenced = contextosApoio.filter((context) =>
-      context.materiais.some((material) =>
-        material.titulo ? materialTitleMatchesReference(material.titulo, questao.enunciado) : false
-      )
-    );
-
-    const all = [...direct, ...referenced].filter(
-      (context, index, array) => array.findIndex((item) => item.id === context.id) === index
-    );
-
-    if (all.length > 0) {
-      questao.contextoApoioId = all[0].id;
-      questao.contextoApoioIds = all.map((context) => context.id);
-    }
-  }
-}
-
 export function parseProvaText(rawText: string): QuestaoDraft[] {
   const lines = rawText.split(/\r?\n/).map((line) => line.trimEnd());
   const repeatedHeaders = findRepeatedHeaderLines(lines);
   const trailingCredits = findTrailingCreditsLines(lines);
   const sectionTitles = findSectionTitleLines(lines);
 
-  // Encontra o primeiro item real antes de apagar os numeros de margem.
+  // Encontra o primeiro item real ANTES de apagar os numeros de margem.
+  // Isso evita que a heuristica de anotacoes de linha remova justamente o primeiro
+  // numero da prova antes de sabermos onde o caderno de questoes realmente comeca.
   const firstQuestionIndex = findFirstQuestionIndex(lines, repeatedHeaders);
 
-  // Os numeros de margem sao removidos somente antes do primeiro item real.
-  // Depois dele, um numero isolado pode ser uma questao legitima.
-  for (const index of findLineNumberAnnotationIndices(lines)) {
-    if (index < firstQuestionIndex) {
-      lines[index] = "";
-    }
-  }
+  // Apaga na origem (por indice, nao por conteudo): um numero pequeno como "24" ou "25"
+  // e reaproveitado como item de verdade em outro ponto do mesmo PDF, entao so a posicao
+  // exata identificada como anotacao de margem pode ser descartada com seguranca.
+  for (const index of findLineNumberAnnotationIndices(lines)) lines[index] = "";
 
   const questoes: QuestaoDraft[] = [];
   let current: { numero: number; linhas: string[] } | null = null;
@@ -714,55 +321,56 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
 
   function flush() {
     if (!current) return;
-
     const blockLines = current.linhas.filter(
       (line) =>
         !isNoise(line.trim()) &&
         !repeatedHeaders.has(line.trim()) &&
         !trailingCredits.has(line.trim()) &&
-        !sectionTitles.has(line.trim())
+        !sectionTitles.has(line.trim()),
     );
-
-    const altStartIdx = blockLines.findIndex((line) => ALTERNATIVA_START.test(line.trim()));
-    const stemLines = altStartIdx === -1 ? blockLines : blockLines.slice(0, altStartIdx);
+    const altStartIdx = blockLines.findIndex((line) =>
+      ALTERNATIVA_START.test(line.trim()),
+    );
+    const stemLines =
+      altStartIdx === -1 ? blockLines : blockLines.slice(0, altStartIdx);
     const enunciado = stemLines.join(" ").replace(/\s+/g, " ").trim();
 
     const alternativas: AlternativaDraft[] = [];
     if (altStartIdx !== -1) {
       let letraAtual: string | null = null;
       let textoAtual = "";
-
       for (const line of blockLines.slice(altStartIdx)) {
         const match = ALTERNATIVA_START.exec(line.trim());
         if (match) {
-          if (letraAtual) {
+          if (letraAtual)
             alternativas.push({
               letra: letraAtual,
               texto: textoAtual.replace(/\s+/g, " ").trim(),
               correta: false,
             });
-          }
           letraAtual = match[1];
           textoAtual = match[2];
         } else if (letraAtual) {
           textoAtual += ` ${line.trim()}`;
         }
       }
-
-      if (letraAtual) {
+      if (letraAtual)
         alternativas.push({
           letra: letraAtual,
           texto: textoAtual.replace(/\s+/g, " ").trim(),
           correta: false,
         });
-      }
     }
 
+    // Algumas questoes (comuns em provas com figura) nao tem nenhum texto proprio alem
+    // do comando compartilhado ja consumido pelo item anterior - ex.: "24. [julgue com
+    // base na figura]" sem mais nada. Descartar silenciosamente perderia o item (e o
+    // gabarito dele) sem o admin nem saber que ele existiu. Em vez disso, entra com um
+    // placeholder visivel que aponta pra revisao manual.
     const enunciadoFinal =
       enunciado.length > 0
         ? enunciado
         : `[Sem texto extraído — questão baseada em figura/imagem. Revisar o PDF original e completar o enunciado da questão ${current.numero}.]`;
-
     questoes.push({
       numero: current.numero,
       tipo: "OBJETIVA",
@@ -771,18 +379,38 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
     });
   }
 
-  // Mantemos a regra atual de começar no primeiro item real. O contexto de apoio
-  // é extraído separadamente, inclusive antes desse índice, para que Texto I/II
-  // não seja descartado.
-  for (let lineIndex = firstQuestionIndex; lineIndex < lines.length; lineIndex += 1) {
+  // Ignora todo o material que vem antes do primeiro item real. Isso e essencial
+  // para PDFs como o da Cesgranrio/Petrobras analisado: a primeira pagina possui
+  // instrucoes "01 - ...", "02 - ..." ate "12 - ...". Sem esta barreira, o parser
+  // transforma essas instrucoes em questoes 1..12 e, quando chega a pagina 2, as
+  // questoes reais 1..12 ficam menores que lastNumero e sao anexadas a "questao 12".
+  for (
+    let lineIndex = firstQuestionIndex;
+    lineIndex < lines.length;
+    lineIndex += 1
+  ) {
     const rawLine = lines[lineIndex];
     const line = rawLine.trim();
 
-    if (!line || isNoise(line) || repeatedHeaders.has(line) || trailingCredits.has(line) || sectionTitles.has(line)) continue;
+    if (
+      !line ||
+      isNoise(line) ||
+      repeatedHeaders.has(line) ||
+      trailingCredits.has(line) ||
+      sectionTitles.has(line)
+    )
+      continue;
+
+    // Linhas de instrucao com hifen nao casam com ITEM_START_INLINE. Se ja estivermos
+    // dentro de uma questao, elas permanecem como texto do bloco em vez de abrirem um item.
 
     const inlineMatch = ITEM_START_INLINE.exec(rawLine);
     const aloneMatch = inlineMatch ? null : ITEM_START_ALONE.exec(line);
-    const numero = inlineMatch ? Number(inlineMatch[1]) : aloneMatch ? Number(aloneMatch[1]) : null;
+    const numero = inlineMatch
+      ? Number(inlineMatch[1])
+      : aloneMatch
+        ? Number(aloneMatch[1])
+        : null;
 
     if (numero !== null && numero > lastNumero && numero <= lastNumero + 30) {
       flush();
@@ -794,38 +422,24 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
   }
   flush();
 
-  const comAlternativas = questoes.filter((questao) => questao.alternativas.length >= 2).length;
+  // O tipo da questao e decidido olhando a prova inteira, nao cada questao isolada:
+  // num caderno majoritariamente objetivo (A-E), uma questao sem alternativas quase
+  // certamente e falha de parse — fabricar "Certo/Errado" nela mascararia o problema
+  // com dado inventado. Ja num caderno onde quase nenhuma questao tem alternativas
+  // (estilo CEBRASPE), itens sem alternativa SAO certo/errado de verdade.
+  const comAlternativas = questoes.filter(
+    (questao) => questao.alternativas.length >= 2,
+  ).length;
   const majoritariamenteObjetiva = comAlternativas > questoes.length / 2;
   for (const questao of questoes) {
     if (questao.alternativas.length >= 2) continue;
-    if (majoritariamenteObjetiva) continue;
+    if (majoritariamenteObjetiva) continue; // deixa OBJETIVA sem alternativas: a validacao do rascunho aponta a questao pro admin corrigir
     questao.tipo = "CERTO_ERRADO";
     questao.alternativas = [
       { letra: "C", texto: "Certo", correta: false },
       { letra: "E", texto: "Errado", correta: false },
     ];
   }
-
-  // Materiais de apoio sao mantidos fora do enunciado e podem ser compartilhados
-  // por varias questoes. A estrutura e anexada ao array para manter compatibilidade
-  // com todos os chamadores existentes que esperam apenas QuestaoDraft[].
-  const questionNumbers = questoes.map((questao) => questao.numero);
-  const contextosApoio = extractSupportContexts(
-    rawText.split(/\r?\n/).map((line) => line.trimEnd()),
-    firstQuestionIndex,
-    questionNumbers,
-    repeatedHeaders,
-    trailingCredits,
-    sectionTitles
-  );
-
-  const questoesComContextos = questoes as QuestaoDraftComContextos;
-  questoesComContextos.contextosApoio = contextosApoio;
-
-  // Liga cada questao ao(s) contexto(s) pelo numero e por referencias explicitas
-  // no enunciado, como "Comparing Texts I and II". Assim uma questao pode usar
-  // dois textos sem duplicar o conteudo dentro do enunciado.
-  attachContextReferences(questoes, contextosApoio);
 
   return questoes;
 }
@@ -862,22 +476,35 @@ function isSuspiciousAlternativaCount(count: number): boolean {
  * nao recusar questoes genuinamente longas (textos de apoio embutidos, comuns em ENEM e
  * concursos) que tem uma quantidade normal de alternativas.
  */
-export function detectParsingAnomaly(rawText: string, questoes: QuestaoDraft[]): string | null {
-  const hardOversized = questoes.find((questao) => questao.enunciado.length > HARD_MAX_ENUNCIADO_LENGTH);
+export function detectParsingAnomaly(
+  rawText: string,
+  questoes: QuestaoDraft[],
+): string | null {
+  const hardOversized = questoes.find(
+    (questao) => questao.enunciado.length > HARD_MAX_ENUNCIADO_LENGTH,
+  );
   if (hardOversized) {
     return `A questão ${hardOversized.numero} ficou com ${hardOversized.enunciado.length} caracteres, muito acima do que qualquer questão real costuma ter — mesmo com texto de apoio longo. Isso indica que o parser não conseguiu separar os itens corretamente neste PDF. Use CSV/JSON ou cadastre manualmente.`;
   }
 
   const suspicious = questoes.find(
-    (questao) => questao.enunciado.length > SUSPICIOUS_ENUNCIADO_LENGTH && isSuspiciousAlternativaCount(questao.alternativas.length)
+    (questao) =>
+      questao.enunciado.length > SUSPICIOUS_ENUNCIADO_LENGTH &&
+      isSuspiciousAlternativaCount(questao.alternativas.length),
   );
   if (suspicious) {
     return `A questão ${suspicious.numero} ficou com ${suspicious.enunciado.length} caracteres e ${suspicious.alternativas.length} alternativa(s) — essa combinação sugere que duas ou mais questões foram mescladas por engano neste PDF (provavelmente o layout não quebra linha entre o número do item e o texto, ou as alternativas estão escritas em formato "(A) ... (B) ..." dentro do parágrafo). Use CSV/JSON ou cadastre manualmente.`;
   }
 
   const meaningfulLength = rawText.replace(/\s+/g, " ").trim().length;
-  const expectedMinQuestoes = Math.floor(meaningfulLength / (TYPICAL_QUESTAO_LENGTH_FOR_COVERAGE_CHECK * 3));
-  if (expectedMinQuestoes > 0 && questoes.length > 0 && questoes.length < expectedMinQuestoes) {
+  const expectedMinQuestoes = Math.floor(
+    meaningfulLength / (TYPICAL_QUESTAO_LENGTH_FOR_COVERAGE_CHECK * 3),
+  );
+  if (
+    expectedMinQuestoes > 0 &&
+    questoes.length > 0 &&
+    questoes.length < expectedMinQuestoes
+  ) {
     return `Foram identificadas apenas ${questoes.length} questão(ões) para um texto de ${meaningfulLength} caracteres, bem menos do que o esperado. O parser provavelmente não conseguiu segmentar os itens neste layout de PDF. Use CSV/JSON ou cadastre manualmente.`;
   }
   return null;
@@ -896,7 +523,9 @@ function normalize(text: string): string {
  * cabecalho e formatados como pares de linhas "1 2 3 ... 20" / "B C A ... D".
  * Extrai cada bloco encontrado, mapeado pelo texto do cabecalho que o precede.
  */
-function parseVersionedGrid(lines: string[]): Array<{ header: string; gabarito: Map<number, string> }> {
+function parseVersionedGrid(
+  lines: string[],
+): Array<{ header: string; gabarito: Map<number, string> }> {
   const HEADER_LINE = /PROVA\s+0*(\d{1,2})\b/i;
   const NUMBERS_ROW = /^\d{1,3}(?:\s+\d{1,3}){2,}$/;
   const LETTERS_ROW = /^[A-E](?:\s+[A-E]){2,}$/;
@@ -935,8 +564,14 @@ function parseVersionedGrid(lines: string[]): Array<{ header: string; gabarito: 
 export type GabaritoSelector = { provaVersao?: string; cargo?: string };
 
 /** Extrai pares {numero -> letra} de um PDF de gabarito oficial (grade numerica, lista simples ou grade versionada). */
-export function parseGabaritoText(rawText: string, selector?: GabaritoSelector): Map<number, string> {
-  const lines = rawText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+export function parseGabaritoText(
+  rawText: string,
+  selector?: GabaritoSelector,
+): Map<number, string> {
+  const lines = rawText
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
 
   const versionedSections = parseVersionedGrid(lines);
   if (versionedSections.length > 0) {
@@ -944,14 +579,25 @@ export function parseGabaritoText(rawText: string, selector?: GabaritoSelector):
     const wantedCargo = selector?.cargo ? normalize(selector.cargo) : null;
 
     const byVersaoAndCargo = versionedSections.filter((section) => {
-      const versaoMatch = wantedVersao ? new RegExp(`PROVA\\s+0*${wantedVersao}\\b`, "i").test(section.header) : true;
-      const cargoMatch = wantedCargo ? normalize(section.header).includes(wantedCargo) : true;
+      const versaoMatch = wantedVersao
+        ? new RegExp(`PROVA\\s+0*${wantedVersao}\\b`, "i").test(section.header)
+        : true;
+      const cargoMatch = wantedCargo
+        ? normalize(section.header).includes(wantedCargo)
+        : true;
       return versaoMatch && cargoMatch;
     });
 
-    const chosen = byVersaoAndCargo[0]
-      ?? versionedSections.find((section) => (wantedVersao ? new RegExp(`PROVA\\s+0*${wantedVersao}\\b`, "i").test(section.header) : true))
-      ?? versionedSections[0];
+    const chosen =
+      byVersaoAndCargo[0] ??
+      versionedSections.find((section) =>
+        wantedVersao
+          ? new RegExp(`PROVA\\s+0*${wantedVersao}\\b`, "i").test(
+              section.header,
+            )
+          : true,
+      ) ??
+      versionedSections[0];
     return chosen.gabarito;
   }
 
@@ -979,7 +625,12 @@ export function parseGabaritoText(rawText: string, selector?: GabaritoSelector):
       continue;
     }
     const next = lines[i + 1];
-    if (digitsOnly.test(line) && next && lettersOrPadding.test(next) && /[A-E]/.test(next)) {
+    if (
+      digitsOnly.test(line) &&
+      next &&
+      lettersOrPadding.test(next) &&
+      /[A-E]/.test(next)
+    ) {
       const semPadding = next.replace(/0+$/, "");
       for (const letra of semPadding) {
         sequential += 1;
@@ -991,14 +642,20 @@ export function parseGabaritoText(rawText: string, selector?: GabaritoSelector):
   return gabarito;
 }
 
-export function applyGabarito(questoes: QuestaoDraft[], gabarito: Map<number, string>): QuestaoDraft[] {
+export function applyGabarito(
+  questoes: QuestaoDraft[],
+  gabarito: Map<number, string>,
+): QuestaoDraft[] {
   return questoes.map((questao) => {
     const letra = gabarito.get(questao.numero);
     if (!letra) return questao;
     return {
       ...questao,
       gabarito: letra,
-      alternativas: questao.alternativas.map((alt) => ({ ...alt, correta: alt.letra.toUpperCase() === letra.toUpperCase() })),
+      alternativas: questao.alternativas.map((alt) => ({
+        ...alt,
+        correta: alt.letra.toUpperCase() === letra.toUpperCase(),
+      })),
     };
   });
 }
@@ -1006,41 +663,32 @@ export function applyGabarito(questoes: QuestaoDraft[], gabarito: Map<number, st
 /** Aplica URLs de imagem extraidas do PDF as questoes/alternativas correspondentes. */
 export function applyImages(
   questoes: QuestaoDraft[],
-  assignments: Array<{ numero: number; letra: string | null; url: string }>
+  assignments: Array<{ numero: number; letra: string | null; url: string }>,
 ): QuestaoDraft[] {
   return questoes.map((questao) => {
-    const questaoImage = assignments.find((a) => a.numero === questao.numero && a.letra === null);
+    const questaoImage = assignments.find(
+      (a) => a.numero === questao.numero && a.letra === null,
+    );
     const alternativas = questao.alternativas.map((alt) => {
       const altImage = assignments.find(
-        (a) => a.numero === questao.numero && a.letra?.toUpperCase() === alt.letra.toUpperCase()
+        (a) =>
+          a.numero === questao.numero &&
+          a.letra?.toUpperCase() === alt.letra.toUpperCase(),
       );
       return altImage ? { ...alt, imagemUrl: altImage.url } : alt;
     });
-
-    const materiaisApoio = [...(questao.materiaisApoio ?? [])];
-    if (questaoImage) {
-      const jaExiste = materiaisApoio.some(
-        (material) => material.tipo === "IMAGEM" && material.imagemUrl === questaoImage.url
-      );
-      if (!jaExiste) {
-        materiaisApoio.push({
-          tipo: "IMAGEM",
-          titulo: "Imagem associada à questão",
-          imagemUrl: questaoImage.url,
-        });
-      }
-    }
-
-    return {
-      ...questao,
-      imagemUrl: questaoImage?.url ?? questao.imagemUrl,
-      alternativas,
-      materiaisApoio: materiaisApoio.length > 0 ? materiaisApoio : questao.materiaisApoio,
-    };
+    return questaoImage
+      ? { ...questao, imagemUrl: questaoImage.url, alternativas }
+      : { ...questao, alternativas };
   });
 }
 
-export type ProvaHints = { banca?: string; orgao?: string; cargo?: string; ano?: number };
+export type ProvaHints = {
+  banca?: string;
+  orgao?: string;
+  cargo?: string;
+  ano?: number;
+};
 
 // Nomes de bancas organizadoras conhecidas, do mais especifico pro mais generico.
 // "CESPE" por ultimo entre os parecidos para nao capturar antes de "CEBRASPE".
@@ -1070,19 +718,23 @@ const BANCAS_CONHECIDAS = [
  * (ex.: prova de 2025 cujo ano mais frequente no texto e 2021), entao qualquer
  * heuristica estatistica marcaria a prova com o ano errado.
  */
-export function inferProvaHints(rawText: string): Pick<ProvaHints, "banca" | "ano"> {
+export function inferProvaHints(
+  rawText: string,
+): Pick<ProvaHints, "banca" | "ano"> {
   const upper = rawText.toUpperCase();
-  const banca = BANCAS_CONHECIDAS.find((nome) => new RegExp(`(^|[^A-Z])${nome}($|[^A-Z])`).test(upper));
+  const banca = BANCAS_CONHECIDAS.find((nome) =>
+    new RegExp(`(^|[^A-Z])${nome}($|[^A-Z])`).test(upper),
+  );
 
-  const anoMatch = /EDITAL[^\d]{0,30}\b((?:19|20)\d{2})\b/.exec(upper) ?? /CONCURSO\s+P[ÚU]BLICO[^\d]{0,10}\b((?:19|20)\d{2})\b/.exec(upper);
+  const anoMatch =
+    /EDITAL[^\d]{0,30}\b((?:19|20)\d{2})\b/.exec(upper) ??
+    /CONCURSO\s+P[ÚU]BLICO[^\d]{0,10}\b((?:19|20)\d{2})\b/.exec(upper);
   const ano = anoMatch ? Number(anoMatch[1]) : undefined;
 
   return { banca, ano };
 }
 
 export function buildProvaDraft(questoes: QuestaoDraft[], hints: ProvaHints) {
-  const contextosApoio = (questoes as QuestaoDraftComContextos).contextosApoio ?? [];
-
   // Sem placeholders: campo nao informado nem inferido fica vazio e reprova na
   // validacao do rascunho (o preview lista o que falta). Placeholder silencioso
   // ("BANCA", "Cargo") gerava o mesmo slug pra provas diferentes e o import em
@@ -1102,7 +754,6 @@ export function buildProvaDraft(questoes: QuestaoDraft[], hints: ProvaHints) {
         ano,
         nivel: ["SUPERIOR"] as const,
         duracaoMin: 240,
-        contextosApoio,
         questoes: questoes.map((questao) => ({
           numero: questao.numero,
           tipo: questao.tipo,
@@ -1111,9 +762,6 @@ export function buildProvaDraft(questoes: QuestaoDraft[], hints: ProvaHints) {
           dificuldade: "MEDIUM" as const,
           gabarito: questao.gabarito,
           alternativas: questao.alternativas,
-          contextoApoioId: questao.contextoApoioId,
-          contextoApoioIds: questao.contextoApoioIds,
-          materiaisApoio: questao.materiaisApoio,
         })),
       },
     ],
