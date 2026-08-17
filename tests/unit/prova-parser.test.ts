@@ -255,6 +255,27 @@ describe("parseProvaText - CESGRANRIO/PETROBRAS (pagina de instrucoes numeradas 
     expect(questao10.enunciado).toContain("Texto II");
     expect(questao10.textoApoioChave).toBe(textoII.chave);
   });
+
+  it("preserva texto de apoio curto (< 100 chars) com aviso de revisao em vez de descartar a referencia", () => {
+    // Antes: textos de apoio com menos de MIN_TEXTO_APOIO_LENGTH eram descartados por
+    // inteiro - a questao seguinte ficava sem nenhuma chave, mesmo tendo um titulo de
+    // texto de apoio de verdade (ex.: charge com legenda curta, citacao, texto cujo
+    // corpo principal esta numa imagem). Curto agora vira entidade com aviso, nao some.
+    const texto = [
+      "Texto I",
+      "Uma citacao curta.",
+      "1",
+      "Segundo o Texto I, a citacao e de quem?",
+      "(A) autor A.",
+      "(B) autor B.",
+    ].join("\n");
+    const { questoes, textosApoio } = parseProvaText(texto);
+    expect(textosApoio).toHaveLength(1);
+    expect(textosApoio[0].conteudo).toContain("revisar PDF original");
+    expect(textosApoio[0].conteudo).toContain("Uma citacao curta.");
+    const questao1 = questoes.find((item) => item.numero === 1)!;
+    expect(questao1.textoApoioChave).toBe(textosApoio[0].chave);
+  });
 });
 
 describe("decisao de tipo por maioria (nao fabricar certo/errado em prova objetiva)", () => {

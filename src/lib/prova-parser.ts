@@ -256,6 +256,12 @@ function findSectionTitleLines(lines: string[]): Set<string> {
     for (let j = i - 1; j >= 0; j -= 1) {
       const candidate = lines[j].trim();
       if (!candidate) continue;
+      // Um titulo de texto de apoio ("Texto I", "Text II"...) pode legitimamente
+      // aparecer bem antes de um "numero sozinho" (ex.: margem/anotacao de linha
+      // logo apos o titulo) e bate no mesmo padrao "curto, sem pontuacao" usado
+      // abaixo pra reconhecer titulo de secao. Nunca descarta um titulo de texto
+      // de apoio aqui - quem decide o destino dele e o parser principal.
+      if (TEXTO_APOIO_TITLE.test(candidate)) break;
       const looksLikeRealContent =
         candidate.length > 60 ||
         /[.?!:;]$/.test(candidate) ||
@@ -373,10 +379,23 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
   function flushTexto() {
     if (!currentTexto) return;
     const conteudo = currentTexto.linhas.join(" ").replace(/\s+/g, " ").trim();
-    if (conteudo.length >= MIN_TEXTO_APOIO_LENGTH) {
+    // Um titulo isolado sem NENHUM conteudo depois (ex.: cabecalho de secao vazio
+    // que por coincidencia bateu no regex) nao vira entidade - nao ha nada pra um
+    // admin revisar. Mas um titulo com algum conteudo, mesmo curto (charge com
+    // legenda, citacao curta, texto cujo corpo principal esta numa imagem), e
+    // preservado com um aviso em vez de descartado silenciosamente: as questoes que
+    // o referenciam nao podem ficar sem chave so porque o PDF extraiu pouco texto.
+    if (conteudo.length > 0) {
       textoApoioSeq += 1;
       const chave = `texto-${textoApoioSeq}`;
-      textosApoio.push({ chave, titulo: currentTexto.titulo, conteudo });
+      textosApoio.push({
+        chave,
+        titulo: currentTexto.titulo,
+        conteudo:
+          conteudo.length >= MIN_TEXTO_APOIO_LENGTH
+            ? conteudo
+            : `[Texto de apoio curto ou baseado em imagem — revisar PDF original e completar manualmente.] ${conteudo}`,
+      });
       activeTextoApoioChave = chave;
     }
     currentTexto = null;
@@ -464,8 +483,7 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
       !line ||
       isNoise(line) ||
       repeatedHeaders.has(line) ||
-      trailingCredits.has(line) ||
-      sectionTitles.has(line)
+      trailingCredits.has(line)
     )
       continue;
 
@@ -475,7 +493,10 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
     // activeTextoApoioChave so e atualizada quando o corpo capturado for substancial
     // (flushTexto) - zera aqui pra nao deixar questoes seguintes herdarem por engano
     // a chave de um texto de apoio anterior quando este aqui falha por ser curto
-    // demais (ex.: cabecalho de secao vazio).
+    // demais (ex.: cabecalho de secao vazio). Verificado ANTES de sectionTitles: um
+    // titulo de texto de apoio nunca deve ser tratado como titulo de secao generico,
+    // mesmo no caso (hoje nao observado em nenhum fixture real, mas defensivo) de
+    // um PDF cujo layout faca o titulo cair bem antes de um "numero sozinho".
     if (TEXTO_APOIO_TITLE.test(line)) {
       flush();
       current = null;
@@ -485,6 +506,8 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
       lastRealLine = line;
       continue;
     }
+
+    if (sectionTitles.has(line)) continue;
 
     // Linhas de instrucao com hifen nao casam com ITEM_START_INLINE. Se ja estivermos
     // dentro de uma questao, elas permanecem como texto do bloco em vez de abrirem um item.
