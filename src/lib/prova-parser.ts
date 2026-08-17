@@ -19,7 +19,10 @@ type QuestaoDraft = {
   imagemUrl?: string;
   gabarito?: string;
   alternativas: AlternativaDraft[];
+  textoApoioChave?: string;
 };
+
+export type TextoApoioDraft = { chave: string; titulo?: string; conteudo: string };
 
 const NOISE_LINE =
   /^(pcimarkpci\b|www\.\S+$|--\s*\d+\s+of\s+\d+\s*--$|espa[cç]o livre$|.*P[ÁA]GINA\s+\d+\s*$)/i;
@@ -41,6 +44,12 @@ export const ITEM_START_ALONE = /^(\d{1,3})\s*[.)]?\s*$/;
 // Alternativa "A) texto", "A. texto", "A: texto", "A- texto" ou "(A) texto" (com ou
 // sem parenteses, com ou sem espaco depois do separador).
 export const ALTERNATIVA_START = /^\(?([A-E])[).:-]\s*(.*)$/;
+
+// Titulo de texto de apoio: "Texto I", "TEXTO", "Texto 1A18-I" etc. Exige "Texto"/
+// "TEXTO" com maiuscula (nunca minusculo dentro de uma frase corrida, ex.: "o texto
+// abaixo") e a linha inteira curta (so o titulo, sem mais nada) - um titulo de
+// verdade nunca continua como uma frase na mesma linha.
+const TEXTO_APOIO_TITLE = /^(?:Texto|TEXTO)\s*([IVXLC\d][\w-]*)?\s*$/;
 
 function isNoise(line: string): boolean {
   return NOISE_LINE.test(line.trim());
@@ -325,7 +334,13 @@ function findLineNumberAnnotationIndices(lines: string[]): Set<number> {
   return annotationIndices;
 }
 
-export function parseProvaText(rawText: string): QuestaoDraft[] {
+// Um titulo seguido de menos que isso de conteudo normalmente e um cabecalho de
+// secao vazio (ex.: "TEXTO" seguido so de "BLOCO III" e uma instrucao curta), nao um
+// texto de apoio de verdade — descartado silenciosamente em vez de virar uma entidade
+// vazia/inutil no rascunho.
+const MIN_TEXTO_APOIO_LENGTH = 100;
+
+export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; textosApoio: TextoApoioDraft[] } {
   const lines = rawText.split(/\r?\n/).map((line) => line.trimEnd());
   const repeatedHeaders = findRepeatedHeaderLines(lines);
   const trailingCredits = findTrailingCreditsLines(lines);
@@ -342,9 +357,29 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
   for (const index of findLineNumberAnnotationIndices(lines)) lines[index] = "";
 
   const questoes: QuestaoDraft[] = [];
-  let current: { numero: number; linhas: string[] } | null = null;
+  let current: { numero: number; linhas: string[]; textoApoioChave?: string } | null = null;
   let lastNumero = 0;
   let lastRealLine: string | null = null;
+
+  // Texto de apoio: um titulo tipo "Texto I" antes de um grupo de questoes, cujo
+  // conteudo (o texto/charge/reportagem em si) e compartilhado por todas as questoes
+  // seguintes ate o proximo titulo de texto de apoio.
+  const textosApoio: TextoApoioDraft[] = [];
+  let currentTexto: { titulo: string; linhas: string[] } | null = null;
+  let activeTextoApoioChave: string | undefined;
+  let textoApoioSeq = 0;
+
+  function flushTexto() {
+    if (!currentTexto) return;
+    const conteudo = currentTexto.linhas.join(" ").replace(/\s+/g, " ").trim();
+    if (conteudo.length >= MIN_TEXTO_APOIO_LENGTH) {
+      textoApoioSeq += 1;
+      const chave = `texto-${textoApoioSeq}`;
+      textosApoio.push({ chave, titulo: currentTexto.titulo, conteudo });
+      activeTextoApoioChave = chave;
+    }
+    currentTexto = null;
+  }
   // Alguns PDFs (layout em colunas) trazem itens fora de ordem numerica no proprio
   // documento - ex.: ...15, 18, 19, 20, 16, 17... Sem isso, "16" e "17" nunca abririam
   // bloco proprio (16 e 17 nao sao > lastNumero=20) e ficariam grudados como texto
@@ -406,6 +441,7 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
       tipo: "OBJETIVA",
       enunciado: enunciadoFinal,
       alternativas,
+      textoApoioChave: current.textoApoioChave,
     });
   }
 
@@ -430,6 +466,23 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
       sectionTitles.has(line)
     )
       continue;
+
+    // Titulo de texto de apoio ("Texto I", "TEXTO", "Texto 1A18-I"...): fecha
+    // qualquer questao aberta (o titulo nunca faz parte do enunciado de uma questao)
+    // e passa a acumular o conteudo do texto de apoio em vez do enunciado de questao.
+    // activeTextoApoioChave so e atualizada quando o corpo capturado for substancial
+    // (flushTexto) - zera aqui pra nao deixar questoes seguintes herdarem por engano
+    // a chave de um texto de apoio anterior quando este aqui falha por ser curto
+    // demais (ex.: cabecalho de secao vazio).
+    if (TEXTO_APOIO_TITLE.test(line)) {
+      flush();
+      current = null;
+      flushTexto();
+      activeTextoApoioChave = undefined;
+      currentTexto = { titulo: line, linhas: [] };
+      lastRealLine = line;
+      continue;
+    }
 
     // Linhas de instrucao com hifen nao casam com ITEM_START_INLINE. Se ja estivermos
     // dentro de uma questao, elas permanecem como texto do bloco em vez de abrirem um item.
@@ -470,16 +523,27 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
 
     if (isForwardOpen || isOutOfOrderReopen) {
       flush();
+      // O texto de apoio (se houver um sendo acumulado) termina aqui: agora que sabemos
+      // o corpo completo dele, decide se vira uma entidade de verdade e atualiza a
+      // chave que esta questao (e as seguintes) vao referenciar.
+      flushTexto();
       lastNumero = numero as number;
       usedNumeros.add(numero as number);
-      current = { numero: numero as number, linhas: inlineMatch ? [inlineMatch[2]] : [] };
+      current = {
+        numero: numero as number,
+        linhas: inlineMatch ? [inlineMatch[2]] : [],
+        textoApoioChave: activeTextoApoioChave,
+      };
     } else if (current) {
       current.linhas.push(line);
+    } else if (currentTexto) {
+      currentTexto.linhas.push(line);
     }
 
     lastRealLine = line;
   }
   flush();
+  flushTexto();
 
   // O tipo da questao e decidido olhando a prova inteira, nao cada questao isolada:
   // num caderno majoritariamente objetivo (A-E), uma questao sem alternativas quase
@@ -500,7 +564,7 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
     ];
   }
 
-  return questoes;
+  return { questoes, textosApoio };
 }
 
 // Teto absoluto: nenhuma questao legitima (nem estilo ENEM com texto de apoio longo
@@ -831,7 +895,7 @@ export function inferProvaHints(
   return { banca, ano, nivel };
 }
 
-export function buildProvaDraft(questoes: QuestaoDraft[], hints: ProvaHints) {
+export function buildProvaDraft(questoes: QuestaoDraft[], hints: ProvaHints, textosApoio: TextoApoioDraft[] = []) {
   // Sem placeholders: campo nao informado nem inferido fica vazio e reprova na
   // validacao do rascunho (o preview lista o que falta). Placeholder silencioso
   // ("BANCA", "Cargo") gerava o mesmo slug pra provas diferentes e o import em
@@ -853,6 +917,7 @@ export function buildProvaDraft(questoes: QuestaoDraft[], hints: ProvaHints) {
         // quando o texto traz sinal explicito ("Nivel Medio", "Ensino Fundamental" etc.).
         nivel: hints.nivel && hints.nivel.length > 0 ? hints.nivel : (["SUPERIOR"] as ExamLevelHint[]),
         duracaoMin: 240,
+        textosApoio: textosApoio.map((texto) => ({ chave: texto.chave, titulo: texto.titulo, conteudo: texto.conteudo })),
         questoes: questoes.map((questao) => ({
           numero: questao.numero,
           tipo: questao.tipo,
@@ -861,6 +926,7 @@ export function buildProvaDraft(questoes: QuestaoDraft[], hints: ProvaHints) {
           dificuldade: "MEDIUM" as const,
           gabarito: questao.gabarito,
           alternativas: questao.alternativas,
+          textoApoioChave: questao.textoApoioChave,
         })),
       },
     ],
