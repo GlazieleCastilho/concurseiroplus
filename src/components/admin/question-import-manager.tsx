@@ -34,6 +34,67 @@ function safeCountFromJson(text: string): { provas: number; questoes: number } {
   }
 }
 
+type DraftTextoApoio = { chave: string; titulo?: string; conteudo: string };
+type DraftAlternativa = { letra: string; texto: string };
+type DraftQuestao = { numero: number; enunciado: string; textoApoioChave?: string; alternativas?: DraftAlternativa[] };
+type DraftProva = { titulo?: string; textosApoio?: DraftTextoApoio[]; questoes?: DraftQuestao[] };
+
+// O JSON do rascunho tem textosApoio e questoes como arrays separados (contrato exigido
+// pelo schema/repository ao confirmar o import) - lendo o JSON bruto de cima pra baixo,
+// isso faz todos os textos de apoio aparecerem juntos ANTES de qualquer questao, mesmo
+// que o array de questoes ja esteja na ordem real do PDF. So pra revisao visual (nao
+// afeta o JSON editavel nem o que e enviado ao confirmar), monta uma pre-visualizacao
+// que intercala cada texto de apoio logo antes do primeiro bloco de questoes que o
+// referencia - mesmo padrao ja usado na tela de simulado do aluno.
+export function buildReadingOrderPreview(text: string): DraftProva[] | null {
+  try {
+    const parsed = JSON.parse(text) as { provas?: DraftProva[] };
+    return parsed.provas ?? [];
+  } catch {
+    return null;
+  }
+}
+
+export function DraftPreview({ provas }: { provas: DraftProva[] }) {
+  return (
+    <div className="space-y-6">
+      {provas.map((prova, provaIdx) => {
+        const questoes = prova.questoes ?? [];
+        const textosPorChave = new Map((prova.textosApoio ?? []).map((texto) => [texto.chave, texto]));
+        return (
+          <div key={provaIdx} className="space-y-3">
+            {questoes.map((questao, index) => {
+              const texto = questao.textoApoioChave ? textosPorChave.get(questao.textoApoioChave) : undefined;
+              const mudouTexto = questao.textoApoioChave !== questoes[index - 1]?.textoApoioChave;
+              return (
+                <div key={`${questao.numero}-${index}`} className="space-y-3">
+                  {texto && mudouTexto && (
+                    <div className="rounded-md border border-dashed bg-muted/30 p-3">
+                      <p className="text-sm font-semibold">{texto.titulo ?? "Texto de apoio"}</p>
+                      <p className="mt-1 whitespace-pre-wrap text-xs leading-5 text-muted-foreground">{texto.conteudo}</p>
+                    </div>
+                  )}
+                  <div className="rounded-md border p-3">
+                    <p className="text-xs font-semibold text-muted-foreground">Questao {questao.numero}</p>
+                    <p className="mt-1 whitespace-pre-wrap text-sm leading-6">{questao.enunciado}</p>
+                    {(questao.alternativas ?? []).length > 0 && (
+                      <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                        {(questao.alternativas ?? []).map((alt) => (
+                          <li key={alt.letra}>({alt.letra}) {alt.texto}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function parseGabaritoInput(text: string): Map<number, string> {
   const map = new Map<number, string>();
   const regex = /(\d+)\s*[-:.)]\s*([A-Za-z])/g;
@@ -305,12 +366,33 @@ export function QuestionImportManager() {
               />
               <Button type="button" variant="secondary" onClick={applyGabarito}>Aplicar gabarito ao rascunho</Button>
             </div>
-            <Label>Rascunho (edite se necessario, especialmente gabaritos)</Label>
-            <Textarea
-              value={editableJson}
-              onChange={(event) => setEditableJson(event.target.value)}
-              className="min-h-[360px] font-mono text-xs"
-            />
+            <Tabs defaultValue="preview">
+              <TabsList>
+                <TabsTrigger value="preview">Pre-visualizacao (ordem do PDF)</TabsTrigger>
+                <TabsTrigger value="json">Editar JSON</TabsTrigger>
+              </TabsList>
+              <TabsContent value="preview" className="mt-3">
+                {(() => {
+                  const provas = buildReadingOrderPreview(editableJson);
+                  if (!provas) {
+                    return <p className="text-sm text-destructive">JSON invalido - corrija na aba &ldquo;Editar JSON&rdquo; pra ver a pre-visualizacao.</p>;
+                  }
+                  return (
+                    <div className="max-h-[480px] overflow-y-auto rounded-md border p-3">
+                      <DraftPreview provas={provas} />
+                    </div>
+                  );
+                })()}
+              </TabsContent>
+              <TabsContent value="json" className="mt-3 space-y-3">
+                <Label>Rascunho (edite se necessario, especialmente gabaritos)</Label>
+                <Textarea
+                  value={editableJson}
+                  onChange={(event) => setEditableJson(event.target.value)}
+                  className="min-h-[360px] font-mono text-xs"
+                />
+              </TabsContent>
+            </Tabs>
             <Button onClick={confirmImport} disabled={confirmLoading}>
               {confirmLoading ? "Salvando..." : "Confirmar e salvar no banco"}
             </Button>
