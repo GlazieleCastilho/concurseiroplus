@@ -604,6 +604,16 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
       lastNumero - numero <= 30 &&
       !usedNumeros.has(numero);
 
+    // Numero de pagina "cru" (so o digito, sem "Pagina"/"PÁGINA" na frente - por isso
+    // NOISE_LINE nao pega) logo apos a marca d'agua/rodape de quebra de pagina. Quando
+    // esse numero coincide com uma questao ja usada antes, nao abre nem reabre nada
+    // (isForwardOpen e isOutOfOrderReopen ambos falham) e cairia como texto solto
+    // dentro do que estiver aberto no momento - ex.: "(E) II e III" ganhando um "8"
+    // grudado no final so porque a pagina 8 comecava logo ali. Descarta em vez de
+    // acumular: um numero de pagina nunca e conteudo real de questao.
+    const isStrayPageNumber =
+      aloneMatch !== null && justCrossedPageBreak && !isForwardOpen && !isOutOfOrderReopen;
+
     if (isForwardOpen || isOutOfOrderReopen) {
       flush();
       // O texto de apoio (se houver um sendo acumulado) termina aqui: agora que sabemos
@@ -618,6 +628,10 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
         textoApoioChave: activeTextoApoioChave,
         pageBreakIdx: [],
       };
+    } else if (isStrayPageNumber) {
+      // Descarta silenciosamente - nao acumula em current nem currentTexto, e nao
+      // conta como "ultima linha real" (mesmo tratamento das linhas de isNoise).
+      continue;
     } else if (current) {
       if (justCrossedPageBreak) current.pageBreakIdx.push(current.linhas.length);
       current.linhas.push(line);

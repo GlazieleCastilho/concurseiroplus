@@ -215,6 +215,17 @@ describe("parseProvaText - CESGRANRIO/PETROBRAS (pagina de instrucoes numeradas 
     expect(findAlternativaCountWarnings(questoes)).toEqual([]);
   });
 
+  it("nao deixa um numero de pagina cru (sem 'Pagina' na frente) vazar pra ultima alternativa em aberto", () => {
+    // Bug original: apos a marca d'agua/rodape de quebra de pagina, o numero da pagina
+    // 8 aparece sozinho na linha, sem nenhuma palavra como "Pagina" na frente (por isso
+    // NOISE_LINE nao pega). Como 8 ja tinha sido usado como questao antes e nao e maior
+    // que o ultimo item (23), nem isForwardOpen nem isOutOfOrderReopen abriam bloco pra
+    // ele, entao caia como texto solto na alternativa E da questao 23: "(E) II e III 8".
+    const questao23 = questoes.find((item) => item.numero === 23)!;
+    const ultimaAlternativa23 = questao23.alternativas[questao23.alternativas.length - 1];
+    expect(ultimaAlternativa23.texto).toBe("II e III");
+  });
+
   it("reconhece titulo de texto de apoio em ingles ('Text I'/'Text II', secao de lingua estrangeira), nao so 'Texto' em portugues", () => {
     const { textosApoio, questoes } = parseProvaText(cesgranrioProva);
     const textI = textosApoio.find((item) => item.titulo === "Text I");
