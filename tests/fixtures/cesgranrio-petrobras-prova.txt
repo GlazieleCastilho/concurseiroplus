@@ -1,0 +1,1550 @@
+
+
+pcimarkpci MjgwNDowMTRkOjE2OGU6OGRlYjo1ZDZjOjUwNDM6Njg0ZjpjYTI1:RnJpLCAxNCBBdWcgMjAyNiAxNjo0NzoyOCAtMDMwMA==
+www.pciconcursos.com.br
+ANALISTA DE SISTEMAS JÚNIOR
+PROCESSOS DE NEGÓCIO
+1
+LEIA  ATENTAMENTE  AS  INSTRUÇÕES  ABAIXO.
+01   -   Você recebeu do fiscal o seguinte material:
+a)  este caderno, com o enunciado das 70 (setenta) questões objetivas, sem repetição ou falha, com a seguinte distribuição:
+b) CARTÃO-RESPOSTA destinado às respostas das questões objetivas formuladas nas provas. 
+02   -    Verifique  se  este  material  está  em  ordem  e  se  o  seu  nome  e  número  de  inscrição  conferem  com  os  que  aparecem  no
+CARTÃO-RESPOSTA. Caso contrário, notifique o fato IMEDIATAMENTE ao fiscal.
+03   -    Após  a  conferência,  o  candidato  deverá  assinar,  no  espaço  próprio  do  CARTÃO-RESPOSTA,  a  caneta  esferográfica  
+transparente de tinta na cor preta.
+04   -   No   CARTÃO-RESPOSTA,  a  marcação  das  letras  correspondentes  às  respostas  certas  deve  ser  feita  cobrindo  a  letra  e  
+preenchendo  todo  o  espaço  compreendido  pelos  círculos,  a  caneta  esferográfica  transparente  de  tinta  na  cor  preta, 
+de forma contínua e densa. A LEITORA ÓTICA é sensível a marcas escuras, portanto, preencha os campos de marcação 
+completamente, sem deixar claros.
+Exemplo:  
+05   -   Tenha  muito  cuidado  com  o  CARTÃO-RESPOSTA,  para  não  o  DOBRAR,  AMASSAR  ou  MANCHAR.  O  CARTÃO-
+-RESPOSTA SOMENTE poderá ser substituído se, no ato da entrega ao candidato, já estiver danificado em suas margens 
+superior e/ou inferior - BARRA DE RECONHECIMENTO PARA LEITURA ÓTICA.
+06      -  Para cada uma das questões objetivas, são apresentadas 5 alternativas classificadas com as letras (A), (B), (C), (D) e (E); 
+só uma responde adequadamente ao quesito proposto. Você só deve assinalar UMA RESPOSTA: a marcação em mais de 
+uma alternativa anula a questão, MESMO QUE UMA DAS RESPOSTAS ESTEJA CORRETA.
+07   -   As questões objetivas são identificadas pelo número que se situa acima de seu enunciado. 
+08      - SERÁ ELIMINADO do Processo Seletivo Público o candidato que:
+a)   se  utilizar,  durante  a  realização  das  provas,  de  máquinas  e/ou  relógios  de  calcular,  bem  como  de  rádios  gravadores,
+headphones, telefones celulares ou fontes de consulta de qualquer espécie;
+b)   se  ausentar  da  sala  em  que  se  realizam  as  provas  levando  consigo  o  CADERNO  DE  QUESTÕES  e/ou  o  CARTÃO-
+-RESPOSTA.
+c)  se recusar a entregar o CADERNO DE QUESTÕES e/ou o CARTÃO-RESPOSTA, quando terminar o tempo estabelecido.
+d)  não assinar a LISTA DE PRESENÇA e/ou o CARTÃO-RESPOSTA.
+Obs. O candidato só poderá se ausentar do recinto das provas após 1 (uma) hora contada a partir do efetivo início das 
+mesmas. Por motivos de segurança, o candidato NÃO PODERÁ LEVAR O CADERNO DE QUESTÕES, a qualquer 
+momento. 
+09   -   Reserve os 30 (trinta) minutos finais para marcar seu CARTÃO-RESPOSTA. Os rascunhos e as marcações assinaladas no 
+CADERNO DE QUESTÕES NÃO SERÃO LEVADOS EM CONTA.
+10   -   Quando   terminar,   entregue  ao  fiscal  O  CADERNO  DE  QUESTÕES,  o  CARTÃO-RESPOSTA  e  ASSINE  A  LISTA  DE  
+PRESENÇA.
+11   - O TEMPO DISPONÍVEL PARA ESTAS PROVAS DE QUESTÕES OBJETIVAS É DE 4 (QUATRO) HORAS E 30 (TRINTA) 
+MINUTOS, incluído o tempo para a marcação do seu CARTÃO-RESPOSTA.  
+12   -   As questões e os gabaritos das Provas Objetivas serão divulgados no primeiro dia útil após a realização das mesmas, no 
+endereço eletrônico da FUNDAÇÃO CESGRANRIO (http://www.cesgranrio.org.br).
+ANALISTA DE SISTEMAS JÚNIOR
+PROCESSOS DE NEGÓCIO
+06
+CONHECIMENTOS BÁSICOSCONHECIMENTOS ESPECÍFICOS
+LÍNGUA
+PORTUGUESA
+LÍNGUA INGLESABloco 1Bloco 2Bloco 3
+Questões    Pontuação    Questões   Pontuação    Questões    Pontuação    Questões    Pontuação    Questões    Pontuação
+1 a 101,0 cada11 a 201,0 cada21 a 401,0 cada41 a 551,0 cada56 a 701,0 cada
+EDITAL N
+o
+ 1 - 
+PETROBRAS
+PSP RH - 1/2011
+
+pcimarkpci MjgwNDowMTRkOjE2OGU6OGRlYjo1ZDZjOjUwNDM6Njg0ZjpjYTI1:RnJpLCAxNCBBdWcgMjAyNiAxNjo0NzoyOCAtMDMwMA==
+www.pciconcursos.com.br
+ANALISTA DE SISTEMAS JÚNIOR
+PROCESSOS DE NEGÓCIO
+2
+LÍNGUA PORTUGUESA
+Texto I
+REPIQUE DAS MESMAS PALAVRAS
+Palavras  consideradas  difíceis,  como  “engala-
+nada”,  já  não  atraem  muitos  autores  de  escola  de  
+samba.  A  busca  agora  é  pela  comunicação  direta.  
+Em 2011, “vai” será a palavra mais repetida nos des-
+files das 12 escolas do Grupo Especial: 19 vezes no 
+total.  Em  seguida,  uma  variação  do  mesmo  verbo:  
+“vou”,  com  dez  repetições.  Essa  também  será  a  in-
+cidência  de  “vida”  e  “amor”  (dez  vezes  cada  uma).  
+“Luz” e “mar” (nove vezes) fecham o pódio das mais 
+populares de 2011. Isto sem considerar as repetições 
+de uma mesma música, uma vez que ela não muda 
+durante todo o desfile das escolas.
+Outrora clássicas, palavras como “relicário” e “di-
+vinal” só aparecerão uma vez cada uma. E “engala-
+nado”, que já teve seus dias de estrela, ficará mesmo 
+de fora dos desfiles do Grupo Especial.
+Para especialistas, as palavras mais usadas atu-
+almente são curtas, chamam o público e motivam os 
+componentes.
+– “Vai” é a clara tentativa do compositor de em-
+polgar e envolver a plateia desde o concurso das es-
+colas, quando tem que mostrar às comissões julgado-
+ras que suas músicas têm capacidade de empolgar. 
+“Vou” está na linha de “vai”: chama, motiva. Quanto a 
+“vida” e “amor”, refletem o otimismo do carnaval. Ne-
+nhuma palavra fica no campo semântico do pessimis-
+mo,  tristeza.  E  “mundo”  deixa  claro  o  aspecto  gran-
+dioso, assim como “céu” – disse o jornalista Marcelo 
+de Mello, jurado do estandarte de Ouro desde 1993.
+Dudu  Botelho,  compositor  do  Salgueiro,  é  um  
+dos compositores dos sambas de 2007, 2008 e 2011. 
+O samba de sua escola, aliás, tem três das seis pala-
+vras mais recorrentes: “vida”, “luz” e “mar”:
+– O compositor tenta, através da letra, estimular 
+o componente e a comunidade a se inserir no roteiro 
+do enredo.
+Todas  as  palavras  mais  repetidas  no  carnaval  
+estão entre as mais usadas nos sambas das últimas 
+campeãs  dos  anos  2000.  “Terra”  foi  a  mais  escolhi-
+da (11 vezes). Em seguida, apareceram “vou” e “pra” 
+(nove vezes); “luz”, “mar”, e “fé” (oito); “Brasil” (sete); 
+e “vai”, “amor”, “carnaval” e “liberdade” (seis); e “vida” 
+(cinco).
+Para Marcelo de Mello, a repetição das mesmas 
+palavras indica um empobrecimento das letras:
+– O visual ganhou um peso grande. A última es-
+cola que venceu um campeonato por causa do sam-
+ba  foi  o  Salgueiro  em  1993,  com  o  refrão  “explode  
+coração”.
+MOTTA, Cláudio. Repique das mesmas palavras. 
+O Globo, 09 fev. 2011. Adaptado.
+1
+Segundo o Texto I, o motivo real para o emprego de pala-
+vras mais curtas se dá porque
+(A)  insere o componente no enredo da escola.
+(B)  identifica o falante no seu contexto linguístico.
+(C) estabelece uma comunicação fácil com a escola.
+(D) estimula os músicos a criarem letras mais inspiradas.
+(E)  envolve o público no processo de criação dos compo-
+sitores.
+2
+O Texto I pode ser lido como um jogo de oposições. 
+A única oposição que NÃO aparece na matéria é
+(A)  passado / presente
+(B)  otimismo / pessimismo
+(C) tradição / modernidade
+(D) rapidez / lentidão
+(E)  envolvimento / passividade
+3
+A escolha do título de um texto nunca é aleatória. 
+O emprego da palavra repique no título do Texto I revela 
+a intenção de
+(A) valorizar  um  dos  instrumentos  mais  populares  da  
+bateria.
+(B)  criar  uma  identidade  com  o  universo  linguístico  do  
+samba.
+(C) apontar uma relação entre a natureza da palavra e o 
+seu sentido.
+(D) evidenciar o contraste entre os tempos de outrora e o 
+da atualidade.
+(E)  reconhecer a importância da empolgação dos compo-
+nentes da escola de samba.
+4
+A  última  fala  do  texto,  de  Marcelo  de  Mello,  poderia  ser  
+introduzida  por  um  conectivo,  que  preencheria  a  frase  
+abaixo.
+A  repetição  das  mesmas  palavras  indica  um  empobreci-
+mento  das  letras  __________  o  visual  ganhou  um  peso  
+grande.
+A   respeito   do   emprego   desse   conectivo,   analise   as   
+afirmações a seguir.
+I 
+-  O  conectivo  adequado  seria  porque,  uma  vez  que  
+estabelece uma relação de causa.
+II 
+-  O conectivo adequado seria por que, uma vez que 
+se reconhecem aqui duas palavras.
+III 
+-  O conectivo levaria acento, porquê, já que pode ser 
+substituído pelo termo “o motivo”, ou “a razão”.
+É correto o que se afirma em
+(A) I, apenas.
+(B) II, apenas. 
+(C) I e II, apenas. 
+(D) I e III, apenas. 
+(E) I, II e III.
+5
+10
+15
+20
+25
+30
+35
+40
+45
+
+pcimarkpci MjgwNDowMTRkOjE2OGU6OGRlYjo1ZDZjOjUwNDM6Njg0ZjpjYTI1:RnJpLCAxNCBBdWcgMjAyNiAxNjo0NzoyOCAtMDMwMA==
+www.pciconcursos.com.br
+ANALISTA DE SISTEMAS JÚNIOR
+PROCESSOS DE NEGÓCIO
+3
+5
+“Essa também será a incidência de ‘vida’ e ‘amor’ (dez vezes 
+cada uma).” (. 7-8)
+O substantivo incidência vem do verbo incidir. Dos verbos 
+a seguir, o único que segue esse mesmo paradigma é
+(A)  abranger
+(B)  devolver
+(C) incinerar
+(D) perceber
+(E)  iludir
+Texto II
+PALAVRA PEJORATIVA
+O uso do termo “diferenciada” com sentido negativo 
+ressuscita o preconceito de classe
+“Você já viu o tipo de gente que fica ao redor das 
+estações do metrô? Drogados, mendigos, uma gen-
+te  diferenciada.”  As  palavras  atribuídas  à  psicóloga  
+Guiomar Ferreira, moradora há 26 anos do bairro Hi-
+gienópolis, em São Paulo, colocaram lenha na polê-
+mica sobre a construção de uma estação de metrô na 
+região,  onde  se  concentra  parte  da  elite  paulistana.  
+Guiomar  nega  ser  a  autora  da  frase.  Mas  a  autoria,  
+convenhamos,  é  o  de  menos.  A  menção  a  camelôs  
+e  usuários  do  transporte  público  ressuscitou  velhos  
+preconceitos de classe, e pode deixar como lembran-
+ça a volta de um clichê: o termo “diferenciada”. 
+A  palavra  nunca  fora  usada  até  então  com  viés  
+pejorativo  no  Brasil.  Habitava  o  jargão  corporativo  
+e  publicitário,  sendo  usada  como  sinônimo  vago  de  
+algo  “especial”,  “destacado”  ou  “diferente”  (sempre  
+para melhor). 
+– Não me consta que já houvesse um “diferencia-
+do” negativamente marcado. Não tenho nenhum co-
+nhecimento de existência desse “clichê”. Parece-me 
+que a origem, aí, foi absolutamente episódica, nasci-
+da da infeliz declaração – explica Maria Helena Mou-
+ra Neves, professora da Unesp de Araraquara (SP) e 
+do Mackenzie.  
+Para  a  professora,  o  termo  pode  até  ganhar  as  
+ruas  com  o  sentido  negativo,  mas  não  devido  a  um  
+deslizamento  semântico  natural.  Por  natural,  enten-
+da-se  uma  direção  semântica  provocada  pela  con-
+figuração  de  sentido  do  termo  originário.  No  verbo  
+“diferenciar”,  algo  que  “se  diferencia”  será  bom,  ao  
+contrário  do  que  ocorreu  com  o  verbo  “discriminar”,  
+por  exemplo.  Ao  virar  “discriminado”,  implicou  algo  
+negativo.  Maria  Helena,  porém,  não  crê  que  a  nova  
+acepção de “diferenciado” tenha vida longa. 
+– Não deve vingar, a não ser como chiste, aque-
+las  coisas  que  vêm  entre  aspas,  de  brincadeira  –  
+emenda ela. [...]
+MURANO, Edgard. 
+Disponível em: <http://revistalingua.uol.com.br/textos.asp?codigo=12327>.
+Acesso em: 05 jul. 2011. Adaptado.
+6
+O verbo ganhar (. 25), na sua forma usual, é considera-
+do um verbo abundante, apresentando, pois, duas formas 
+de particípio: uma forma regular (ganhado); outra, irregu-
+lar, supletiva (ganho).
+Dentre os verbos encontrados no Texto II, qual é aquele 
+que apresenta SOMENTE uma forma irregular?
+(A)  Ver  (. 1)
+(B)  Ficar  (. 1)
+(C) Ter (. 19)
+(D) Ocorrer (. 31)
+(E)  Vingar  (. 35)
+7
+Na última fala do Texto II, a forma verbal vingar está com 
+o sentido de “ter bom êxito”, “dar certo”. (. 35)
+Em qual das frases abaixo o verbo em negrito apresenta 
+a mesma regência de vingar?
+(A)  “A menção a camelôs e usuários do transporte público 
+ressuscitou velhos preconceitos de classe,” (. 9-11)
+(B)  “–  Não  me  consta que já houvesse um ‘diferenciado’ 
+negativamente marcado.” (. 18-19)
+(C) “Não tenho   nenhum   conhecimento   de   existência   
+desse ‘clichê’.” (. 19-20)
+(D) “Parece-me   que   a   origem,   aí,   foi   absolutamente   
+episódica,” (. 20-21)
+(E) “[...] aquelas coisas que vêm entre aspas, de brinca-
+deira –” (. 35-36)
+8
+Segundo   os   compêndios   gramaticais,   existem   duas   
+possibilidades de escritura da voz passiva no português. 
+Na frase abaixo, encontra-se uma delas:
+“A palavra nunca fora usada até então com viés pejorativo 
+no Brasil.” (. 13-14)
+A  outra  possibilidade  de  escritura,  na  forma  passiva,  na  
+qual o sentido NÃO se altera é:
+(A)  A palavra nunca se usou até então com viés pejorativo 
+no Brasil.
+(B)  A palavra nunca se usara até então com viés pejorati-
+vo no Brasil.
+(C)  A  palavra  nunca  se  tem  usado  até  então  com  viés  
+pejorativo no Brasil.
+(D) A palavra nunca se usava até então com viés pejorati-
+vo no Brasil.
+(E) A palavra nunca se usaria até então com viés pejora-
+tivo no Brasil.
+5
+10
+15
+20
+25
+30
+35
+
+pcimarkpci MjgwNDowMTRkOjE2OGU6OGRlYjo1ZDZjOjUwNDM6Njg0ZjpjYTI1:RnJpLCAxNCBBdWcgMjAyNiAxNjo0NzoyOCAtMDMwMA==
+www.pciconcursos.com.br
+ANALISTA DE SISTEMAS JÚNIOR
+PROCESSOS DE NEGÓCIO
+4
+LÍNGUA ESTRANGEIRA
+Text I
+Brazil: Platform for growth
+By Joe Leahy
+On  the  Cidade  de  Angra  dos  Reis  oil  platform,  
+surrounded   by   the   deep   blue   South   Atlantic,   a   
+Petrobras engineer turns on a tap and watches black 
+liquid flow into a beaker.
+It   looks   and   smells   like   ordinary   crude   oil.   
+Nevertheless,  for  Brazil,  this  represents  something  
+much  more  spectacular.  Pumped  by  the  national  oil  
+company from “pre-salt” deposits – so-called because 
+they lie beneath 2,000m of salt – 300km off the coast 
+of  Rio  de  Janeiro,  it  is  some  of  the  first  commercial  
+oil  to  flow  from  the  country’s  giant  new  deepwater  
+discoveries.
+Already  estimated  to  contain  50bn  barrels,  and  
+with  much  of  the  area  still  to  be  fully  explored,  the  
+fields  contain  the  world’s  largest  known  offshore  oil  
+deposits. In one step, Brazil could jump up the world 
+rankings of national oil reserves and production, from 
+15th  to  fifth.  So  great  are  the  discoveries,  and  the  
+investment  required  to  exploit  them,  that  they  have  
+the potential to transform the country – for good or for ill.
+Having   seen   out   booms   and   busts   before,   
+Brazilians  are  hoping  that  this  time  “the  country  
+of  the  future”  will  at  last  realise  its  full  economic  
+potential. The hope is that the discoveries will provide 
+a  nation  already  rich  in  renewable  energy  with  an  
+embarrassment of resources with which to pursue the 
+goal of becoming a US of the south.
+The  danger  for  Brazil,  if  it  fails  to  manage  this  
+windfall wisely, is of falling victim to “Dutch disease”. 
+The economic malaise is named after the Netherlands 
+in the 1970s, where the manufacturing sector withered 
+after its currency strengthened on the back of a large 
+gas field discovery combined with rising energy prices.
+Even  worse,  Brazil  could  suffer  a  more  severe  
+form of the disease, the “oil curse”, whereby nations 
+rich in natural resources – Nigeria and Venezuela, for 
+example – grow addicted to the money that flows from 
+them.
+Petrobras   chief   executive   says   neither   the   
+company  nor  the  country’s  oil  industry  has  so  far  
+been big enough to become a government cash cow. 
+But with the new discoveries, which stretch across an 
+800km belt off the coast of south-eastern Brazil, this is 
+going to change. The oil industry could grow from about 
+10 per cent of GDP to up to 25 per cent in the coming 
+decades, analysts say. To curb any negative effects, 
+Brazil  is  trying  to  support  domestic  manufacturing  
+by  increasing  “local  content”  requirements  in  the  oil  
+industry.
+5
+10
+15
+20
+25
+30
+35
+40
+45
+9
+“Não me consta que já houvesse um ‘diferenciado’ nega-
+tivamente marcado.” (. 18-19)
+A respeito da ocorrência da forma verbal houvesse, des-
+tacada no trecho, teceram-se os seguintes comentários:
+I 
+-  A forma verbal houvesse, nessa estrutura, tem valor 
+de existisse, e se apresenta como verbo impessoal.
+II -  O  verbo  haver,  quando  impessoal,  transmite  sua  
+impessoalidade a auxiliares.
+III -   A  forma  verbal  houvesse,  nesse  trecho,  desempe-
+nha uma função de verbo auxiliar.
+É correto o que se afirma em
+(A) I, apenas. 
+(B) II, apenas. 
+(C) I e II, apenas. 
+(D) I e III, apenas. 
+(E) I, II e III.
+10
+Considere o trecho do Texto II abaixo.
+“[...] colocaram lenha na polêmica sobre a construção de 
+uma estação de metrô na região, onde se concentra parte 
+da elite paulistana.” (. 5-7)
+O emprego do pronome relativo onde está correto.
+PORQUE
+Retoma o termo na região, que tem valor de lugar físico 
+na oração antecedente.
+Analisando-se as afirmações acima, conclui-se que
+(A)  as  duas  afirmações  são  verdadeiras,  e  a  segunda  
+justifica a primeira.
+(B)  as duas afirmações são verdadeiras, e a segunda não 
+justifica a primeira.
+(C)  a primeira afirmação é verdadeira, e a segunda é falsa.
+(D)  a primeira afirmação é falsa, e a segunda é verdadeira.
+(E)  as duas afirmações são falsas.
+
+pcimarkpci MjgwNDowMTRkOjE2OGU6OGRlYjo1ZDZjOjUwNDM6Njg0ZjpjYTI1:RnJpLCAxNCBBdWcgMjAyNiAxNjo0NzoyOCAtMDMwMA==
+www.pciconcursos.com.br
+ANALISTA DE SISTEMAS JÚNIOR
+PROCESSOS DE NEGÓCIO
+5
+Without   a   “firm   local   content   policy”,   says   
+Petrobras CEO, Dutch disease and the oil curse will 
+take hold. However, “if we have a firm and successful 
+local content policy, no – because other sectors in the 
+economy are going to grow as fast as Petrobras”.
+The  other  long-term  dividend  Brazil  is  seeking  
+from the discoveries is in research and development 
+(R&D).  Extracting  oil  from  beneath  a  layer  of  salt  at  
+great depth, hundreds of kilometres from the coast, is 
+so challenging that Brazilian engineers see it as a new 
+frontier. If they can perfect this, they can lead the way 
+in other markets with similar geology, such as Africa.
+For its part, Petrobras is spending $800m-$900m 
+a  year  over  the  next  five  years  on  R&D,  and  has  
+invested  $700m  in  the  expansion  of  its  research  
+centre.
+Ultimately, Brazil’s ability to avoid Dutch disease 
+will  depend  not  just  on  how  the  money  from  the  oil  
+is  spent.  The  country  is  the  world’s  second  biggest  
+exporter of iron ore. It is the largest exporter of beef. 
+It  is  also  the  biggest  producer  of  sugar,  coffee  and  
+orange juice, and the second-largest producer of soya 
+beans.
+Exports of these commodities are already driving 
+up  the  exchange  rate  before  the  new  oil  fields  have  
+fully  come  on  stream,  making  it  harder  for  Brazilian  
+exporters of manufactured goods. Industrial production 
+has  faltered  in  recent  months,  with  manufacturers  
+blaming the trend on a flood of cheap Chinese-made 
+imports.
+“Brazil has everything that China doesn’t and it’s 
+natural that, as China continues to grow, it’s just going 
+to  be  starved  for  those  resources,”  says  Harvard’s  
+Prof  Rogoff.  “At  some  level  Brazil  doesn’t  just  want  
+to  be  exporting  natural  resources  –  it  wants  a  more  
+diversified  economy.  There  are  going  to  be  some  
+rising tensions over that.”
+Adapted from Financial Times - March 15 2011 22:54. Available in:  
+<http://www.ft.com/cms/s/0/fa11320c-4f48-11e0-9038-00144feab49a,_i_email=y.html>
+Retrieved on: June 17, 2011.
+11 
+The communicative intention of Text I is to
+(A)  classify all the economic risks Brazil will certainly run if 
+it insists on extracting oil at great depth.
+(B)  suggest that Brazil could soon be ranked as one of the 
+four main oil producers in the whole world.
+(C) argue that Brazil should try to avoid potential dangers 
+associated to its recent deepwater oil discoveries.
+(D) report on the rising tensions between China and Brazil 
+over the manufacturing sector of the world economy.
+(E)  announce  the  expected  growth  of  the  oil  industry  in  
+Brazil, Nigeria and Venezuela in the coming decades.
+50
+55
+60
+65
+70
+75
+80
+85
+12
+According  to  paragraphs  5  and  6  (lines  28-38),  Dutch  
+disease is a
+(A)  concept  that  explains  the  relationship  between  a  
+stronger  currency,  due  to  the  discovery  of  vast  gas  
+deposits, and the decline in the manufacturing sector. 
+(B)  theory  that  can  justify  the  increase  in  energy  prices  
+and the strengthening of the manufacturing sector.
+(C)  dangerous  form  of  economic  malaise  that  can  only  
+victimize already affluent nations.
+(D) severe economic disease that is affecting the economy 
+of countries like the Netherlands.
+(E) a type of problem known as the “oil curse” that affects 
+the booming sector of oil extraction.
+13
+According to paragraphs 9 and 10 (lines 55-65), investing 
+in R&D 
+(A) may open new markets for the Brazilian technological 
+sector of oil extraction at great depth. 
+(B)  may justify Petrobras’ plans to reduce the development 
+of its research center.
+(C)  is surely leading Brazilian engineers to work for African 
+countries rich in natural resources.
+(D) will pay immediate dividends in the challenging sector 
+of geology and oil exploitation.
+(E)  can explain why Petrobras is spending $800m - $900m 
+to extract oil at great depth. 
+14
+Based  on  the  meanings  in  Text  I,  the  two  words  are  
+antonymous in
+(A) “...realise...” (line  23) – understand
+(B) “...stretch...” (line  42) – bridge
+(C) “...curb...” (line  46) – foster
+(D) “...faltered...” (line  77) – halted
+(E) “...blaming...” (line  78) – reproaching
+15
+Concerning the referent to the pronoun it, in the fragments 
+below, 
+(A)  in  “It looks and smells like ordinary crude oil.” (line  5), 
+it refers to “beaker” (line  4).
+(B)  in  “The  danger  for  Brazil,  if  it  fails  to  manage  this  
+windfall wisely, is of falling victim to ‘Dutch disease.’ ” 
+(lines  28-29), it refers to “danger” (line  28).
+(C)  in  “...  Brazilian  engineers  see  it  as  a  new  frontier.”  
+(lines  59-60), it refers to “coast” (line  58).
+(D) in   “making it   harder   for   Brazilian   exporters   of   
+manufactured   goods.”   (lines   75-76),   it   refers   to   
+“stream” (line  75).
+(E)  in  “  ‘it’s  just  going  to  be  starved  for  those  resources,’  
+says Harvard’s Prof Rogoff.” (lines 81-83), it refers to 
+“China” (line  81).
+
+pcimarkpci MjgwNDowMTRkOjE2OGU6OGRlYjo1ZDZjOjUwNDM6Njg0ZjpjYTI1:RnJpLCAxNCBBdWcgMjAyNiAxNjo0NzoyOCAtMDMwMA==
+www.pciconcursos.com.br
+ANALISTA DE SISTEMAS JÚNIOR
+PROCESSOS DE NEGÓCIO
+6
+18
+Comparing Texts I and II,  
+(A)  only Text I mentions an environmental disaster derived 
+from deepwater oil prospection.
+(B)    only  Text  II  reports  on  China’s  intensive  economic  
+growth and absolute need of commodities.
+(C)    neither  Text  I  nor  Text  II  express  concern  for  the  
+implications of  the explorations of offshore oil deposits 
+to local economies.
+(D)    both  Text  I  and  Text  II    present  Brazil’s  potential  of  
+holding an outstanding position concerning worldwide 
+deepwater reserves and exploration. 
+(E)    Text  I  mentions  Brazil,  Nigeria  and  Venezuela  to  
+criticize  their  addiction  to  oil  revenues,  while  Text  
+II  mentions  these  countries  to  illustrate  successful  
+examples of conventional oil prospection.   
+19
+According to Text II, in spite of the oil spill disaster in the 
+Gulf of Mexico, 
+(A)  the US will soon surpass China in energy consumption.
+(B)    the  conventional  drilling  of  oil  and  gas  is  seen  as  a  
+taboo now. 
+(C)    in  twenty  years,  the  whole  world  will  need  65  million  
+barrels a day.
+(D)  energy consumption of India and China will double in 
+ten years’ time.
+(E)  deepwater oil and gas prospecting has not been halted 
+in other regions of the globe.  
+20
+In Text II, Herbert illustrates the possibility of “...idled rigs 
+heading  to  other  shores.”  (line  26)  EXCEPT  when  he  
+mentions
+(A)  prospection in ultra-deepwater reserves off the coasts 
+of Ghana and Nigeria.
+(B)  deepwater operations in the sulfur-laden depths of the 
+Black Sea.
+(C)  the quest for oil in the tar sands of Venezuela’s Orinoco 
+Basin.
+(D) the suspension of the US offshore-drilling moratorium. 
+(E)  Brazil’s drillings four miles below the Atlantic.
+16
+In    “Without  a  ‘firm  local  content  policy’,  says  Petrobras  
+CEO,  Dutch  disease  and  the  oil  curse  will  take  hold.”  
+(lines  50-52), “take hold” means to 
+(A)  become more easily controlled.
+(B)  become stronger and difficult to stop.
+(C) be completely defeated and ineffective.
+(D) be absolutely harmless and disappointing.
+(E)  be transformed into very powerful assets.
+17
+The boldfaced item is synonymous with the expression in 
+parentheses in     
+(A)  “Nevertheless,  for  Brazil,  this  represents  something  
+much more spectacular.” (lines 6-7) – (Thus)
+(B)  “...neither  the  company  nor  the  country’s  oil  industry  
+has so far been big enough to become a government 
+cash cow.” (lines 39-41) – (meanwhile) 
+(C) “However,  ‘if  we  have  a  firm  and  successful  local  
+content policy, no” (lines 52-53) – (Moreover)   
+(D) “ ‘because other sectors in the economy are going to 
+grow as fast as Petrobras.’ ” (lines 53-54) – (due to the 
+fact that) 
+(E)  “Ultimately,  Brazil’s  ability  to  avoid  Dutch  disease  
+will depend not just on how the money from the oil is 
+spent.” (lines 66-68) – (Furthermore)  
+Text II
+Off the Deep End in Brazil
+Gerald Herbert
+ 
+With  crude  still  hemorrhaging  into  the  Gulf  of  
+Mexico,  deep-water  drilling  might  seem  taboo  just  
+now. In fact, extreme oil will likely be the new normal. 
+Despite the gulf tragedy, the quest for oil and gas in 
+the  most  difficult  places  on  the  planet  is  just  getting  
+underway.  Prospecting  proceeds  apace  in  the  ultra-
+deepwater  reserves  off  the  coasts  of  Ghana  and  
+Nigeria, the sulfur-laden depths of the Black Sea, and 
+the  tar  sands  of  Venezuela’s  Orinoco  Basin.  Brazil’s  
+Petrobras, which already controls a quarter of global 
+deepwater operations, is just starting to plumb its 9 to 
+15 billion barrels of proven reserves buried some four 
+miles below the Atlantic.
+The  reason  is  simple:  after  a  century  and  a  
+half  of  breakneck  oil  prospecting,  the  easy  stuff  is  
+history.  Blistering  growth  in  emerging  nations  has  
+turned the power grid upside down. India and China 
+will  consume  28  percent  of  global  energy  by  2030,  
+triple the juice they required in 1990. China is set to 
+overtake  the  U.S.  in  energy  consumption  by  2014.  
+And  now  that  the  Great  Recession  is  easing,  the  
+earth’s  hoard  of  conventional  oil  is  waning  even  
+faster.  The  International  Energy  Agency  reckons  the  
+world will need to find 65 million additional barrels a 
+day  by  2030.  If  the  U.S.  offshore-drilling  moratorium  
+drags on, look for idled rigs heading to other shores.
+ Available in:
+<http://www.newsweek.com/2010/06/13/off-the-deep-end-in-brazil.html>  
+Retrieved on: June 19, 2011.
+5
+10
+15
+20
+25
+
+pcimarkpci MjgwNDowMTRkOjE2OGU6OGRlYjo1ZDZjOjUwNDM6Njg0ZjpjYTI1:RnJpLCAxNCBBdWcgMjAyNiAxNjo0NzoyOCAtMDMwMA==
+www.pciconcursos.com.br
+ANALISTA DE SISTEMAS JÚNIOR
+PROCESSOS DE NEGÓCIO
+7
+CONHECIMENTOS ESPECÍFICOS
+BLOCO 1
+21
+Segundo o PMBOK 4
+a
+ Edição, projetos se caracterizam como um esforço temporário com a finalidade de criar um produto, 
+serviço ou resultado exclusivo. Conforme esse guia, os projetos, grandes ou pequenos, simples ou complexos, podem ser 
+mapeados em uma estrutura de ciclo de vida genérico que compreende:
+(A)  Início do projeto, Organização e preparação, Execução do trabalho do projeto e Encerramento do projeto  
+(B)  Início do projeto, Planejamento, Construção, Testes e Encerramento do projeto 
+(C) Contratação, Levantamento de requisitos, Análise, Projeto, Execução e Homologação 
+(D) Contratação, Preparação, Planejamento, Execução, Avaliação e Fechamento 
+(E)  Planejamento, Execução, Verificação e Ação 
+22
+Um gerente foi incumbido de executar o projeto interno da implantação de um serviço de atendimento a clientes. Ao iniciar 
+a criação do termo de abertura, detectou que a Declaração de Trabalho do Projeto não continha a informação esperada.
+Segundo o PMBOK 4
+a
+ Edição, esse documento deve informar o(a)
+(A)  business case, a descrição do escopo do produto e o plano estratégico
+(B)  necessidade de negócios, a descrição inicial de requisitos e o plano estratégico 
+(C) necessidade de negócios, a descrição do escopo do produto e o plano estratégico  
+(D) identificação das partes interessadas, o business case e a descrição de escopo do produto 
+(E)  identificação das partes interessadas, a descrição inicial de requisitos e a descrição do escopo do produto 
+23
+O planejamento inicial para um projeto de desenvolvimento de software gerou a rede do cronograma apenas com a data 
+de início mais cedo da primeira atividade e término mais tarde da última atividade determinadas, conforme apresentado a 
+seguir.
+ 
+Considerando o uso do Método do Caminho Crítico, analise as afirmativas abaixo.
+I  -  A data mais cedo que o projeto pode terminar é no dia 141.
+II  -  Caso a previsão para a fase de construção mude para 90 dias, a data limite para a fase de modelagem começar, 
+sem atrasar, é o dia 70.
+III  
+-  A folga total na atividade de documentação é de 75 dias.
+É correto APENAS o que se afirma em
+(A)  I    
+(B)  II    
+(C) III 
+(D) I e II  
+(E)  II e III  
+
+pcimarkpci MjgwNDowMTRkOjE2OGU6OGRlYjo1ZDZjOjUwNDM6Njg0ZjpjYTI1:RnJpLCAxNCBBdWcgMjAyNiAxNjo0NzoyOCAtMDMwMA==
+www.pciconcursos.com.br
+ANALISTA DE SISTEMAS JÚNIOR
+PROCESSOS DE NEGÓCIO
+8
+24
+De acordo com o PMBOK 4
+a
+ Edição, o plano de gerencia-
+mento do projeto é progressivamente desenvolvido ao longo 
+do projeto.
+PORQUE
+Atualizações  no  plano  de  gerenciamento  de  projeto  po-
+dem ser feitas no processo Realizar o Controle Integrado 
+de Mudanças. 
+Analisando-se as afirmações acima, conclui-se que
+(A)  as  duas  afirmações  são  verdadeiras,  e  a  segunda  
+justifica a primeira. 
+(B)  as duas afirmações são verdadeiras, e a segunda não 
+justifica a primeira. 
+(C) a primeira afirmação é verdadeira, e a segunda é falsa.
+(D) a primeira afirmação é falsa, e a segunda é verdadeira.
+(E)  as duas afirmações são falsas.
+25
+Em uma Estrutura Analítica de Projeto organizada por fa-
+ses, devem-se colocar as atividades mais complexas do 
+projeto no nível mais detalhado (os pacotes de trabalho).
+PORQUE
+Um pacote de trabalho pode ser agendado, ter seu custo 
+estimado, monitorado e controlado.
+Analisando-se as afirmações acima, conclui-se que
+(A)  as duas afirmações são verdadeiras, e a segunda jus-
+tifica a primeira. 
+(B)  as duas afirmações são verdadeiras, e a segunda não 
+justifica a primeira. 
+(C) a primeira afirmação é verdadeira, e a segunda é falsa.
+(D) a primeira afirmação é falsa, e a segunda é verdadeira. 
+(E)  as duas afirmações são falsas.
+26
+Segundo  o  PMBOK  4
+a
+  Edição,  durante  o  processo  De-
+senvolver  o  cronograma,  é  necessário  realizar  a  Análise  
+da Rede do Cronograma. Para isso, devem ser utilizadas 
+técnicas analíticas apropriadas que permitam gerar corre-
+tamente o cronograma do projeto. 
+A esse respeito, considere as seguintes técnicas analíticas:
+I 
+-     Método da cadeia crítica 
+II  -     Análise do cenário e-se 
+III  -     Nivelamento de recursos 
+É  aplicável  à  Análise  da  Rede  do  Cronograma  a  técnica  
+mencionada em
+(A)  I, apenas.  
+(B)  III,  apenas.  
+(C) I e II, apenas.  
+(D) II e III, apenas. 
+(E)  I, II e III.
+27 
+Na etapa de encerramento de um projeto, o gerente deve 
+analisar  o  plano  de  gerenciamento  do  projeto,  as  entre-
+gas aceitas e os ativos de processos organizacionais. Por 
+meio da opinião especializada, pode(m) ser produzida(s):
+I  
+-  a transição de produto, serviço ou resultado final;
+II  -   as  atualizações  de  ativos  de  processos  organiza-
+cionais;
+III  -  o registro da situação da configuração final.
+O gerente deve produzir o que se apresenta em
+(A)  I,  apenas.  
+(B)  III,  apenas.  
+(C) I e II, apenas.   
+(D) II e III, apenas. 
+(E)  I, II e III.
+28
+O gerenciamento de projeto exige, para sua boa realiza-
+ção,  o  conhecimento  não  só  do  processo  de  gerencia-
+mento e suas atividades, mas também das ferramentas e 
+técnicas apropriadas para serem utilizadas em cada Pro-
+cesso. O PMBOK 4
+a
+ Edição é um guia que fornece essa 
+informação. 
+Com base nesse guia, considere as ferramentas e técni-
+cas listadas a seguir:
+I  
+-  Análise da Variação  
+II  -  Decomposição  
+III  -  Entrevistas  
+IV  -  Oficinas  
+Fazem  parte  do  processo  Coletar  os  Requisitos  apenas  
+os que se apresentam em
+(A) I e II
+(B) I e III
+(C) I e IV
+(D) II e IV
+(E) III e IV
+29
+Segundo o PMBOK 4
+a
+ Edição, as estruturas organizacio-
+nais influenciam na forma como os projetos são executa-
+dos. 
+Nesse contexto, na estrutura organizacional
+(A) funcional, quem controla o orçamento é o gerente de 
+projeto.
+(B)  matricial  fraca,  a  autoridade  do  gerente  de  projeto  é  
+de considerável a total.
+(C) matricial balanceada, o pessoal administrativo da ge-
+rência  do  projeto  trabalha  para  o  mesmo  em  tempo  
+integral.
+(D) matricial forte, a disponibilidade de recurso é de mo-
+derada a alta.
+(E)  projetizada, o papel de gerente de projeto é de dedica-
+ção parcial.
+
+pcimarkpci MjgwNDowMTRkOjE2OGU6OGRlYjo1ZDZjOjUwNDM6Njg0ZjpjYTI1:RnJpLCAxNCBBdWcgMjAyNiAxNjo0NzoyOCAtMDMwMA==
+www.pciconcursos.com.br
+ANALISTA DE SISTEMAS JÚNIOR
+PROCESSOS DE NEGÓCIO
+9
+30
+Os resultados de um projeto podem requerer atualizações no planejamento. Essas alterações podem mudar durações, 
+produtividade, recursos e causar riscos imprevistos. 
+Quanto ao Grupo de processos de execução descrito no PMBOK 4
+a
+ Edição, tem-se que 
+(A)  Orientar e gerenciar a execução do projeto possui como entrada as métricas de qualidade.
+(B)  Mobilizar a equipe do projeto produz como uma de suas saídas o calendário dos recursos.
+(C) Desenvolver a equipe do projeto possui como uma de suas entradas os fatores ambientais da empresa.
+(D) Gerenciar a equipe do projeto inclui o processo de confirmação da disponibilidade de recursos humanos.
+(E)  Gerenciar as expectativas das partes interessadas inclui como uma de suas entradas os pedidos de mudança.
+31
+Um processo de negócio pode ser definido como um(a)
+(A)  algoritmo passo a passo para atingir um objetivo de negócio.
+(B)  programa de computador capaz de auxiliar a execução de uma atividade de negócio.
+(C) empreendimento de duração determinada com objetivo de produzir um produto ou serviço.
+(D) atividade atômica e indivisível que produz algumas saídas a partir de uma série de entradas.
+(E)  especificação não executável do método de trabalho de uma pessoa.
+32
+Analisando-se o esqueleto de modelo de processo descrito com a técnica EPC (ARIS) acima, verifica-se que, quanto ao 
+relacionamento entre eventos e funções,
+(A)  a função A define o início do processo.
+(B)  a função N indicará se R ou Q serão executados.
+(C) as funções R e Q nunca ocorrem na mesma execução do processo.
+(D) os eventos B e C nunca ocorrem na mesma execução do processo.
+(E)  os eventos P e N nunca ocorrem na mesma execução do processo.
+33
+“Se você não pode medir isso, você não pode gerenciá-lo.”
+                    Peter Drucker
+O sucesso de uma organização depende da capacidade de avaliação de seu desempenho, é o que nos afirma Drucker. 
+É necessário, no entanto, determinar os indicadores de desempenho apropriados para cada processo. 
+Um indicador importante do desempenho de processo é a Velocidade do Processo, que é definida pela razão entre
+(A)  o tempo para alterar o processo para atender um cliente e o tempo de produzir o produto.
+(B)  o tempo de atravessamento e o tempo de valor adicionado.
+(C) a quantidade produzida e o tempo de atravessamento.
+(D) a quantidade produzida e o tempo de produção. 
+(E)  as quantidades de alterações no processo e o tempo de existência do processo.
+
+pcimarkpci MjgwNDowMTRkOjE2OGU6OGRlYjo1ZDZjOjUwNDM6Njg0ZjpjYTI1:RnJpLCAxNCBBdWcgMjAyNiAxNjo0NzoyOCAtMDMwMA==
+www.pciconcursos.com.br
+ANALISTA DE SISTEMAS JÚNIOR
+PROCESSOS DE NEGÓCIO
+10
+34
+Entre as técnicas de controle e análise de dados de pro-
+cesso,  encontra-se  o  Balanced  Scorecard  (BSC),  criado  
+por Robert Kaplan e David Norton. 
+Sobre essa técnica, analise as afirmações a seguir.
+O  BSC  disponibiliza  aos  gerentes  e  executivos  um  con-
+junto de medidas financeiras e não financeiras que forne-
+cem uma visão mais ampla e balanceada do desempenho 
+organizacional.
+PORQUE
+As  medidas  financeiras  guiam,  indicam  e  avaliam  o  ca-
+minho  que  as  companhias  devem  tomar  para  criar  valor  
+futuro,  enquanto  as  medidas  não  financeiras  indicam  a  
+história dos eventos passados.
+A esse respeito, conclui-se que
+(A)  as  duas  afirmações  são  verdadeiras,  e  a  segunda  
+justifica a primeira.
+(B) as duas afirmações são verdadeiras, e a segunda não 
+justifica a primeira.
+(C) a primeira afirmação é verdadeira, e a segunda é falsa.
+(D) a primeira afirmação é falsa, e a segunda é verdadeira.
+(E) as duas afirmações são falsas.
+35
+Medindo alguns indicadores de um processo, um consul-
+tor descobriu os seguintes dados:
+I 
+-  A cada 100 horas planejadas de produção, apenas 
+92 horas são realmente usadas em atividades pro-
+dutivas, sendo as 8 horas restantes não produtivas.
+II -  A cada 100 produtos entregues, 12 são devolvidos 
+pelo cliente por não estarem de acordo com os re-
+quisitos acordados.
+Usando  unicamente  esses  dados,  o  consultor  então  con-
+cluiu que a eficácia e a eficiência do processo são, respec-
+tivamente,
+(A)  12%   e     8%
+(B)  88%   e     8%
+(C) 88%   e   92%
+(D) 92%   e   12%
+(E)  92%   e   88%
+36
+A  inovação  (reengenharia)  em  processos  consiste  em  
+quatro passos principais, entre os quais NÃO se encontra
+(A)  simulação do processo 
+(B)  análise do cenário em alto nível 
+(C) uso da Teoria do Um 
+(D) benchmark do processo 
+(E)  modelagem do processo 
+37
+Passo importante em qualquer projeto de BPM é fazer a 
+modelagem “as-is”.
+PORQUE
+Para  garantir  o  sucesso  do  projeto  dos  novos  métodos  
+a implantar pelo BPM, os procedimentos vigentes devem 
+ser ignorados.
+Analisando-se as afirmações acima, conclui-se que
+(A)  as  duas  afirmações  são  verdadeiras,  e  a  segunda  
+justifica a primeira.
+(B) as duas afirmações são verdadeiras, e a segunda não 
+justifica a primeira.
+(C) a primeira afirmação é verdadeira, e a segunda é falsa.
+(D) a primeira afirmação é falsa, e a segunda é verdadeira.
+(E) as duas afirmações são falsas.
+38
+Entre  as  principais  características  dos  processos  de  ne-
+gócio, está o fato de que 
+(A) podem ocorrer em qualquer tempo, bastando que um 
+gatilho os dispare.
+(B)  devem produzir um produto único.
+(C) devem considerar a elaboração progressiva das eta-
+pas, sem execução simultânea.
+(D) devem possuir documentação intensiva.
+(E)  devem ser temporários dentro da organização.
+39
+A  gestão  de  processos  de  negócio  (BPM)  exige  um  mé-
+todo  sistemático  e  confiável  de  análise  do  impacto  dos  
+processos de negócio e de introdução de inovações.
+PORQUE
+O gerenciamento de um portfólio de processos de negó-
+cios, entre outros, analisa requisitos do cliente.
+Analisando-se as afirmativas acima, conclui-se que
+(A)  as  duas  afirmações  são  verdadeiras,  e  a  segunda  
+justifica a primeira.
+(B) as duas afirmações são verdadeiras, e a segunda não 
+justifica a primeira.
+(C) a primeira afirmação é verdadeira, e a segunda é falsa.
+(D) a primeira afirmação é falsa, e a segunda é verdadeira.
+(E) as duas afirmações são falsas.
+
+pcimarkpci MjgwNDowMTRkOjE2OGU6OGRlYjo1ZDZjOjUwNDM6Njg0ZjpjYTI1:RnJpLCAxNCBBdWcgMjAyNiAxNjo0NzoyOCAtMDMwMA==
+www.pciconcursos.com.br
+ANALISTA DE SISTEMAS JÚNIOR
+PROCESSOS DE NEGÓCIO
+11
+40
+As técnicas e metodologias criadas para modelar proces-
+sos  podem  ter  seu  uso  relacionado  com  perspectivas,  
+cada uma com um foco específico. 
+Associe as perspectivas com os focos relacionados a se-
+guir. 
+ 
+As associações corretas são:
+(A)  I  –  P  ,  II  –  Q  ,  III  –  R 
+(B)  I  –  P  ,  II  –  S  ,  III  –  Q 
+(C) I  –  Q  ,  II  –  R  ,  III  –  P 
+(D) I  –  R  ,  II  –  S ,   III  –  Q 
+(E)  I  –  S  ,  II  –  P ,   III  –  R 
+  
+ 
+ 
+I   -  Atividades 
+II  -  Responsabilidades, 
+dependências  e  au-
+toridade 
+III -  Sequência  dos  esta-
+dos  de  atividades  e  
+objetos 
+P 
+- Perspectiva funcional
+Q 
+- Perspectiva   comporta-
+mental
+R - Perspectiva informacio-
+nal 
+S 
+- Perspectiva    organiza-
+cional
+BLOCO 2
+41
+Em Projeto de Interfaces de Software, estilos de interação 
+são as formas por meio das quais os usuários se comuni-
+cam ou interagem com os sistemas computacionais.
+Dentre as formas abaixo, qual NÃO representa um estilo 
+de interação de uma interface de software?
+(A)  Linguagem de Comandos
+(B)  Linguagem  Natural
+(C) Linguagem Polimórfica
+(D) WIMP (Windows, Icons, Menus, and Pointers)
+(E)  WYSIWYG (What You See Is What You Get)
+42
+Em  Arquiteturas  Orientadas  a  Serviços,  os  barramentos  
+de  serviços  corporativos  (ESB  -  Enterprise  Service  Bus)  
+viabilizam  a  infraestrutura  que  permite  usar  os  serviços  
+em ambientes distribuídos.
+Entretanto,  os  ESB  possuem  características  técnicas  e  
+conceituais que os distinguem, e, em função dessas dife-
+renças, podem ser categorizados. 
+Associe  os  tipos  de  conexão  com  suas  possíveis  imple-
+mentações. 
+As associações corretas são:
+(A)  I – P  , II – Q  , III – R 
+(B)  I – Q  , II – S  , III – P 
+(C) I – R  , II – P  , III – S 
+(D) I – R  , II – S  , III – P 
+(E)  I – S  , II – R  , III – Q 
+I   –  API
+II  –  Interceptores
+III –  Mediadores
+P     –    Chamada  de  serviço  indireta  
+ponto  a  ponto,  onde  o  ponto  
+final  físico  é  substituído  por  
+um balanceador de carga.
+Q     –    O  ESB  define  um  protocolo,  
+utilizado  para  troca  de  men-
+sagens  entre  fornecedores  e  
+consumidores.
+R     –    O  ESB  define  as  interfaces  
+específicas das plataformas, e 
+fornecedores e consumidores 
+as  utilizam  para  implementa-
+ções e chamadas de serviços.
+S     –    Comunicação  onde  o  consu-
+midor identifica o serviço ofe-
+recido  através  de  um  nome  
+simbólico,   interpretado   pelo   
+ESB para encontrar um forne-
+cedor apropriado.
+RASCUNHO
+
+pcimarkpci MjgwNDowMTRkOjE2OGU6OGRlYjo1ZDZjOjUwNDM6Njg0ZjpjYTI1:RnJpLCAxNCBBdWcgMjAyNiAxNjo0NzoyOCAtMDMwMA==
+www.pciconcursos.com.br
+ANALISTA DE SISTEMAS JÚNIOR
+PROCESSOS DE NEGÓCIO
+12
+43
+Há sistemas de informação para atender especificamente 
+à área de recursos humanos.
+Associe  os  níveis  organizacionais  às  macrodescrições  
+dos sistemas correspondentes.
+As associações corretas são:
+(A)  I 
+- P  , II - S  , III - Q
+(B)  I - Q , II - R , III - P
+(C)  I - Q , II - S  , III - R
+(D)  I - R , II - Q , III - S
+(E)  I - S  , II - P  , III - R
+44
+Os Sistemas de Informação, já há algum tempo, se bene-
+ficiam de ferramentas de troca eletrônica de documentos, 
+utilizando um padrão de comunicação chamado Intercâm-
+bio Eletrônico de Dados (EDI – Electronic Data Interchange).
+Nesse contexto, um cenário que NÃO integra essa abor-
+dagem é que
+(A) a implementação de sistemas EDI tradicionais exigia, 
+antes do surgimento da Internet, a utilização de uma 
+rede de valor agregado (VAN – Value Added Network), 
+que  possui  um  custo  alto  para  ser  disponibilizada,  o  
+que limitou a popularização de seu uso.
+(B)  a utilização da tecnologia Web para sistemas EDI ain-
+da se revela como uma lacuna devido às questões re-
+lativas  à  segurança,  confiabilidade  e  disponibilidade,  
+além de inviabilizar a implantação de funções adicio-
+nais, tais como, colaboração e fluxo de trabalho.
+(C) os documentos rotineiros, como, por exemplo, os pe-
+didos de compra, são trocados automaticamente por 
+parceiros de negócio, diminuindo em muito a possibi-
+lidade de erros, reduzindo o tempo de ciclo da opera-
+ção e promovendo parcerias estratégicas.
+(D) um dos importantes componentes de um EDI é o seu 
+tradutor,  que  converte  dados  em  um  formato  padrão  
+antes  de  eles  serem  transmitidos;  em  seguida,  o  
+formulário  padrão  é  convertido  nos  dados  originais,  
+viabilizando a troca dos documentos.
+(E)  um  dos  requisitos  para  a  implantação  dos  EDI  tradi-
+cionais  é  a  necessidade  de  que  os  parceiros  de  ne-
+gócio  que  implantarão  essa  abordagem  de  troca  de  
+documentos utilizem padrões de formatação de dados 
+compatíveis, como, por exemplo, o ANSI X.12.
+45
+A utilização das tecnologias de serviços Internet, tais como, 
+WWW e o protocolo HTTP, fomentou o aparecimento de 
+soluções  corporativas  como  as  intranets  e  extranets.  
+Sobre essas tecnologias, tem-se que
+(A)  as intranets permitem a comunicação entre os colabo-
+radores da empresa, viabilizando o compartilhamento 
+de arquivo e a troca de mensagens eletrônicas, utili-
+zando  servidores  POP3  e  IEEE  802.3G,  com  chave  
+reversa.
+(B) as intranets permitem que colaboradores da empresa 
+acessem  seu  conteúdo  através  de  uma  rede  segura  
+com  aplicativos  que  implementem  o  protocolo  SSH  
+fora  do  ambiente  corporativo,  por  meio  de  validação  
+com login e senha.
+(C)  o  custo  de  implantação  de  uma  extranet  frequente-
+mente é bem maior do que a implementação de uma 
+rede de valor agregado (VAN), tendo em vista que a 
+primeira  opção  demanda  a  utilização  de  redes  VPN  
+(virtual private network).
+(D) uma diferença técnica marcante entre a implementa-
+ção de intranets e extranets está no fato de a primeira 
+utilizar  o  protocolo  ARP3,  com  navegadores  padrão  
+IEEE 802.3G, e a segunda, o protocolo TCP/IP.
+(E) uma extranet é uma rede corporativa privada que uti-
+liza a tecnologia de internet e o sistema público de te-
+lecomunicações  para  compartilhar,  de  forma  segura,  
+parte das informações e operações de uma empresa 
+com parceiros de negócio.
+46
+Em data warehouses, medidas servem para quantificar os 
+dados dos fatos que compõem a sua base de dados. 
+Considere a tabela de dados abaixo. 
+Das  medidas  apresentadas,  quantas  delas  podem  ser  
+consideradas não aditivas?
+(A)    0
+(B)    3
+(C)   4
+(D)   9
+(E)  12
+RecursoJunhoJulhoAgostoPercentual 
+trimestral
+Roldana311219,05%
+Broca1511030,95%
+Cunha98050,00%
+Utilização
+Nível
+I  
+-  Operacional
+II  -  Gerencial
+III  -  Estratégico
+Macrodescrição
+P  -  Facilita o balanceamento de re-
+cursos de produção.
+Q  -    Acompanha  o  treinamento  e  o  
+desempenho do funcionário.
+R  -      Projeta   necessidades   futuras   
+de mão de obra qualifi cada.
+S  -  Monitora salários e benefícios.
+
+pcimarkpci MjgwNDowMTRkOjE2OGU6OGRlYjo1ZDZjOjUwNDM6Njg0ZjpjYTI1:RnJpLCAxNCBBdWcgMjAyNiAxNjo0NzoyOCAtMDMwMA==
+www.pciconcursos.com.br
+ANALISTA DE SISTEMAS JÚNIOR
+PROCESSOS DE NEGÓCIO
+13
+47
+A  área  de  armazenamento  temporário  (ODS  –  Staging  
+Area)  é  um  componente  indispensável  em  um  data  
+warehouse, e sua utilização é uma decisão de projeto.
+ 
+PORQUE
+A  área  de  armazenamento  dinâmico  de  dados  (DDS  
+–  Dynamic  Data  Storage)  consiste  em  um  espaço  de  
+armazenamento  volátil  onde  informações  correntes  de  
+dados são armazenados antes de serem carregadas para 
+o data warehouse.
+Analisando-se as afirmações acima, conclui-se que
+(A)  as duas afirmações são verdadeiras, e a segunda jus-
+tifica a primeira.
+(B)  as duas afirmações são verdadeiras, e a segunda não 
+justifica a primeira.
+(C)  a primeira afirmação é verdadeira, e a segunda é falsa.
+(D)  a primeira afirmação é falsa, e a segunda é verdadeira.
+(E)  as duas afirmações são falsas.
+48
+Um  dos  grandes  desafios  na  construção  de  bases  de  
+dados  de  data  warehouses  reside  na  qualidade  dos  
+seus dados. Como esses dados que servem de matéria-
+-prima  para  esses  repositórios  de  dados  podem  ter  as  
+mais  diversas  procedências,  vários  tipos  de  problemas  
+precisam ser resolvidos. 
+Um  exemplo  da  situação  acima  descrita  encontra-se  no  
+fato de que os 
+(A)  campos numéricos das bases de dados de origem po-
+dem conter dados que não pertençam ao domínio de 
+valores do atributo, por problemas relativos ao ende-
+reçamento dos cálculos efetuados pela ferramenta de 
+extração, transformação e carga.
+(B) campos que armazenam datas precisam fazer menção 
+à  latitude  e  à  longitude  onde  se  encontra  a  base  de  
+dados do data warehouse, sob pena de comprometer 
+o processo de construção de eventuais datamarts em 
+momentos posteriores.
+(C) dados que representam medidas que ocorrem em di-
+versas fontes de dados, como um atributo que arma-
+zene  medições  de  temperatura  de  diversas  regiões,  
+podem, em algumas bases, se encontrar incompletos, 
+necessitando tratamento.
+(D)  atributos  categóricos,  tais  como,  sexo  ou  categoria  
+funcional, necessitam, na integração, ser convertidos 
+em  valores  numéricos,  pois  ferramentas  OLAP  pos-
+suem limitações quanto ao tratamento de valores de 
+atributos discretos.
+(E)  identificadores, tais como, atributos-chave de tabelas, 
+podem,  no  processo  de  integração,  conter  valores  
+de  chaves  primárias  inválidas  de  outras  tabelas,  
+indicando  problemas  de  integridade  referencial  e  de  
+unicidade.
+49
+Ferramentas  OLAP  (On-Line  Analytical  Processing)  per-
+mitem  aos  seus  usuários  analisar  tendências  em  bases  
+de  dados  transacionais.  Para  implementá-las,  diversas  
+tecnologias com características diversas estão à disposi-
+ção dos analistas.
+Sendo assim, associe as tecnologias utilizadas em ferra-
+mentas OLAP, listadas abaixo, às suas respectivas carac-
+terísticas. 
+Estão corretas as associações:
+(A)  I  –  P  ,   II  –   R  ,   III  –  Q
+(B)  I  –  P  ,   II  –   S  ,   III  –  R  
+(C) I  –  R ,  II  –  S ,   III  –  Q          
+(D)  I  –  S  ,   II  –   P  ,   III  –  Q
+(E)  I  –  S  ,   II  –   R  ,   III  –  P
+50
+A verificação de software é um processo mais abrangente 
+que o processo de validação de software. 
+PORQUE 
+O objetivo da validação é assegurar que o sistema atenda 
+às expectativas do cliente, enquanto que a verificação en-
+volve testes de correção do produto. 
+Analisando-se as afirmações acima, conclui-se que
+(A) as duas afirmações são verdadeiras, e a segunda jus-
+tifica a primeira.
+(B) as duas afirmações são verdadeiras, e a segunda não 
+justifica a primeira.
+(C) a primeira afirmação é verdadeira, e a segunda é falsa.
+(D) a primeira afirmação é falsa, e a segunda é verdadeira.
+(E) as duas afirmações são falsas.
+51
+Em um projeto de software orientado a objetos, surgiu a ne-
+cessidade de modelar um certo comportamento alternativo 
+com base no tipo específico de uma determinada entidade. 
+Procedimento similar foi desenvolvido no passado, usando 
+lógica condicional através dos comandos se – então – se-
+não em uma linguagem de programação estruturada. 
+Qual recurso o programador deverá utilizar para solucio-
+nar a questão nesse novo projeto?
+(A)  Agregação
+(B)  Classes  Abstratas
+(C) Encapsulamento
+(D) Polimorfismo
+(E)  Composição
+I    –  MOLAP
+II   –  HOLAP
+III  –  ROLAP
+P  –   Permitem acesso a bases de dados 
+armazenados  em  estruturas  multi-
+dimensionais apenas.
+Q  –  Evitam  problemas  de  escalabilida-
+de,  tendo  em  vista  que  os  dados  
+estão  armazenados  em  computa-
+dores pessoais.
+R  –  Constroem   bases   multidimensio-
+nais em sistemas de bancos de da-
+dos relacionais.
+S  –  Permitem acesso tanto a bases re-
+lacionais quanto multidimensionais.
+
+pcimarkpci MjgwNDowMTRkOjE2OGU6OGRlYjo1ZDZjOjUwNDM6Njg0ZjpjYTI1:RnJpLCAxNCBBdWcgMjAyNiAxNjo0NzoyOCAtMDMwMA==
+www.pciconcursos.com.br
+ANALISTA DE SISTEMAS JÚNIOR
+PROCESSOS DE NEGÓCIO
+14
+52
+O  esboço  de  diagrama  de  classes  ilustrado  na  figura,  
+usando  a  notação  proposta  pela  linguagem  UML,  apre-
+senta duas classes C1 e C2, relacionadas por
+(A)  agregação  
+–  todo-parte  –  destruição  de  um  objeto  
+todo implica necessariamente a destruição do objeto 
+parte.
+(B)  agregação  
+–  todo-parte  –  destruição  de  um  objeto  
+todo não implica necessariamente a destruição do ob-
+jeto parte.
+(C) agregação 
+– generalização-especialização – destrui-
+ção de um objeto mais geral não implica necessaria-
+mente a destruição de um objeto mais específico.
+(D) composição 
+–  generalização-especialização  –  des-
+truição  de  um  objeto  mais  geral  implica  necessaria-
+mente a destruição de um objeto mais específico.
+(E)  composição  
+–  todo-parte  –  destruição  de  um  objeto  
+todo implica necessariamente a destruição do objeto 
+parte.
+53
+Entre os requisitos que devem ser levantados na constru-
+ção de um data warehouse se inclui a latência de dados, 
+que descreve a(o)
+(A)  rapidez de entrega dos dados ao usuário final
+(B)  rapidez da carga inicial do data warehouse
+(C) rapidez da perda de validade do dado
+(D) tempo total de uma consulta
+(E)  tempo entre consultas do usuário
+54
+O  esboço  de  diagrama  de  classes  ilustrado  na  figura,  
+usando  a  notação  proposta  pela  linguagem  UML,  apre-
+senta duas classes C1 e C2 e dois pacotes p1 e p2. 
+Quais atributos de instância podem ser manipulados por 
+métodos definidos na classe C2?
+(A)  w, y e z, apenas.
+(B)  x, y e z, apenas.
+(C) w e y, apenas.
+(D) w, apenas.
+(E)  y,  apenas.
+55
+No  contexto  de  qualidade  de  software  e  métricas  de  
+software, coesão e acoplamento são medidas
+(A)  intramodulares,  sendo  a  primeira  inversamente  pro-
+porcional, e a segunda proporcional à qualidade.
+(B) intramodulares e diretamente proporcionais à qualidade.
+(C)  intramodular  e  intermodular,  respectivamente,  sendo  
+a  primeira  proporcional,  e  a  segunda  inversamente  
+proporcional à qualidade.
+(D) intermodulares e diretamente proporcionais à qualidade.
+(E)  intermodular  e  intramodular,  respectivamente,  sendo  
+a  primeira  proporcional,  e  a  segunda  inversamente  
+proporcional à qualidade.
+RASCUNHO
+
+pcimarkpci MjgwNDowMTRkOjE2OGU6OGRlYjo1ZDZjOjUwNDM6Njg0ZjpjYTI1:RnJpLCAxNCBBdWcgMjAyNiAxNjo0NzoyOCAtMDMwMA==
+www.pciconcursos.com.br
+ANALISTA DE SISTEMAS JÚNIOR
+PROCESSOS DE NEGÓCIO
+15
+BLOCO 3
+56
+Um banco de dados é construído segundo as definições abaixo apresentadas.
+create table T1 (a integer, b integer);
+create table T2 (b integer);
+A consulta a seguir
+select distinct a from T1 y
+where not exists( select 1 from T2 where not exists
+( select 1 from T1 x where y.a = x.a and T2.b = x.b) )
+implementa qual operação da álgebra relacional entre as relações T1 e T2?
+(A)  Divisão
+(B)  Interseção
+(C) Junção cruzada (CROSS JOIN)
+(D) Junção externa completa (FULL OUTER JOIN)
+(E)  Junção natural (NATURAL JOIN)
+57
+No modelo relacional, chaves candidatas desempenham um papel importante, pois se referem a atributos que identificam 
+de forma única as tuplas de uma relação.
+Sendo assim, chaves candidatas apresentam como característica
+(A)  demandarem a sua implementação através de uma trigger.
+(B)  demandarem a implantação de restrição de entidade, tendo em vista serem atributos não identificadores.
+(C) possuírem campos que são chamados cada um de atributos primários.
+(D) serem criadas com a imposição de uma restrição de integridade do tipo CHECK.
+(E)  serem superchaves mínimas, por essa razão, compostas por apenas um atributo.
+58
+Um DBA executou os seguintes comandos em um sistema gerenciador de bancos de dados relacional, onde se encontra 
+uma base de dados com duas tabelas, TAB1 e TAB2:
+GRANT SELECT, UPDATE ON TAB1, TAB2 TO U1, U2 WITH GRANT OPTION
+GRANT DELETE, INSERT ON TAB2 TO U2, U3
+A seguir, o seguinte comando foi executado pelo usuário U2:
+GRANT UPDATE ON TAB2 TO U3
+Depois, o DBA executou o comando
+REVOKE SELECT, UPDATE ON TAB2 FROM U2
+Um cenário válido, após a execução dos comandos acima, é aquele onde o usuário
+(A)  U1 possuirá direito de leitura e inserção na tabela TAB1 
+(B)  U1 possuirá direito de remoção e atualização na tabela TAB2  
+(C) U2 possuirá direito de leitura e inserção na tabela TAB1 
+(D) U3 possuirá direito de remoção e seleção na tabela TAB1 
+(E)  U3 possuirá direito de remoção e inserção na tabela TAB2 
+59
+O principal uso da internet (www) é o acesso interativo a documentos e aplicações, na maioria dos casos, acessados por 
+pessoas.  Entretanto,  cresce  significantemente  o  uso  dessa  arquitetura  para  comunicação  e  interoperabilidade  através  
+do  web-service. Em geral, os web-services oferecem serviços para sua descoberta e para sua descrição, representados, 
+respectivamente, por
+(A)  SOAP e WSDL 
+(B)  UDDI e SOAP
+(C) UDDI e WSDL 
+(D) URI e SOAP
+(E)  URI e WSDL
+
+pcimarkpci MjgwNDowMTRkOjE2OGU6OGRlYjo1ZDZjOjUwNDM6Njg0ZjpjYTI1:RnJpLCAxNCBBdWcgMjAyNiAxNjo0NzoyOCAtMDMwMA==
+www.pciconcursos.com.br
+ANALISTA DE SISTEMAS JÚNIOR
+PROCESSOS DE NEGÓCIO
+16
+60
+Qual é a arquitetura de software muito utilizada para de-
+senvolvimento  de  aplicação  web,  onde  a  lógica  da  apli-
+cação é implementada em uma camada separada da in-
+terface  do  usuário  (entrada  de  dados  e  apresentação)  e  
+onde a comunicação entre as camadas se dá através de 
+uma camada controladora?
+(A)  Arquitetura  3  camadas:  cliente  magro,  servidor  de  
+aplicação e banco de dados
+(B)  Arquitetura  Cliente  /  Servidor:  cliente  gordo  e  banco  
+de dados
+(C) Arquitetura de comunicação multicamadas
+(D) Arquitetura MVC
+(E)  Arquitetura  SOA
+61
+É conveniente o uso de técnicas de criptografia para pro-
+teger a confidencialidade, a integridade e a autenticidade 
+das informações.
+PORQUE
+Técnicas de chaves públicas proporcionam método segu-
+ro de autenticação.
+Analisando-se as afirmações acima à luz da NBR/ISO 27002, 
+conclui-se que
+(A)  as duas afirmações são verdadeiras, e a segunda jus-
+tifica a primeira.
+(B)  as duas afirmações são verdadeiras, e a segunda não 
+justifica a primeira. 
+(C) a primeira afirmação é verdadeira, e a segunda é falsa.
+(D) a primeira afirmação é falsa, e a segunda é verdadeira.
+(E)   as duas afirmações são falsas.
+62
+As  NBR/ISO  27002  prescrevem  que,  para  identificar  os  
+requisitos para os acordos de confidencialidade ou de não 
+divulgação, convém considerar diversos elementos, entre 
+os quais NÃO consta(m)
+(A)  tempo  de  duração  esperado  de  um  acordo,  incluin-
+do situações onde a confidencialidade tenha que ser 
+mantida. 
+(B) proprietário da informação, de segredos comerciais e 
+de  propriedade  intelectual,  e  como  isso  se  relaciona  
+com a proteção da informação confidencial.
+(C)  penalidades  previstas  para  o  infrator  das  cláusulas  
+acordadas.
+(D) ações requeridas de ambas as partes para homologar 
+a rescisão de contratos.
+(E) termos para a informação ser retornada ou destruída 
+quando da suspensão do acordo.
+63
+No      cálculo      proposicional,      dada      a      fórmula      
+(P 
+  Q)   (  P    Q),  exatamente  em  quantas  valo-
+rações  do  par  (P,  Q)  essa  proposição  assume  o  valor  
+verdade?
+(A)  0  
+(B)  1  
+(C) 2 
+(D) 3 
+(E)  4
+64
+A  seção  Segurança  em  Recursos  Humanos  da  Norma  
+NBR/ISO 27002 preconiza ações mesmo antes da con-
+tratação  de  funcionários.  O  objetivo  declarado  é    “As-
+segurar  que  os  funcionários,  fornecedores  e  terceiros  
+entendam suas responsabilidades e estejam de acordo 
+com os seus papéis, e reduzir o risco de roubo, fraude 
+ou mau uso de recursos.” 
+Para isso, essa norma diz ser conveniente que
+(A) a direção reconheça, antecipadamente, como de sua 
+exclusiva responsabilidade, a segurança sobre a pro-
+teção dos ativos de informação contra acesso não au-
+torizado, divulgação, modificação, destruição ou inter-
+ferência. 
+(B) a divulgação das regras de manipulação de informa-
+ções  sensíveis  seja  restrita  aos  candidatos  a  cargos  
+de  chefia  e  a  fornecedores  que  possam  vir  a  utilizá-
+-las.
+(C) as responsabilidades pela segurança da informação 
+sejam  atribuídas  antes  da  contratação,  de  forma  
+adequada, nas descrições de cargos e nos termos e 
+condições de contratação.
+(D) todos os candidatos a funcionários, fornecedores e 
+terceiros,  usuários  dos  recursos  de  processamento  
+da informação, assinem acordos de não exploração 
+do conhecimento das fragilidades institucionais fren-
+te às ameaças à segurança da informação.
+(E) todos os funcionários, fornecedores e terceiros que 
+tenham  acesso  a  informações  sensíveis  assinem  
+um termo de confidencialidade ou de não divulgação 
+imediatamente após ser-lhes dado o acesso aos re-
+cursos de processamento da informação.
+65
+A  proposição  “se  o  freio  da  bicicleta  falhou,  então  não  
+houve manutenção” é equivalente à proposição
+(A)  o freio da bicicleta falhou e não houve manutenção.
+(B)  o freio da bicicleta falhou ou não houve manutenção.
+(C) o freio da bicicleta não falhou ou não houve manuten-
+ção.
+(D) se não houve manutenção, então o freio da bicicleta 
+falhou.
+(E) se não houve manutenção, então o freio da bicicleta 
+não falhou.
+
+pcimarkpci MjgwNDowMTRkOjE2OGU6OGRlYjo1ZDZjOjUwNDM6Njg0ZjpjYTI1:RnJpLCAxNCBBdWcgMjAyNiAxNjo0NzoyOCAtMDMwMA==
+www.pciconcursos.com.br
+ANALISTA DE SISTEMAS JÚNIOR
+PROCESSOS DE NEGÓCIO
+17
+66
+Considere as cláusulas C1 e  C2, representadas, respec-
+tivamente, pelos conjuntos  { A(x),B(x)} e { A(g(y)),B(y)}.  
+Um resolvente dessas cláusulas é
+(A)  {B(x),  B(y)}
+(B)  {B(g(y)),  B(y)}
+(C) { A(x), A(g(x))}
+(D) { A(x), A(g(x)), B(x)} 
+(E)  { A(x), B(x), A(g(y)), B(y)}
+67
+Considere as proposições a seguir.
+I 
+- 
+II - 
+III - 
+IV - 
+São tautologias as proposições apresentadas em
+(A)  I e IV, apenas.
+(B)  II e III, apenas.
+(C) I, II e III, apenas.
+(D) II, III e IV, apenas.
+(E)  I, II, III e IV.
+68
+Após a inserção de um nó, é necessário verificar cada um 
+dos nós ancestrais desse nó inserido, relativamente à con-
+sistência com as regras estruturais de uma árvore AVL.
+PORQUE
+O  fator  de  balanceamento  de  cada  nó,  em  uma  ár-
+vore   AVL,   deve   pertencer   ao   conjunto   formado   por   
+{−2, −1, 0, +1, +2}.
+Analisando-se as afirmações acima, conclui-se que
+(A)  as duas afirmações são verdadeiras, e a segunda jus-
+tifica a primeira.
+(B)  as duas afirmações são verdadeiras, e a segunda não 
+justifica a primeira. 
+(C) a primeira afirmação é verdadeira, e a segunda é falsa.
+(D) a primeira afirmação é falsa, e a segunda é verdadeira.
+(E)  as duas afirmações são falsas.
+69
+Considere  as  sentenças  da  lógica  de  primeira  ordem  a  
+seguir.
+I 
+- 
+II -                                               
+III -                         
+São  insatisfatíveis  APENAS  as  sentenças  apresentadas  
+em  
+(A)  I    
+(B)  II  
+(C) III  
+(D) I e II 
+(E)  II e III 
+70
+A figura abaixo representa uma árvore B em que as letras 
+correspondem  às  chaves  atualmente  armazenadas  em  
+cada nó.
+Considere  que  a  cada  nó  está  associado  um  identifica-
+dor, um número no conjunto {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}. 
+O identificador de cada nó foi definido, durante a varredu-
+ra da árvore, para imprimir suas chaves em ordem lexico-
+gráfica crescente. Durante essa varredura, quando um nó 
+era acessado pela primeira vez para imprimir uma de suas 
+chaves, ele era associado ao seu identificador. Como re-
+sultado, o nó que contém a primeira chave impressa, du-
+rante a varredura, possui identificador igual a 1, e assim 
+por diante, de tal forma que o nó que contém as últimas 
+chaves impressas possui identificador igual a 10.
+Após a varredura para essa impressão, houve uma busca 
+na árvore pela letra R. 
+Considerando-se a numeração de nós definida por aquela 
+varredura, qual a sequência de nós examinada na busca 
+por R? 
+(A)  3, 6, 8
+(B)  4, 2, 6
+(C) 4, 9, 7
+(D) 5, 3, 9
+(E)  5, 7, 8
