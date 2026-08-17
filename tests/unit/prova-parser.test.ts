@@ -13,6 +13,16 @@
  *    por instrucoes tipo "julgue os itens de 1 a 8" - formato que este parser NAO suporta
  *    ainda. O teste trava que o parser falha honestamente (0 questoes, sem inventar itens
  *    a partir da numeracao de margem) em vez de produzir questoes falsas)
+ *  - CESGRANRIO/PETROBRAS - Analista de Sistemas Junior (pagina de instrucoes numeradas
+ *    "01 - ...", "02 - ..." antes das questoes, com sub-itens em minuscula "a) ... b) ..."
+ *    e linhas de continuacao que quebravam a deteccao do primeiro item real - regressao
+ *    real: questao 1 virava o bloco de instrucoes inteiro, 3129 chars e 0 alternativas.
+ *    Tambem regressao de uma frase em ingles "...grow from about" que quebra de linha
+ *    exatamente em "10 per cent of GDP...", sendo lida como o inicio da questao 10 e
+ *    engolindo a questao 9 real. Essa prova tambem tem os itens 16/17 fora de ordem
+ *    numerica no proprio PDF de origem (aparecem depois do item 20) - limitacao conhecida,
+ *    nao corrigida; o teste trava que isso falha honestamente via detectParsingAnomaly
+ *    em vez de produzir uma questao 20 com 15 alternativas silenciosamente)
  * Qualquer mudanca de regex/heuristica que quebre um layout ja suportado falha aqui,
  * em vez de regredir silenciosamente em producao (ja aconteceu uma vez: um commit de
  * correcao ficou orfao num branch mergeado e o parser voltou a perder alternativas V/F).
@@ -40,6 +50,7 @@ const cebraspeProva = fixture("cebraspe-prova.txt");
 const cebraspeGabarito = fixture("cebraspe-gabarito.txt");
 const prf2019Prova = fixture("prf2019-prova.txt");
 const serproProva = fixture("serpro-prova.txt");
+const cesgranrioProva = fixture("cesgranrio-petrobras-prova.txt");
 
 describe("parseProvaText - FGV/TJRS (numero sozinho na linha, alternativas '(A) texto')", () => {
   const questoes = parseProvaText(fgvProva);
@@ -131,6 +142,35 @@ describe("parseProvaText - SERPRO/UnB-CESPE (formato nao suportado: itens sem nu
     // pior que falhar limpo, porque parecia ter funcionado parcialmente.
     const questoes = parseProvaText(serproProva);
     expect(questoes).toHaveLength(0);
+  });
+});
+
+describe("parseProvaText - CESGRANRIO/PETROBRAS (pagina de instrucoes numeradas + falso item em frase corrida)", () => {
+  const questoes = parseProvaText(cesgranrioProva);
+
+  it("nao confunde o bloco de instrucoes (01-12, com sub-itens minusculos) com a questao 1", () => {
+    const questao1 = questoes.find((item) => item.numero === 1)!;
+    expect(questao1).toBeDefined();
+    expect(questao1.alternativas).toHaveLength(5);
+    expect(questao1.enunciado).toContain("Segundo o Texto I");
+    expect(questao1.enunciado.length).toBeLessThan(200);
+  });
+
+  it("nao confunde uma frase em ingles que quebra de linha em '10 per cent...' com o inicio da questao 10, perdendo a questao 9", () => {
+    const questao9 = questoes.find((item) => item.numero === 9)!;
+    expect(questao9).toBeDefined();
+    expect(questao9.alternativas.length).toBeGreaterThanOrEqual(2);
+    const questao10 = questoes.find((item) => item.numero === 10)!;
+    expect(questao10).toBeDefined();
+    expect(questao10.enunciado).not.toContain("per cent of GDP");
+  });
+
+  it("falha honestamente quando itens estao fora de ordem numerica no PDF de origem (16/17 aparecem depois do 20)", () => {
+    // Limitacao conhecida, nao corrigida: o parser exige numeros crescentes. Antes da
+    // checagem de alternativas>6 em detectParsingAnomaly, isso virava uma questao 20
+    // com 15 alternativas (3 questoes mescladas) sem nenhum aviso.
+    const anomaly = detectParsingAnomaly(cesgranrioProva, questoes);
+    expect(anomaly).toContain("alternativas");
   });
 });
 

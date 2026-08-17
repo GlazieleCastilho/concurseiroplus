@@ -56,6 +56,17 @@ function isExamInstructionLine(line: string): boolean {
   return EXAM_INSTRUCTION_LINE.test(line.trim());
 }
 
+// Sub-itens de instrucao ao candidato costumam vir em letra minuscula: "a) este
+// caderno...", "b) CARTAO-RESPOSTA...". Alternativas de questao de verdade sao
+// SEMPRE maiusculas (ver ALTERNATIVA_START), entao esse padrao nunca colide com
+// uma alternativa real - so serve pra nao confundir texto de instrucao com
+// "conteudo plausivel de questao" na busca do primeiro item (findFirstQuestionIndex).
+const INSTRUCTION_SUBITEM_LINE = /^[a-e][).]\s/;
+
+function isInstructionSubitemLine(line: string): boolean {
+  return INSTRUCTION_SUBITEM_LINE.test(line.trim());
+}
+
 function isAllCapsLine(line: string): boolean {
   const trimmed = line.trim();
   return (
@@ -84,6 +95,17 @@ function findFirstQuestionIndex(
 ): number {
   const MAX_LOOKAHEAD = 80;
 
+  // Documentos com pagina de instrucoes numeradas ("01 - ...", "02 - ...") tem o
+  // texto de cada instrucao QUEBRADO em varias linhas pelo pdf-parse - so a
+  // primeira linha de cada instrucao bate com isExamInstructionLine; as linhas de
+  // continuacao ("transparente de tinta na cor preta.", por exemplo) sao texto
+  // corrido comum, minusculo, indistinguivel linha a linha do enunciado de uma
+  // questao real. Por isso, quando o documento tem esse tipo de instrucao em
+  // algum lugar, o sinal fraco de "conteudo plausivel" (so "nao e caixa alta")
+  // deixa de ser suficiente sozinho - so uma alternativa real (A)-(E) no inicio
+  // da linha confirma que achamos a primeira questao de verdade.
+  const documentHasNumberedInstructions = lines.some((rawLine) => isExamInstructionLine(rawLine.trim()));
+
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i].trim();
     if (!line || isNoise(line) || repeatedHeaders.has(line)) continue;
@@ -101,23 +123,26 @@ function findFirstQuestionIndex(
     // apenas para atravessar o material inicial (instrucoes/cabecalhos).
     if (numero !== 1) continue;
 
-    // Se for uma questao inline, o texto depois do numero ja fornece o contexto.
-    if (inlineMatch) {
-      const texto = inlineMatch[2].trim();
-      if (texto && !isExamInstructionLine(line)) return i;
-    }
+    // Descarta de cara o formato inline sem nenhum texto depois do numero (nao tem
+    // como ser uma questao real). O restante da validacao (lookahead abaixo) vale
+    // tanto pro formato inline quanto pro "numero sozinho": tabelas de distribuicao
+    // de pontos ("1 a 10   1,0 cada   11 a 20...", comuns no topo de provas Cesgranrio)
+    // tambem batem no formato inline "numero + texto" e precisam da mesma checagem,
+    // senao qualquer numero "1" seguido de texto vira um falso item 1.
+    if (inlineMatch && !inlineMatch[2].trim()) continue;
 
-    // Para o formato de numero isolado, precisamos diferenciar o numero da pagina
-    // de uma questao real. O numero da pagina 1 costuma aparecer antes dos cabecalhos
-    // e, mais adiante, surge novamente o numero 1 da primeira questao. Se encontramos
-    // outro item 1 antes de qualquer alternativa, o candidato atual era pagina/cabecalho.
+    // Para confirmar o candidato, precisamos diferenciar o numero da pagina (ou de
+    // uma tabela/referencia de edital) de uma questao real. O numero da pagina 1
+    // costuma aparecer antes dos cabecalhos e, mais adiante, surge novamente o
+    // numero 1 da primeira questao. Se encontramos outro item 1 antes de qualquer
+    // alternativa, o candidato atual nao era a questao 1 de verdade.
     let sawPlausibleContent = false;
     let sawAlternative = false;
 
     for (let j = i + 1; j < Math.min(lines.length, i + MAX_LOOKAHEAD); j += 1) {
       const next = lines[j].trim();
       if (!next || isNoise(next) || repeatedHeaders.has(next)) continue;
-      if (isExamInstructionLine(next)) continue;
+      if (isExamInstructionLine(next) || isInstructionSubitemLine(next)) continue;
 
       const nextInline = ITEM_START_INLINE.exec(next);
       const nextAlone = nextInline ? null : ITEM_START_ALONE.exec(next);
@@ -150,7 +175,7 @@ function findFirstQuestionIndex(
       if (!isAllCapsLine(next)) sawPlausibleContent = true;
     }
 
-    if (sawAlternative || sawPlausibleContent) return i;
+    if (sawAlternative || (sawPlausibleContent && !documentHasNumberedInstructions)) return i;
   }
 
   // Fallback para PDFs incomuns que nao possuem um marcador claro de inicio.
@@ -319,6 +344,7 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
   const questoes: QuestaoDraft[] = [];
   let current: { numero: number; linhas: string[] } | null = null;
   let lastNumero = 0;
+  let lastRealLine: string | null = null;
 
   function flush() {
     if (!current) return;
@@ -410,13 +436,27 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
         ? Number(aloneMatch[1])
         : null;
 
-    if (numero !== null && numero > lastNumero && numero <= lastNumero + 30) {
+    // Um numero que da inicio a um item de verdade no formato inline sempre vem
+    // depois de conteudo que "fechou" (pontuacao de frase no fim da ultima linha
+    // real) - o proprio numero do item so aparece apos a alternativa/enunciado
+    // anterior terminar. Um numero que e so um dado dentro de uma frase corrida
+    // (ex.: "...grow from about" quebra de linha e o pdf-parse extrai "10 per
+    // cent of GDP..." como se fosse uma linha nova) aparece no meio de uma frase
+    // que ainda nao terminou. So aplica essa exigencia ao formato inline: o
+    // formato "numero sozinho" ja e menos ambiguo (a linha inteira e so o numero).
+    const previousLineEndedSentence =
+      lastRealLine === null || /[.?!:;]$/.test(lastRealLine);
+    const isPlausibleItemStart = aloneMatch !== null || previousLineEndedSentence;
+
+    if (numero !== null && numero > lastNumero && numero <= lastNumero + 30 && isPlausibleItemStart) {
       flush();
       lastNumero = numero;
       current = { numero, linhas: inlineMatch ? [inlineMatch[2]] : [] };
     } else if (current) {
       current.linhas.push(line);
     }
+
+    lastRealLine = line;
   }
   flush();
 
@@ -483,6 +523,16 @@ export function detectParsingAnomaly(
   );
   if (hardOversized) {
     return `A questão ${hardOversized.numero} ficou com ${hardOversized.enunciado.length} caracteres, muito acima do que qualquer questão real costuma ter — mesmo com texto de apoio longo. Isso indica que o parser não conseguiu separar os itens corretamente neste PDF. Use CSV/JSON ou cadastre manualmente.`;
+  }
+
+  // Mais de 6 alternativas nunca acontece numa questao objetiva real (maximo A-E, 5
+  // alternativas) - diferente do teto de tamanho do enunciado, que varia legitimamente
+  // (textos de apoio longos), essa contagem e um sinal de mesclagem sozinho, sem
+  // precisar combinar com o tamanho do enunciado (uma questao mesclada pode ficar
+  // curta se as questoes originais forem curtas).
+  const excessAlternativas = questoes.find((questao) => questao.alternativas.length > 6);
+  if (excessAlternativas) {
+    return `A questão ${excessAlternativas.numero} ficou com ${excessAlternativas.alternativas.length} alternativas — nenhuma questão objetiva real tem mais que 5 (A-E). Isso indica que duas ou mais questões foram mescladas por engano neste PDF (o layout original pode ter os itens fora de ordem numérica, ou o parser nao conseguiu identificar onde uma questão termina e a próxima começa). Use CSV/JSON ou cadastre manualmente.`;
   }
 
   const suspicious = questoes.find(
