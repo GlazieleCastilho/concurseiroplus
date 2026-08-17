@@ -4,7 +4,7 @@ import { toErrorResponse } from "@/lib/api-error";
 import { bulkImportSchema } from "@/schemas/app-schemas";
 import { csvRowsToImportPayload, parseCsv } from "@/lib/question-import";
 import { extractPdfText, extractItemPositions } from "@/services/question-extraction-service";
-import { applyGabarito, applyImages, buildProvaDraft, detectParsingAnomaly, inferProvaHints, parseGabaritoText, parseProvaText } from "@/lib/prova-parser";
+import { applyGabarito, applyImages, buildProvaDraft, detectParsingAnomaly, findAlternativaCountWarnings, inferProvaHints, parseGabaritoText, parseProvaText } from "@/lib/prova-parser";
 import { assignImagesToQuestions, extractImagePlacements } from "@/lib/pdf-image-extractor";
 import { uploadQuestionImage } from "@/lib/supabase-storage";
 
@@ -19,6 +19,7 @@ export async function POST(req: Request) {
 
     const name = file.name.toLowerCase();
     let draft: unknown;
+    let parsingWarnings: string[] = [];
 
     if (name.endsWith(".pdf")) {
       const buffer = Buffer.from(await file.arrayBuffer());
@@ -34,6 +35,11 @@ export async function POST(req: Request) {
       if (anomaly) {
         return NextResponse.json({ error: anomaly }, { status: 422 });
       }
+      // Diferente da anomalia acima (indica que o parse inteiro provavelmente falhou),
+      // questoes com mais de 6 alternativas normalmente sao um problema isolado (ex.:
+      // itens fora de ordem numerica no PDF de origem) - nao vale travar o rascunho
+      // inteiro por causa de 1-2 questoes ruins quando o resto parseou certo.
+      parsingWarnings = findAlternativaCountWarnings(questoes);
       const gabaritoFile = form.get("gabaritoFile");
       const cargo = form.get("cargo")?.toString();
       if (gabaritoFile instanceof File) {
@@ -84,10 +90,12 @@ export async function POST(req: Request) {
     }
 
     const validation = bulkImportSchema.safeParse(draft);
+    const schemaErrors = validation.success ? [] : validation.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`);
+    const errors = [...parsingWarnings, ...schemaErrors];
     return NextResponse.json({
       draft,
-      valid: validation.success,
-      errors: validation.success ? [] : validation.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`),
+      valid: validation.success && parsingWarnings.length === 0,
+      errors,
       source: name.endsWith(".pdf") ? "pdf" : name.endsWith(".csv") ? "csv" : "json",
     });
   } catch (error) {
