@@ -27,7 +27,9 @@ export async function POST(req: Request) {
       if (text.trim().length < 40) {
         return NextResponse.json({ error: "Nao foi possivel extrair texto do PDF (pode ser um PDF escaneado sem OCR)" }, { status: 422 });
       }
-      let questoes = parseProvaText(text);
+      const parsed = parseProvaText(text);
+      let questoes = parsed.questoes;
+      const textosApoio = parsed.textosApoio;
       if (questoes.length === 0) {
         return NextResponse.json({ error: "Nao foi possivel identificar itens numerados no PDF. Use CSV/JSON ou cadastre manualmente." }, { status: 422 });
       }
@@ -72,13 +74,17 @@ export async function POST(req: Request) {
       }
 
       const inferred = inferProvaHints(text);
-      draft = buildProvaDraft(questoes, {
-        banca: form.get("banca")?.toString() || inferred.banca,
-        orgao: form.get("orgao")?.toString(),
-        cargo,
-        ano: form.get("ano") ? Number(form.get("ano")) : inferred.ano,
-        nivel: inferred.nivel,
-      });
+      draft = buildProvaDraft(
+        questoes,
+        {
+          banca: form.get("banca")?.toString() || inferred.banca,
+          orgao: form.get("orgao")?.toString(),
+          cargo,
+          ano: form.get("ano") ? Number(form.get("ano")) : inferred.ano,
+          nivel: inferred.nivel,
+        },
+        textosApoio
+      );
     } else if (name.endsWith(".csv")) {
       const text = await file.text();
       draft = csvRowsToImportPayload(parseCsv(text));

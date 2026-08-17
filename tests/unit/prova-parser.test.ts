@@ -55,7 +55,7 @@ const serproProva = fixture("serpro-prova.txt");
 const cesgranrioProva = fixture("cesgranrio-petrobras-prova.txt");
 
 describe("parseProvaText - FGV/TJRS (numero sozinho na linha, alternativas '(A) texto')", () => {
-  const questoes = parseProvaText(fgvProva);
+  const { questoes } = parseProvaText(fgvProva);
 
   it("encontra as 80 questoes, numeradas 1..80, todas objetivas", () => {
     expect(questoes).toHaveLength(80);
@@ -93,7 +93,7 @@ describe("parseProvaText - FGV/TJRS (numero sozinho na linha, alternativas '(A) 
 });
 
 describe("parseProvaText - CEBRASPE/PRF (numero + texto na mesma linha, certo/errado)", () => {
-  const questoes = parseProvaText(cebraspeProva);
+  const { questoes } = parseProvaText(cebraspeProva);
 
   it("encontra os 120 itens, todos certo/errado com alternativas C/E", () => {
     expect(questoes).toHaveLength(120);
@@ -102,8 +102,37 @@ describe("parseProvaText - CEBRASPE/PRF (numero + texto na mesma linha, certo/er
   });
 });
 
+describe("parseProvaText - textos de apoio (titulo 'Texto X' antes de um grupo de questoes)", () => {
+  const { questoes, textosApoio } = parseProvaText(cebraspeProva);
+
+  it("captura o texto de apoio como entidade propria, com titulo e conteudo", () => {
+    const texto = textosApoio.find((item) => item.titulo === "Texto 1A18-I");
+    expect(texto).toBeDefined();
+    expect(texto!.conteudo).toContain("Estados Unidos da América");
+    expect(texto!.conteudo.length).toBeGreaterThan(100);
+  });
+
+  it("questao 8 (antes do titulo) nao herda a chave do texto de apoio seguinte", () => {
+    const questao8 = questoes.find((item) => item.numero === 8)!;
+    expect(questao8.textoApoioChave).toBeUndefined();
+    expect(questao8.enunciado).not.toContain("Estados Unidos da América");
+  });
+
+  it("questao 9 (depois do titulo) referencia a chave do texto de apoio", () => {
+    const texto = textosApoio.find((item) => item.titulo === "Texto 1A18-I")!;
+    const questao9 = questoes.find((item) => item.numero === 9)!;
+    expect(questao9.textoApoioChave).toBe(texto.chave);
+  });
+
+  it("nao duplica nem infla a questao anterior ao titulo (bug original: flush() sem zerar current)", () => {
+    expect(questoes.filter((item) => item.numero === 8)).toHaveLength(1);
+    const questao8 = questoes.find((item) => item.numero === 8)!;
+    expect(questao8.enunciado.length).toBeLessThan(300);
+  });
+});
+
 describe("parseProvaText - CEBRASPE/PRF 2019 (textos de apoio com numeracao de linha na margem)", () => {
-  const questoes = parseProvaText(prf2019Prova);
+  const { questoes } = parseProvaText(prf2019Prova);
 
   it("encontra os 120 itens (nao perde os que ficam atras de anotacao de linha na margem)", () => {
     expect(questoes).toHaveLength(120);
@@ -142,13 +171,13 @@ describe("parseProvaText - SERPRO/UnB-CESPE (formato nao suportado: itens sem nu
     // (passo constante > 1, mesmo sem separacao por linha em branco), esse PDF gerava
     // 6 "questoes" falsas a partir dos numeros de margem mal interpretados como item -
     // pior que falhar limpo, porque parecia ter funcionado parcialmente.
-    const questoes = parseProvaText(serproProva);
+    const { questoes } = parseProvaText(serproProva);
     expect(questoes).toHaveLength(0);
   });
 });
 
 describe("parseProvaText - CESGRANRIO/PETROBRAS (pagina de instrucoes numeradas + falso item em frase corrida)", () => {
-  const questoes = parseProvaText(cesgranrioProva);
+  const { questoes } = parseProvaText(cesgranrioProva);
 
   it("nao confunde o bloco de instrucoes (01-12, com sub-itens minusculos) com a questao 1", () => {
     const questao1 = questoes.find((item) => item.numero === 1)!;
@@ -203,7 +232,7 @@ describe("decisao de tipo por maioria (nao fabricar certo/errado em prova objeti
       "3",
       "Enunciado cuja lista de alternativas o parser nao reconheceu.",
     ].join("\n");
-    const questoes = parseProvaText(texto);
+    const { questoes } = parseProvaText(texto);
     expect(questoes).toHaveLength(3);
     const terceira = questoes.find((questao) => questao.numero === 3)!;
     expect(terceira.tipo).toBe("OBJETIVA");
@@ -212,7 +241,7 @@ describe("decisao de tipo por maioria (nao fabricar certo/errado em prova objeti
 
   it("em prova majoritariamente sem alternativas (estilo CEBRASPE), itens viram certo/errado", () => {
     const texto = ["1 Primeiro item para julgar.", "2 Segundo item para julgar.", "3 Terceiro item para julgar."].join("\n");
-    const questoes = parseProvaText(texto);
+    const { questoes } = parseProvaText(texto);
     expect(questoes).toHaveLength(3);
     expect(questoes.every((questao) => questao.tipo === "CERTO_ERRADO" && questao.alternativas.length === 2)).toBe(true);
   });
@@ -230,7 +259,7 @@ describe("detectParsingAnomaly (nao confundir questao genuinamente longa com mes
       "(D) delta.",
       "(E) epsilon.",
     ].join("\n");
-    const questoes = parseProvaText(texto);
+    const { questoes } = parseProvaText(texto);
     expect(questoes[0].enunciado.length).toBeGreaterThan(2500);
     expect(questoes[0].alternativas).toHaveLength(5);
     expect(detectParsingAnomaly(texto, questoes)).toBeNull();
@@ -261,7 +290,7 @@ describe("detectParsingAnomaly (nao confundir questao genuinamente longa com mes
       "(D) d.",
       "(E) e.",
     ].join("\n");
-    const questoes = parseProvaText(texto);
+    const { questoes } = parseProvaText(texto);
     expect(questoes[0].enunciado.length).toBeGreaterThan(2500);
     expect(questoes[0].alternativas).toHaveLength(1);
     expect(detectParsingAnomaly(texto, questoes)).toMatch(/mescladas/);
@@ -270,7 +299,7 @@ describe("detectParsingAnomaly (nao confundir questao genuinamente longa com mes
   it("recusa qualquer questao acima do teto absoluto, mesmo com contagem de alternativas normal", () => {
     const textoExtremo = "Isso e um sinal inequivoco de falha de parse independente de tudo mais. ".repeat(120); // ~8600 chars
     const texto = ["1", textoExtremo, "(A) a.", "(B) b.", "(C) c."].join("\n");
-    const questoes = parseProvaText(texto);
+    const { questoes } = parseProvaText(texto);
     expect(questoes[0].enunciado.length).toBeGreaterThan(8000);
     expect(detectParsingAnomaly(texto, questoes)).not.toBeNull();
   });
@@ -315,7 +344,7 @@ describe("parseGabaritoText", () => {
 
 describe("pipeline completo (parse + gabarito + draft + schema)", () => {
   it("FGV com hints completos gera draft valido com 80/80 gabaritos aplicados", () => {
-    let questoes = parseProvaText(fgvProva);
+    let { questoes } = parseProvaText(fgvProva);
     questoes = applyGabarito(questoes, parseGabaritoText(fgvGabarito, { provaVersao: "1", cargo: "Área Administrativa" }));
     expect(questoes.filter((questao) => !questao.gabarito)).toHaveLength(0);
 
@@ -325,7 +354,7 @@ describe("pipeline completo (parse + gabarito + draft + schema)", () => {
   });
 
   it("draft sem banca/cargo/ano NAO usa placeholder: reprova na validacao em vez de gerar slug generico", () => {
-    const questoes = parseProvaText(cebraspeProva);
+    const { questoes } = parseProvaText(cebraspeProva);
     const draft = buildProvaDraft(questoes, {});
     expect(draft.provas[0].titulo).toBe("");
     expect(draft.provas[0].banca).toBe("");
@@ -361,7 +390,7 @@ describe("inferProvaHints", () => {
 
 describe("applyImages", () => {
   it("anexa imagem ao enunciado (letra null) e a alternativa especifica", () => {
-    const questoes = parseProvaText(["1", "Enunciado um.", "(A) alfa.", "(B) beta.", "2", "Enunciado dois.", "(A) um.", "(B) dois."].join("\n"));
+    const { questoes } = parseProvaText(["1", "Enunciado um.", "(A) alfa.", "(B) beta.", "2", "Enunciado dois.", "(A) um.", "(B) dois."].join("\n"));
     const comImagens = applyImages(questoes, [
       { numero: 1, letra: null, url: "https://cdn.exemplo/q1.jpg" },
       { numero: 2, letra: "B", url: "https://cdn.exemplo/q2b.jpg" },
