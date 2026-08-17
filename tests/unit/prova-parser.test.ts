@@ -228,6 +228,19 @@ describe("parseProvaText - CESGRANRIO/PETROBRAS (pagina de instrucoes numeradas 
     const ultimaAlternativa5 = questao5.alternativas[questao5.alternativas.length - 1];
     expect(ultimaAlternativa5.texto.length).toBeLessThan(20);
   });
+
+  it("captura o texto de apoio que vem antes da questao 1 (fora da faixa que comeca em firstQuestionIndex)", () => {
+    // Bug original: o loop principal so comecava em firstQuestionIndex (pulando a
+    // pagina de instrucoes numeradas). Como o "Texto I" da questao 1 fica ANTES dela
+    // no PDF (junto com as instrucoes puladas), esse texto nunca era visto e a
+    // questao 1 ficava sem texto de apoio.
+    const { questoes, textosApoio } = parseProvaText(cesgranrioProva);
+    const texto = textosApoio.find((item) => item.titulo === "Texto I");
+    expect(texto).toBeDefined();
+    expect(texto!.conteudo).toContain("REPIQUE");
+    const questao1 = questoes.find((item) => item.numero === 1)!;
+    expect(questao1.textoApoioChave).toBe(texto!.chave);
+  });
 });
 
 describe("decisao de tipo por maioria (nao fabricar certo/errado em prova objetiva)", () => {

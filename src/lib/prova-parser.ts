@@ -446,16 +446,17 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
     });
   }
 
-  // Ignora todo o material que vem antes do primeiro item real. Isso e essencial
-  // para PDFs como o da Cesgranrio/Petrobras analisado: a primeira pagina possui
-  // instrucoes "01 - ...", "02 - ..." ate "12 - ...". Sem esta barreira, o parser
-  // transforma essas instrucoes em questoes 1..12 e, quando chega a pagina 2, as
-  // questoes reais 1..12 ficam menores que lastNumero e sao anexadas a "questao 12".
-  for (
-    let lineIndex = firstQuestionIndex;
-    lineIndex < lines.length;
-    lineIndex += 1
-  ) {
+  // O loop comeca do inicio do documento (nao de firstQuestionIndex) porque o
+  // texto de apoio da questao 1 quase sempre vem ANTES dela (ex.: "Texto I" no
+  // topo da pagina 2, antes da pagina de instrucoes terminar) - comecando so em
+  // firstQuestionIndex, esse texto nunca seria visto e a questao 1 ficaria sem
+  // texto de apoio. So a ABERTURA de item (isForwardOpen/isOutOfOrderReopen) fica
+  // proibida antes de firstQuestionIndex: sem essa barreira, PDFs como o da
+  // Cesgranrio/Petrobras (pagina de instrucoes numeradas "01 - ...", "02 - ..." ate
+  // "12 - ...") teriam essas instrucoes transformadas em questoes 1..12 e, quando
+  // a pagina 2 chegasse, as questoes reais 1..12 ficariam menores que lastNumero e
+  // seriam anexadas a "questao 12".
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
     const rawLine = lines[lineIndex];
     const line = rawLine.trim();
 
@@ -508,6 +509,7 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
       lastRealLine === null || /[.?!:;]$/.test(lastRealLine);
     const isPlausibleItemStart = aloneMatch !== null || previousLineEndedSentence;
     const isForwardOpen =
+      lineIndex >= firstQuestionIndex &&
       numero !== null && numero > lastNumero && numero <= lastNumero + 30 && isPlausibleItemStart;
     // So reabre pra tras no formato "numero sozinho" (o menos ambiguo: a linha inteira
     // e so o numero, sem risco de ser um dado no meio de uma frase) e so quando esse
@@ -515,6 +517,7 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
     // certamente e uma referencia dentro do enunciado (ex.: "questao 16" citada em
     // outro contexto), nao uma reabertura legitima.
     const isOutOfOrderReopen =
+      lineIndex >= firstQuestionIndex &&
       numero !== null &&
       aloneMatch !== null &&
       numero > 0 &&
