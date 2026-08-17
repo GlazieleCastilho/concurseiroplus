@@ -283,15 +283,26 @@ describe("pipeline completo (parse + gabarito + draft + schema)", () => {
 
 describe("inferProvaHints", () => {
   it("FGV/TJRS: infere a banca mas NAO chuta ano (o corpo cita 2021 mais vezes que 2025)", () => {
-    expect(inferProvaHints(fgvProva)).toEqual({ banca: "FGV", ano: undefined });
+    const hints = inferProvaHints(fgvProva);
+    expect(hints.banca).toBe("FGV");
+    expect(hints.ano).toBeUndefined();
   });
 
   it("CEBRASPE/PRF: infere banca e o ano explicito do edital", () => {
-    expect(inferProvaHints(cebraspeProva)).toEqual({ banca: "CEBRASPE", ano: 2021 });
+    const hints = inferProvaHints(cebraspeProva);
+    expect(hints.banca).toBe("CEBRASPE");
+    expect(hints.ano).toBe(2021);
   });
 
   it("texto sem sinais nao inventa nada", () => {
-    expect(inferProvaHints("um texto qualquer sem banca nem edital")).toEqual({ banca: undefined, ano: undefined });
+    expect(inferProvaHints("um texto qualquer sem banca nem edital")).toEqual({ banca: undefined, ano: undefined, nivel: undefined });
+  });
+
+  it("infere nivel apenas com sinal explicito no texto ('Nivel Medio', 'Ensino Fundamental'...)", () => {
+    expect(inferProvaHints("Concurso Publico - Nivel Medio").nivel).toEqual(["MEDIO"]);
+    expect(inferProvaHints("Prova de Ensino Fundamental").nivel).toEqual(["FUNDAMENTAL"]);
+    expect(inferProvaHints("Concurso para Nivel Medio e Nivel Superior").nivel).toEqual(["MEDIO", "SUPERIOR"]);
+    expect(inferProvaHints("texto sem nenhum sinal de nivel").nivel).toBeUndefined();
   });
 });
 
