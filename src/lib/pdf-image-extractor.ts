@@ -1,6 +1,7 @@
 /**
- * Extrai imagens embutidas (JPEG/DCTDecode) de PDFs oficiais e associa cada uma a
- * uma questao/alternativa pela posicao na pagina. Deterministico, sem IA.
+ * Extrai imagens embutidas (JPEG/DCTDecode e RGB/Gray sem compressao com perdas,
+ * /FlateDecode) de PDFs oficiais e associa cada uma a uma questao/alternativa pela
+ * posicao na pagina. Deterministico, sem IA.
  *
  * So implementa um subconjunto minimo do formato PDF (le objetos indiretos direto dos
  * bytes, resolve a arvore de paginas, descomprime content streams com zlib nativo e
@@ -11,7 +12,7 @@
  * que ja causou incidente de producao neste projeto. getTextContent() (usado em
  * question-extraction-service.ts para achar a posicao dos itens) nao tem esse problema.
  */
-import { inflateSync } from "node:zlib";
+import { deflateSync, inflateSync } from "node:zlib";
 
 type PdfObject = { dictText: string; streamBytes: Buffer | null };
 
@@ -117,7 +118,87 @@ export type RawImagePlacement = {
   width: number;
   height: number;
   bytes: Buffer;
+  format: "jpeg" | "png";
 };
+
+// Tabela de CRC32 padrao (usada nos chunks do PNG que montamos manualmente). Implementada
+// na mao em vez de zlib.crc32 (so disponivel a partir do Node 20.12/21.4) pra nao depender
+// de uma versao minima especifica do runtime da Vercel.
+const CRC_TABLE = (() => {
+  const table = new Uint32Array(256);
+  for (let n = 0; n < 256; n += 1) {
+    let c = n;
+    for (let k = 0; k < 8; k += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    table[n] = c >>> 0;
+  }
+  return table;
+})();
+
+function crc32(buf: Buffer): number {
+  let crc = 0xffffffff;
+  for (let i = 0; i < buf.length; i += 1) crc = CRC_TABLE[(crc ^ buf[i]) & 0xff] ^ (crc >>> 8);
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function pngChunk(type: string, data: Buffer): Buffer {
+  const length = Buffer.alloc(4);
+  length.writeUInt32BE(data.length, 0);
+  const typeAndData = Buffer.concat([Buffer.from(type, "ascii"), data]);
+  const crc = Buffer.alloc(4);
+  crc.writeUInt32BE(crc32(typeAndData), 0);
+  return Buffer.concat([length, typeAndData, crc]);
+}
+
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+/**
+ * Reconstroi um PNG valido a partir dos bytes ja descomprimidos (inflateSync) de uma
+ * imagem /FlateDecode do PDF. O PDF usa exatamente o mesmo esquema de filtro por linha
+ * do formato PNG quando /Predictor no DecodeParms e >= 10 ("PNG prediction" - o proprio
+ * spec do PDF empresta o termo do PNG): cada linha decodificada ja vem prefixada com o
+ * byte de tipo de filtro (0-4), que e literalmente o que o IDAT do PNG espera. Nesse
+ * caso so precisa reempacotar - recomprimir com zlib e envolver no container PNG
+ * (assinatura + IHDR + IDAT + IEND). Sem Predictor (comum em imagens pequenas, ex.: sem
+ * DecodeParms nenhum), os bytes sao pixels crus sem esse prefixo - insere um filtro
+ * "None" (0) em cada linha manualmente, que e o formato mais simples aceito pelo PNG.
+ */
+export function buildPngFromFlateImage(
+  raw: Buffer,
+  width: number,
+  height: number,
+  colors: 1 | 3,
+  bitsPerComponent: number,
+  hasPngPredictor: boolean,
+): Buffer | null {
+  if (width <= 0 || height <= 0 || bitsPerComponent !== 8) return null;
+  const rowBytes = width * colors;
+  let idatRaw: Buffer;
+  if (hasPngPredictor) {
+    if (raw.length !== (rowBytes + 1) * height) return null;
+    idatRaw = raw;
+  } else {
+    if (raw.length !== rowBytes * height) return null;
+    idatRaw = Buffer.alloc((rowBytes + 1) * height);
+    for (let row = 0; row < height; row += 1) {
+      idatRaw[row * (rowBytes + 1)] = 0;
+      raw.copy(idatRaw, row * (rowBytes + 1) + 1, row * rowBytes, (row + 1) * rowBytes);
+    }
+  }
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(width, 0);
+  ihdr.writeUInt32BE(height, 4);
+  ihdr[8] = bitsPerComponent;
+  ihdr[9] = colors === 3 ? 2 : 0; // PNG color type: 2 = RGB, 0 = grayscale
+  ihdr[10] = 0;
+  ihdr[11] = 0;
+  ihdr[12] = 0;
+  return Buffer.concat([
+    PNG_SIGNATURE,
+    pngChunk("IHDR", ihdr),
+    pngChunk("IDAT", deflateSync(idatRaw)),
+    pngChunk("IEND", Buffer.alloc(0)),
+  ]);
+}
 
 function xobjNameMap(objects: Map<number, PdfObject>, resourcesDictOrRef: string | undefined): Map<string, number> {
   const resolved = resolveDict(objects, resourcesDictOrRef);
@@ -173,10 +254,25 @@ function processContentStream(
           const formResources = xobj.dictText.match(/\/Resources\s+(\d+\s+0\s+R|<<[\s\S]*?>>)/)?.[1];
           const formContent = decompress(xobj).toString("latin1");
           processContentStream(objects, placements, formContent, formResources, formCTM, pageNum, depth + 1);
-        } else if (xobj && /\/Subtype\s*\/Image/.test(xobj.dictText) && /\/DCTDecode/.test(xobj.dictText) && xobj.streamBytes) {
+        } else if (xobj && /\/Subtype\s*\/Image/.test(xobj.dictText) && xobj.streamBytes) {
           const width = Number(xobj.dictText.match(/\/Width\s+(\d+)/)?.[1] ?? 0);
           const height = Number(xobj.dictText.match(/\/Height\s+(\d+)/)?.[1] ?? 0);
-          placements.push({ xobjNum, page: pageNum, x: ctm[4], y: ctm[5], width, height, bytes: Buffer.from(xobj.streamBytes) });
+          if (/\/DCTDecode/.test(xobj.dictText)) {
+            placements.push({ xobjNum, page: pageNum, x: ctm[4], y: ctm[5], width, height, bytes: Buffer.from(xobj.streamBytes), format: "jpeg" });
+          } else if (/\/FlateDecode/.test(xobj.dictText)) {
+            // Imagens sem compressao com perdas (fotos/diagramas exportados como PNG,
+            // muito comum em figuras de questao) - o PDF guarda os pixels comprimidos
+            // com zlib puro, sem cabecalho JPEG. Reconstroi um PNG valido a partir
+            // desses bytes em vez de descartar a imagem (ver buildPngFromFlateImage).
+            const colorSpace = xobj.dictText.match(/\/ColorSpace\s*\/(\w+)/)?.[1];
+            const colors = colorSpace === "DeviceRGB" ? 3 : colorSpace === "DeviceGray" ? 1 : null;
+            const bitsPerComponent = Number(xobj.dictText.match(/\/BitsPerComponent\s+(\d+)/)?.[1] ?? 8);
+            const predictor = Number(xobj.dictText.match(/\/Predictor\s+(\d+)/)?.[1] ?? 1);
+            if (colors !== null) {
+              const png = buildPngFromFlateImage(decompress(xobj), width, height, colors, bitsPerComponent, predictor >= 10);
+              if (png) placements.push({ xobjNum, page: pageNum, x: ctm[4], y: ctm[5], width, height, bytes: png, format: "png" });
+            }
+          }
         }
       }
       operands = [];
@@ -240,7 +336,20 @@ export function extractImagePlacements(pdfBuffer: Buffer): RawImagePlacement[] {
     processContentStream(objects, placements, contentText, resources, [1, 0, 0, 1, 0, 0], pageNum, 0);
   }
 
-  return placements;
+  // Uma marca d'agua/logo institucional (comum em PDFs baixados de sites como o
+  // pciconcursos) e o MESMO objeto de imagem desenhado em praticamente toda pagina do
+  // documento - uma figura de questao de verdade, por outro lado, e especifica de uma
+  // unica pagina. Descarta qualquer imagem cujo objeto se repete em mais paginas do
+  // que faria sentido pra uma figura legitima (ex.: um mesmo diagrama reaproveitado em
+  // 2-3 questoes proximas ainda e plausivel; em praticamente todas as paginas, nao).
+  const pagesByXobj = new Map<number, Set<number>>();
+  for (const placement of placements) {
+    if (!pagesByXobj.has(placement.xobjNum)) pagesByXobj.set(placement.xobjNum, new Set());
+    pagesByXobj.get(placement.xobjNum)!.add(placement.page);
+  }
+  const totalPages = pageObjs.length;
+  const REPEATED_WATERMARK_THRESHOLD = Math.max(4, Math.ceil(totalPages / 2));
+  return placements.filter((placement) => (pagesByXobj.get(placement.xobjNum)?.size ?? 0) < REPEATED_WATERMARK_THRESHOLD);
 }
 
 export type ItemPosition = { page: number; x: number; y: number; numero: number; letra: string | null };
@@ -251,6 +360,7 @@ export type ImageAssignment = {
   bytes: Buffer;
   width: number;
   height: number;
+  format: "jpeg" | "png";
 };
 
 const COLUMN_TOLERANCE = 60;
@@ -286,6 +396,7 @@ export function assignImagesToQuestions(placements: RawImagePlacement[], itemPos
       bytes: placement.bytes,
       width: placement.width,
       height: placement.height,
+      format: placement.format,
     });
   }
   return assignments;

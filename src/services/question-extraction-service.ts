@@ -7,7 +7,22 @@ export async function extractPdfText(buffer: Buffer): Promise<string> {
 
   const result = await pdfParse(buffer);
 
-  return result.text;
+  return normalizeExtractedText(result.text);
+}
+
+/**
+ * Algumas fontes embutidas no PDF mapeiam um glifo especial pra um codepoint que nao
+ * tem nenhum sentido como texto (ex.: CESGRANRIO usa "ℓ" pra citar linha do texto de
+ * apoio, "(ℓ. 7-8)", mas o pdf-parse as vezes extrai o caractere de controle STX
+ * (0x02) no lugar por falta de ToUnicode CMap pra esse glifo na fonte). Como esse
+ * caractere de controle nunca e conteudo real de prova, restaura pro simbolo mais
+ * provavel no padrao de citacao de linha ("(0x02." -> "(ℓ.") e remove qualquer outro
+ * caractere de controle C0 remanescente (nunca deveriam aparecer em texto real).
+ */
+export function normalizeExtractedText(text: string): string {
+  return text
+    .replace(/\x02(?=\.)/g, "ℓ")
+    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, "");
 }
 
 /**

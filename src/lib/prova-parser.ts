@@ -364,9 +364,19 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
   for (const index of findLineNumberAnnotationIndices(lines)) lines[index] = "";
 
   const questoes: QuestaoDraft[] = [];
-  let current: { numero: number; linhas: string[]; textoApoioChave?: string } | null = null;
+  let current: {
+    numero: number;
+    linhas: string[];
+    textoApoioChave?: string;
+    // Indices (em `linhas`) de linhas que vieram logo depois de uma quebra de pagina
+    // (marca d'agua "pcimarkpci", rodape "www...", "Pagina N"...). Usado em flush()
+    // pra recuperar o caso em que o texto de apoio retoma sem titulo repetido depois
+    // da quebra e acaba grudado na ultima alternativa em aberto (ver comentario la).
+    pageBreakIdx: number[];
+  } | null = null;
   let lastNumero = 0;
   let lastRealLine: string | null = null;
+  let justCrossedPageBreak = false;
 
   // Texto de apoio: um titulo tipo "Texto I" antes de um grupo de questoes, cujo
   // conteudo (o texto/charge/reportagem em si) e compartilhado por todas as questoes
@@ -447,6 +457,48 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
         });
     }
 
+    // Alguns PDFs em coluna dupla (ex.: secao de lingua estrangeira da Cesgranrio)
+    // retomam o texto de apoio bem no meio de uma pagina seguinte SEM repetir o
+    // titulo ("Texto I"/"Text I"...) - a passagem so reaparece depois da marca
+    // d'agua/rodape de pagina. Sem marcador nenhum pra abrir um novo bloco, esse
+    // conteudo orfao fica grudado na ultima alternativa que estava em aberto no
+    // momento da quebra, inflando-a com um paragrafo inteiro sem relacao com ela.
+    // So tenta recortar quando ha um sinal forte de que algo vazou (a ultima
+    // alternativa ficou bem maior que as demais) E existe uma quebra de pagina
+    // registrada dentro do intervalo de linhas dela - alternativas legitimas que
+    // simplesmente quebram de pagina no meio de uma frase normal nunca disparam a
+    // combinacao das duas condicoes.
+    if (alternativas.length >= 2 && current.pageBreakIdx.length > 0) {
+      let lastAltLineStart = -1;
+      for (let i = blockLines.length - 1; i >= 0; i -= 1) {
+        if (ALTERNATIVA_START.test(blockLines[i].trim())) {
+          lastAltLineStart = i;
+          break;
+        }
+      }
+      const breakInLastAlt = current.pageBreakIdx.find((idx) => idx > lastAltLineStart);
+      if (lastAltLineStart !== -1 && breakInLastAlt !== undefined) {
+        const lastAlt = alternativas[alternativas.length - 1];
+        const outrasLens = alternativas.slice(0, -1).map((alt) => alt.texto.length);
+        const maiorOutra = outrasLens.length > 0 ? Math.max(...outrasLens) : 0;
+        if (lastAlt.texto.length > 800 && lastAlt.texto.length > maiorOutra * 3) {
+          const keptLines = blockLines.slice(lastAltLineStart, breakInLastAlt);
+          const leakedLines = blockLines.slice(breakInLastAlt);
+          const rebuiltMatch = ALTERNATIVA_START.exec(keptLines[0].trim());
+          if (rebuiltMatch) {
+            let textoReconstruido = rebuiltMatch[2];
+            for (const linha of keptLines.slice(1)) textoReconstruido += ` ${linha.trim()}`;
+            lastAlt.texto = textoReconstruido.replace(/\s+/g, " ").trim();
+          }
+          const leaked = leakedLines.join(" ").replace(/\s+/g, " ").trim();
+          if (leaked.length > 0 && current.textoApoioChave) {
+            const texto = textosApoio.find((item) => item.chave === current!.textoApoioChave);
+            if (texto) texto.conteudo = `${texto.conteudo} ${leaked}`.trim();
+          }
+        }
+      }
+    }
+
     // Algumas questoes (comuns em provas com figura) nao tem nenhum texto proprio alem
     // do comando compartilhado ja consumido pelo item anterior - ex.: "24. [julgue com
     // base na figura]" sem mais nada. Descartar silenciosamente perderia o item (e o
@@ -479,13 +531,13 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
     const rawLine = lines[lineIndex];
     const line = rawLine.trim();
 
-    if (
-      !line ||
-      isNoise(line) ||
-      repeatedHeaders.has(line) ||
-      trailingCredits.has(line)
-    )
+    if (isNoise(line)) {
+      // Marca que a proxima linha de conteudo real vem logo depois de uma quebra de
+      // pagina (marca d'agua/rodape/numero de pagina) - ver uso em flush().
+      justCrossedPageBreak = true;
       continue;
+    }
+    if (!line || repeatedHeaders.has(line) || trailingCredits.has(line)) continue;
 
     // Titulo de texto de apoio ("Texto I", "TEXTO", "Texto 1A18-I"...): fecha
     // qualquer questao aberta (o titulo nunca faz parte do enunciado de uma questao)
@@ -504,10 +556,14 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
       activeTextoApoioChave = undefined;
       currentTexto = { titulo: line, linhas: [] };
       lastRealLine = line;
+      justCrossedPageBreak = false;
       continue;
     }
 
-    if (sectionTitles.has(line)) continue;
+    if (sectionTitles.has(line)) {
+      justCrossedPageBreak = false;
+      continue;
+    }
 
     // Linhas de instrucao com hifen nao casam com ITEM_START_INLINE. Se ja estivermos
     // dentro de uma questao, elas permanecem como texto do bloco em vez de abrirem um item.
@@ -560,13 +616,16 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
         numero: numero as number,
         linhas: inlineMatch ? [inlineMatch[2]] : [],
         textoApoioChave: activeTextoApoioChave,
+        pageBreakIdx: [],
       };
     } else if (current) {
+      if (justCrossedPageBreak) current.pageBreakIdx.push(current.linhas.length);
       current.linhas.push(line);
     } else if (currentTexto) {
       currentTexto.linhas.push(line);
     }
 
+    justCrossedPageBreak = false;
     lastRealLine = line;
   }
   flush();

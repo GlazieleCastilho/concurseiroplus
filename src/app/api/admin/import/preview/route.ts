@@ -59,11 +59,15 @@ export async function POST(req: Request) {
           const itemPositions = await extractItemPositions(buffer);
           const assignments = assignImagesToQuestions(placements, itemPositions);
           const uploaded = await Promise.all(
-            assignments.map(async (assignment) => ({
-              numero: assignment.numero,
-              letra: assignment.letra,
-              url: await uploadQuestionImage(assignment.bytes, `q${assignment.numero}${assignment.letra ?? ""}.jpg`),
-            }))
+            assignments.map(async (assignment) => {
+              const ext = assignment.format === "png" ? "png" : "jpg";
+              const contentType = assignment.format === "png" ? "image/png" : "image/jpeg";
+              return {
+                numero: assignment.numero,
+                letra: assignment.letra,
+                url: await uploadQuestionImage(assignment.bytes, `q${assignment.numero}${assignment.letra ?? ""}.${ext}`, contentType),
+              };
+            })
           );
           questoes = applyImages(questoes, uploaded);
         }

@@ -256,6 +256,22 @@ describe("parseProvaText - CESGRANRIO/PETROBRAS (pagina de instrucoes numeradas 
     expect(questao10.textoApoioChave).toBe(textoII.chave);
   });
 
+  it("nao deixa a continuacao de um texto de apoio sem titulo repetido vazar pra ultima alternativa em aberto", () => {
+    // Bug original: apos a quebra de pagina (marca d'agua "pcimarkpci"), o "Text I"
+    // retoma sem repetir o titulo, no meio da acumulacao da questao 10 (que ja tinha
+    // fechado sua alternativa E). Esse paragrafo inteiro em ingles ficava grudado no
+    // final da alternativa E da questao 10 (a ultima em aberto no momento da quebra).
+    const { questoes, textosApoio } = parseProvaText(cesgranrioProva);
+    const questao10 = questoes.find((item) => item.numero === 10)!;
+    const ultimaAlternativa10 = questao10.alternativas[questao10.alternativas.length - 1];
+    expect(ultimaAlternativa10.texto.length).toBeLessThan(50);
+    expect(ultimaAlternativa10.texto).not.toContain("Without");
+
+    const textI = textosApoio.find((item) => item.titulo === "Text I")!;
+    expect(textI.conteudo).toContain("Without");
+    expect(textI.conteudo).toContain("local content policy");
+  });
+
   it("preserva texto de apoio curto (< 100 chars) com aviso de revisao em vez de descartar a referencia", () => {
     // Antes: textos de apoio com menos de MIN_TEXTO_APOIO_LENGTH eram descartados por
     // inteiro - a questao seguinte ficava sem nenhuma chave, mesmo tendo um titulo de
