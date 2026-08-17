@@ -214,6 +214,20 @@ describe("parseProvaText - CESGRANRIO/PETROBRAS (pagina de instrucoes numeradas 
     expect(detectParsingAnomaly(cesgranrioProva, questoes)).toBeNull();
     expect(findAlternativaCountWarnings(questoes)).toEqual([]);
   });
+
+  it("reconhece titulo de texto de apoio em ingles ('Text I'/'Text II', secao de lingua estrangeira), nao so 'Texto' em portugues", () => {
+    const { textosApoio, questoes } = parseProvaText(cesgranrioProva);
+    const textI = textosApoio.find((item) => item.titulo === "Text I");
+    const textII = textosApoio.find((item) => item.titulo === "Text II");
+    expect(textI).toBeDefined();
+    expect(textII).toBeDefined();
+    // Bug original: regex so aceitava "Texto"/"TEXTO" (portugues), entao "Text I"/
+    // "Text II" (secao de lingua estrangeira) nao eram reconhecidos como titulo e o
+    // texto inteiro vazava para dentro da ultima alternativa da questao anterior.
+    const questao5 = questoes.find((item) => item.numero === 5)!;
+    const ultimaAlternativa5 = questao5.alternativas[questao5.alternativas.length - 1];
+    expect(ultimaAlternativa5.texto.length).toBeLessThan(20);
+  });
 });
 
 describe("decisao de tipo por maioria (nao fabricar certo/errado em prova objetiva)", () => {

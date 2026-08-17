@@ -45,11 +45,12 @@ export const ITEM_START_ALONE = /^(\d{1,3})\s*[.)]?\s*$/;
 // sem parenteses, com ou sem espaco depois do separador).
 export const ALTERNATIVA_START = /^\(?([A-E])[).:-]\s*(.*)$/;
 
-// Titulo de texto de apoio: "Texto I", "TEXTO", "Texto 1A18-I" etc. Exige "Texto"/
-// "TEXTO" com maiuscula (nunca minusculo dentro de uma frase corrida, ex.: "o texto
-// abaixo") e a linha inteira curta (so o titulo, sem mais nada) - um titulo de
-// verdade nunca continua como uma frase na mesma linha.
-const TEXTO_APOIO_TITLE = /^(?:Texto|TEXTO)\s*([IVXLC\d][\w-]*)?\s*$/;
+// Titulo de texto de apoio: "Texto I", "TEXTO", "Texto 1A18-I", ou "Text I"/"Text II"
+// (secoes de lingua estrangeira, ex.: Cesgranrio/Petrobras) etc. Exige a palavra com
+// maiuscula (nunca minusculo dentro de uma frase corrida, ex.: "o texto abaixo") e a
+// linha inteira curta (so o titulo, sem mais nada) - um titulo de verdade nunca
+// continua como uma frase na mesma linha.
+const TEXTO_APOIO_TITLE = /^(?:Texto|TEXTO|Text)\s*([IVXLC\d][\w-]*)?\s*$/;
 
 function isNoise(line: string): boolean {
   return NOISE_LINE.test(line.trim());
