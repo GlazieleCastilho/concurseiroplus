@@ -525,16 +525,6 @@ export function detectParsingAnomaly(
     return `A questão ${hardOversized.numero} ficou com ${hardOversized.enunciado.length} caracteres, muito acima do que qualquer questão real costuma ter — mesmo com texto de apoio longo. Isso indica que o parser não conseguiu separar os itens corretamente neste PDF. Use CSV/JSON ou cadastre manualmente.`;
   }
 
-  // Mais de 6 alternativas nunca acontece numa questao objetiva real (maximo A-E, 5
-  // alternativas) - diferente do teto de tamanho do enunciado, que varia legitimamente
-  // (textos de apoio longos), essa contagem e um sinal de mesclagem sozinho, sem
-  // precisar combinar com o tamanho do enunciado (uma questao mesclada pode ficar
-  // curta se as questoes originais forem curtas).
-  const excessAlternativas = questoes.find((questao) => questao.alternativas.length > 6);
-  if (excessAlternativas) {
-    return `A questão ${excessAlternativas.numero} ficou com ${excessAlternativas.alternativas.length} alternativas — nenhuma questão objetiva real tem mais que 5 (A-E). Isso indica que duas ou mais questões foram mescladas por engano neste PDF (o layout original pode ter os itens fora de ordem numérica, ou o parser nao conseguiu identificar onde uma questão termina e a próxima começa). Use CSV/JSON ou cadastre manualmente.`;
-  }
-
   const suspicious = questoes.find(
     (questao) =>
       questao.enunciado.length > SUSPICIOUS_ENUNCIADO_LENGTH &&
@@ -556,6 +546,25 @@ export function detectParsingAnomaly(
     return `Foram identificadas apenas ${questoes.length} questão(ões) para um texto de ${meaningfulLength} caracteres, bem menos do que o esperado. O parser provavelmente não conseguiu segmentar os itens neste layout de PDF. Use CSV/JSON ou cadastre manualmente.`;
   }
   return null;
+}
+
+/**
+ * Diferente de detectParsingAnomaly (que bloqueia o import inteiro quando o problema
+ * indica que o parse como um todo provavelmente falhou), isso e um aviso pontual: mais
+ * de 6 alternativas so pode acontecer numa questao especifica que foi mesclada com
+ * outra (nenhuma questao objetiva real tem mais que 5, A-E) - mas normalmente e um
+ * problema ISOLADO a uma ou duas questoes num PDF grande que, fora isso, parseou bem.
+ * Bloquear o rascunho inteiro por causa de 1-2 questoes ruins obrigaria o admin a
+ * cadastrar tudo de novo via CSV/JSON em vez de so corrigir as questoes marcadas na
+ * revisao - por isso isso retorna avisos em vez de travar o preview.
+ */
+export function findAlternativaCountWarnings(questoes: QuestaoDraft[]): string[] {
+  return questoes
+    .filter((questao) => questao.alternativas.length > 6)
+    .map(
+      (questao) =>
+        `Questão ${questao.numero}: ficou com ${questao.alternativas.length} alternativas — nenhuma questão objetiva real tem mais que 5 (A-E). Provavelmente duas ou mais questões foram mescladas (o PDF pode ter itens fora de ordem numérica). Revise ou refaça essa questão manualmente antes de confirmar.`,
+    );
 }
 
 function normalize(text: string): string {

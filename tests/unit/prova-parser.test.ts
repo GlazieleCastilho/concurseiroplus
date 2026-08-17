@@ -21,8 +21,9 @@
  *    exatamente em "10 per cent of GDP...", sendo lida como o inicio da questao 10 e
  *    engolindo a questao 9 real. Essa prova tambem tem os itens 16/17 fora de ordem
  *    numerica no proprio PDF de origem (aparecem depois do item 20) - limitacao conhecida,
- *    nao corrigida; o teste trava que isso falha honestamente via detectParsingAnomaly
- *    em vez de produzir uma questao 20 com 15 alternativas silenciosamente)
+ *    nao corrigida; o teste trava que isso gera so um aviso pontual (findAlternativaCountWarnings)
+ *    em vez de bloquear o rascunho inteiro ou produzir uma questao 20 com 15 alternativas
+ *    silenciosamente)
  * Qualquer mudanca de regex/heuristica que quebre um layout ja suportado falha aqui,
  * em vez de regredir silenciosamente em producao (ja aconteceu uma vez: um commit de
  * correcao ficou orfao num branch mergeado e o parser voltou a perder alternativas V/F).
@@ -35,6 +36,7 @@ import {
   applyImages,
   buildProvaDraft,
   detectParsingAnomaly,
+  findAlternativaCountWarnings,
   inferProvaHints,
   parseGabaritoText,
   parseProvaText,
@@ -165,12 +167,15 @@ describe("parseProvaText - CESGRANRIO/PETROBRAS (pagina de instrucoes numeradas 
     expect(questao10.enunciado).not.toContain("per cent of GDP");
   });
 
-  it("falha honestamente quando itens estao fora de ordem numerica no PDF de origem (16/17 aparecem depois do 20)", () => {
-    // Limitacao conhecida, nao corrigida: o parser exige numeros crescentes. Antes da
-    // checagem de alternativas>6 em detectParsingAnomaly, isso virava uma questao 20
-    // com 15 alternativas (3 questoes mescladas) sem nenhum aviso.
-    const anomaly = detectParsingAnomaly(cesgranrioProva, questoes);
-    expect(anomaly).toContain("alternativas");
+  it("nao trava o rascunho inteiro por causa de itens fora de ordem numerica (16/17 aparecem depois do 20) - so avisa pontualmente", () => {
+    // Limitacao conhecida, nao corrigida: o parser exige numeros crescentes, entao a
+    // questao 20 termina com 15 alternativas (3 questoes mescladas). Isso NAO deve
+    // bloquear o import inteiro (detectParsingAnomaly) - as outras 67 questoes
+    // parsearam certo e devem continuar disponiveis no rascunho para revisao; so a
+    // questao especifica deve ser sinalizada via findAlternativaCountWarnings.
+    expect(detectParsingAnomaly(cesgranrioProva, questoes)).toBeNull();
+    const warnings = findAlternativaCountWarnings(questoes);
+    expect(warnings.some((warning) => warning.includes("Questão 20"))).toBe(true);
   });
 });
 
