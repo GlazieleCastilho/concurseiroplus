@@ -71,6 +71,7 @@ export async function POST(req: Request) {
         orgao: form.get("orgao")?.toString(),
         cargo,
         ano: form.get("ano") ? Number(form.get("ano")) : inferred.ano,
+        nivel: inferred.nivel,
       });
     } else if (name.endsWith(".csv")) {
       const text = await file.text();

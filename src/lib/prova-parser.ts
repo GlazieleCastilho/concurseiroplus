@@ -38,8 +38,9 @@ export const ITEM_START_INLINE =
 // Numero do item sozinho na linha, com o enunciado comecando na linha seguinte.
 // Aceita tambem o numero seguido de ponto ou parenteses, comum em alguns PDFs.
 export const ITEM_START_ALONE = /^(\d{1,3})\s*[.)]?\s*$/;
-// Alternativa "A) texto", "A. texto" ou "(A) texto" (com ou sem parenteses).
-export const ALTERNATIVA_START = /^\(?([A-E])[).]\s+(.*)$/;
+// Alternativa "A) texto", "A. texto", "A: texto", "A- texto" ou "(A) texto" (com ou
+// sem parenteses, com ou sem espaco depois do separador).
+export const ALTERNATIVA_START = /^\(?([A-E])[).:-]\s*(.*)$/;
 
 function isNoise(line: string): boolean {
   return NOISE_LINE.test(line.trim());
@@ -321,13 +322,10 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
 
   function flush() {
     if (!current) return;
-    const blockLines = current.linhas.filter(
-      (line) =>
-        !isNoise(line.trim()) &&
-        !repeatedHeaders.has(line.trim()) &&
-        !trailingCredits.has(line.trim()) &&
-        !sectionTitles.has(line.trim()),
-    );
+    // current.linhas ja vem sem ruido/cabecalho/credito/titulo de secao: essas linhas
+    // sao descartadas com "continue" no loop principal antes de chegar aqui, entao
+    // filtrar de novo seria redundante.
+    const blockLines = current.linhas;
     const altStartIdx = blockLines.findIndex((line) =>
       ALTERNATIVA_START.test(line.trim()),
     );
@@ -683,11 +681,14 @@ export function applyImages(
   });
 }
 
+export type ExamLevelHint = "FUNDAMENTAL" | "MEDIO" | "SUPERIOR";
+
 export type ProvaHints = {
   banca?: string;
   orgao?: string;
   cargo?: string;
   ano?: number;
+  nivel?: ExamLevelHint[];
 };
 
 // Nomes de bancas organizadoras conhecidas, do mais especifico pro mais generico.
@@ -711,16 +712,30 @@ const BANCAS_CONHECIDAS = [
   "CESPE",
 ];
 
+// Sinal explicito de nivel de escolaridade no texto do edital/prova. Um mesmo concurso
+// pode ter mais de um nivel (cargos diferentes com exigencias diferentes), entao busca
+// TODOS os niveis mencionados em vez de parar no primeiro.
+const NIVEL_PATTERNS: Array<{ nivel: ExamLevelHint; regex: RegExp }> = [
+  { nivel: "FUNDAMENTAL", regex: /N[ÍI]VEL\s+FUNDAMENTAL|ENSINO\s+FUNDAMENTAL/ },
+  { nivel: "MEDIO", regex: /N[ÍI]VEL\s+M[ÉE]DIO|ENSINO\s+M[ÉE]DIO/ },
+  { nivel: "SUPERIOR", regex: /N[ÍI]VEL\s+SUPERIOR|ENSINO\s+SUPERIOR/ },
+];
+
+function inferNivel(upper: string): ExamLevelHint[] | undefined {
+  const encontrados = NIVEL_PATTERNS.filter((padrao) => padrao.regex.test(upper)).map((padrao) => padrao.nivel);
+  return encontrados.length > 0 ? encontrados : undefined;
+}
+
 /**
- * Infere banca e ano do texto extraido do PDF, apenas quando ha sinal explicito
- * (nome de banca conhecida no documento; ano em "Edital ... 2021" / "Concurso Publico 2025").
- * Nao tenta advinhar por frequencia: o corpo das provas cita anos de leis e obras
- * (ex.: prova de 2025 cujo ano mais frequente no texto e 2021), entao qualquer
- * heuristica estatistica marcaria a prova com o ano errado.
+ * Infere banca, ano e nivel do texto extraido do PDF, apenas quando ha sinal explicito
+ * (nome de banca conhecida no documento; ano em "Edital ... 2021" / "Concurso Publico 2025";
+ * nivel em "Nivel Superior"/"Ensino Medio" etc.). Nao tenta advinhar por frequencia: o
+ * corpo das provas cita anos de leis e obras (ex.: prova de 2025 cujo ano mais frequente
+ * no texto e 2021), entao qualquer heuristica estatistica marcaria a prova com o dado errado.
  */
 export function inferProvaHints(
   rawText: string,
-): Pick<ProvaHints, "banca" | "ano"> {
+): Pick<ProvaHints, "banca" | "ano" | "nivel"> {
   const upper = rawText.toUpperCase();
   const banca = BANCAS_CONHECIDAS.find((nome) =>
     new RegExp(`(^|[^A-Z])${nome}($|[^A-Z])`).test(upper),
@@ -731,7 +746,9 @@ export function inferProvaHints(
     /CONCURSO\s+P[ÚU]BLICO[^\d]{0,10}\b((?:19|20)\d{2})\b/.exec(upper);
   const ano = anoMatch ? Number(anoMatch[1]) : undefined;
 
-  return { banca, ano };
+  const nivel = inferNivel(upper);
+
+  return { banca, ano, nivel };
 }
 
 export function buildProvaDraft(questoes: QuestaoDraft[], hints: ProvaHints) {
@@ -752,7 +769,9 @@ export function buildProvaDraft(questoes: QuestaoDraft[], hints: ProvaHints) {
         banca,
         cargo,
         ano,
-        nivel: ["SUPERIOR"] as const,
+        // "Superior" e o nivel mais comum em concursos de banco de questoes; so troca
+        // quando o texto traz sinal explicito ("Nivel Medio", "Ensino Fundamental" etc.).
+        nivel: hints.nivel && hints.nivel.length > 0 ? hints.nivel : (["SUPERIOR"] as ExamLevelHint[]),
         duracaoMin: 240,
         questoes: questoes.map((questao) => ({
           numero: questao.numero,
