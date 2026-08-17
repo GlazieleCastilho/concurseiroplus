@@ -345,6 +345,12 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
   let current: { numero: number; linhas: string[] } | null = null;
   let lastNumero = 0;
   let lastRealLine: string | null = null;
+  // Alguns PDFs (layout em colunas) trazem itens fora de ordem numerica no proprio
+  // documento - ex.: ...15, 18, 19, 20, 16, 17... Sem isso, "16" e "17" nunca abririam
+  // bloco proprio (16 e 17 nao sao > lastNumero=20) e ficariam grudados como texto
+  // dentro da questao 20. Guarda quais numeros ja viraram questao pra permitir reabrir
+  // um numero MENOR que lastNumero quando ele ainda nao foi usado.
+  const usedNumeros = new Set<number>();
 
   function flush() {
     if (!current) return;
@@ -447,11 +453,26 @@ export function parseProvaText(rawText: string): QuestaoDraft[] {
     const previousLineEndedSentence =
       lastRealLine === null || /[.?!:;]$/.test(lastRealLine);
     const isPlausibleItemStart = aloneMatch !== null || previousLineEndedSentence;
+    const isForwardOpen =
+      numero !== null && numero > lastNumero && numero <= lastNumero + 30 && isPlausibleItemStart;
+    // So reabre pra tras no formato "numero sozinho" (o menos ambiguo: a linha inteira
+    // e so o numero, sem risco de ser um dado no meio de uma frase) e so quando esse
+    // numero especifico ainda nao apareceu como questao - um numero ja usado quase
+    // certamente e uma referencia dentro do enunciado (ex.: "questao 16" citada em
+    // outro contexto), nao uma reabertura legitima.
+    const isOutOfOrderReopen =
+      numero !== null &&
+      aloneMatch !== null &&
+      numero > 0 &&
+      numero < lastNumero &&
+      lastNumero - numero <= 30 &&
+      !usedNumeros.has(numero);
 
-    if (numero !== null && numero > lastNumero && numero <= lastNumero + 30 && isPlausibleItemStart) {
+    if (isForwardOpen || isOutOfOrderReopen) {
       flush();
-      lastNumero = numero;
-      current = { numero, linhas: inlineMatch ? [inlineMatch[2]] : [] };
+      lastNumero = numero as number;
+      usedNumeros.add(numero as number);
+      current = { numero: numero as number, linhas: inlineMatch ? [inlineMatch[2]] : [] };
     } else if (current) {
       current.linhas.push(line);
     }

@@ -20,10 +20,10 @@
  *    Tambem regressao de uma frase em ingles "...grow from about" que quebra de linha
  *    exatamente em "10 per cent of GDP...", sendo lida como o inicio da questao 10 e
  *    engolindo a questao 9 real. Essa prova tambem tem os itens 16/17 fora de ordem
- *    numerica no proprio PDF de origem (aparecem depois do item 20) - limitacao conhecida,
- *    nao corrigida; o teste trava que isso gera so um aviso pontual (findAlternativaCountWarnings)
- *    em vez de bloquear o rascunho inteiro ou produzir uma questao 20 com 15 alternativas
- *    silenciosamente)
+ *    numerica no proprio PDF de origem (aparecem depois do item 20, layout em colunas) -
+ *    sem tratamento, isso gerava uma questao 20 com 15 alternativas (3 mescladas);
+ *    corrigido permitindo reabrir um numero menor que o ultimo, no formato "sozinho na
+ *    linha", desde que ainda nao tenha sido usado por nenhuma questao)
  * Qualquer mudanca de regex/heuristica que quebre um layout ja suportado falha aqui,
  * em vez de regredir silenciosamente em producao (ja aconteceu uma vez: um commit de
  * correcao ficou orfao num branch mergeado e o parser voltou a perder alternativas V/F).
@@ -167,15 +167,23 @@ describe("parseProvaText - CESGRANRIO/PETROBRAS (pagina de instrucoes numeradas 
     expect(questao10.enunciado).not.toContain("per cent of GDP");
   });
 
-  it("nao trava o rascunho inteiro por causa de itens fora de ordem numerica (16/17 aparecem depois do 20) - so avisa pontualmente", () => {
-    // Limitacao conhecida, nao corrigida: o parser exige numeros crescentes, entao a
-    // questao 20 termina com 15 alternativas (3 questoes mescladas). Isso NAO deve
-    // bloquear o import inteiro (detectParsingAnomaly) - as outras 67 questoes
-    // parsearam certo e devem continuar disponiveis no rascunho para revisao; so a
-    // questao especifica deve ser sinalizada via findAlternativaCountWarnings.
+  it("recupera itens 16 e 17 mesmo aparecendo fora de ordem numerica no PDF (depois do item 20, layout em colunas)", () => {
+    // Bug original: como o parser exige numeros crescentes, "16" e "17" apos "20" no
+    // texto nunca abriam bloco proprio e ficavam grudados dentro da questao 20 (que
+    // terminava com 15 alternativas, 3 questoes mescladas). Corrigido permitindo
+    // reabrir um numero MENOR que o ultimo, desde que seja formato "sozinho na linha"
+    // e ainda nao tenha sido usado por nenhuma questao.
+    expect(questoes).toHaveLength(70);
+    expect(questoes.map((questao) => questao.numero).sort((a, b) => a - b)).toEqual(
+      Array.from({ length: 70 }, (_, i) => i + 1),
+    );
+    for (const numero of [16, 17, 20]) {
+      const questao = questoes.find((item) => item.numero === numero)!;
+      expect(questao, `questao ${numero}`).toBeDefined();
+      expect(questao.alternativas, `questao ${numero}`).toHaveLength(5);
+    }
     expect(detectParsingAnomaly(cesgranrioProva, questoes)).toBeNull();
-    const warnings = findAlternativaCountWarnings(questoes);
-    expect(warnings.some((warning) => warning.includes("Questão 20"))).toBe(true);
+    expect(findAlternativaCountWarnings(questoes)).toEqual([]);
   });
 });
 
