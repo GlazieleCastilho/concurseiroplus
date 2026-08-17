@@ -568,6 +568,26 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
     ];
   }
 
+  // textoApoioChave e atribuida por posicao (o texto de apoio mais recente antes da
+  // questao no fluxo linearizado do PDF) - o que falha quando o layout em colunas
+  // intercala paginas (ex.: uma pagina com 2 colunas, uma ainda terminando questoes
+  // do texto anterior enquanto a outra ja comecou o titulo do texto seguinte). Como
+  // e comum a questao citar o titulo do texto de apoio explicitamente no proprio
+  // enunciado ("Segundo o Texto I...", "Considere o trecho do Texto II..."), uma
+  // mencao explicita e um sinal mais confiavel que a posicao e sobrescreve o valor
+  // atribuido por posicao quando os dois divergem.
+  for (const questao of questoes) {
+    for (const texto of textosApoio) {
+      if (texto.chave === questao.textoApoioChave) continue;
+      if (!texto.titulo) continue;
+      const escaped = texto.titulo.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      if (new RegExp(`\\b${escaped}\\b`).test(questao.enunciado)) {
+        questao.textoApoioChave = texto.chave;
+        break;
+      }
+    }
+  }
+
   return { questoes, textosApoio };
 }
 

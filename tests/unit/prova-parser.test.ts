@@ -241,6 +241,20 @@ describe("parseProvaText - CESGRANRIO/PETROBRAS (pagina de instrucoes numeradas 
     const questao1 = questoes.find((item) => item.numero === 1)!;
     expect(questao1.textoApoioChave).toBe(texto!.chave);
   });
+
+  it("prefere mencao explicita ao titulo no enunciado sobre a posicao no PDF (layout em colunas intercala secoes)", () => {
+    // Bug original: nesse PDF, o titulo "Text I" (secao de lingua estrangeira)
+    // aparece fisicamente ANTES das questoes 9 e 10 no texto linearizado, mesmo elas
+    // ainda sendo sobre o "Texto II" (portugues) - artefato de layout em colunas (uma
+    // coluna ja mostra o titulo da proxima secao enquanto a outra ainda termina a
+    // anterior). Atribuicao so por posicao dava a questao 10 o texto errado (Text I),
+    // apesar dela citar "Texto II" explicitamente no proprio enunciado.
+    const { questoes, textosApoio } = parseProvaText(cesgranrioProva);
+    const textoII = textosApoio.find((item) => item.titulo === "Texto II")!;
+    const questao10 = questoes.find((item) => item.numero === 10)!;
+    expect(questao10.enunciado).toContain("Texto II");
+    expect(questao10.textoApoioChave).toBe(textoII.chave);
+  });
 });
 
 describe("decisao de tipo por maioria (nao fabricar certo/errado em prova objetiva)", () => {
