@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { DraftPreview, buildReadingOrderPreview } from "@/components/admin/question-import-manager";
+import { DraftPreview, buildReadingOrderPreview, parseGabaritoInput } from "@/components/admin/question-import-manager";
 
 // O rascunho de import guarda textosApoio e questoes como arrays separados (contrato do
 // schema/repository) - o JSON bruto mostra todos os textos juntos ANTES de qualquer
@@ -60,5 +60,43 @@ describe("DraftPreview (intercala texto de apoio com as questoes na ordem do PDF
     expect(screen.getByText("Questao 4")).toBeInTheDocument();
     // So 2 textos no total (nao ganhou um terceiro card vazio pra questao 4).
     expect(screen.getAllByText(/Texto (I|II)$/)).toHaveLength(2);
+  });
+});
+
+describe("parseGabaritoInput", () => {
+  // Pedido do usuario: digitar "1-A, 2-C, 3-E..." pra cada questao de uma prova
+  // inteira (as vezes 70+ questoes) da muito trabalho. Formato simplificado: so a
+  // sequencia de respostas, uma por questao, na ordem - sem precisar numerar cada uma.
+  it("formato simplificado: sequencia de letras separadas por espaco, sem numero nenhum", () => {
+    const gabarito = parseGabaritoInput("A C E D B");
+    expect(gabarito).toEqual(new Map([[1, "A"], [2, "C"], [3, "E"], [4, "D"], [5, "B"]]));
+  });
+
+  it("formato simplificado: uma letra por linha", () => {
+    const gabarito = parseGabaritoInput("A\nC\nE\nD\nB");
+    expect(gabarito).toEqual(new Map([[1, "A"], [2, "C"], [3, "E"], [4, "D"], [5, "B"]]));
+  });
+
+  it("formato simplificado: minusculas tambem funcionam", () => {
+    const gabarito = parseGabaritoInput("a c e d b");
+    expect(gabarito).toEqual(new Map([[1, "A"], [2, "C"], [3, "E"], [4, "D"], [5, "B"]]));
+  });
+
+  it("formato com numero continua funcionando (util com questao anulada/pulada)", () => {
+    const gabarito = parseGabaritoInput("1-A, 2-C, 4-D, 5-B");
+    expect(gabarito).toEqual(new Map([[1, "A"], [2, "C"], [4, "D"], [5, "B"]]));
+  });
+
+  it("formato com numero tambem aceita so espaco como separador (tabela colada direto do PDF)", () => {
+    const gabarito = parseGabaritoInput("01 A  02 B  03 C");
+    expect(gabarito).toEqual(new Map([[1, "A"], [2, "B"], [3, "C"]]));
+  });
+
+  it("presenca de qualquer numero no texto prefere o formato explicito sobre o sequencial", () => {
+    // Evita confundir: se ha numeros no texto colado (mesmo que so em ALGUMAS linhas),
+    // usa o modo explicito (mais confiavel com furos na sequencia) em vez do sequencial.
+    const gabarito = parseGabaritoInput("1-A\n2-C\n4-D");
+    expect(gabarito.get(3)).toBeUndefined();
+    expect(gabarito.get(4)).toBe("D");
   });
 });

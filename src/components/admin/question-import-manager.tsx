@@ -103,11 +103,30 @@ export function DraftPreview({ provas }: { provas: DraftProva[] }) {
   );
 }
 
-function parseGabaritoInput(text: string): Map<number, string> {
+// Aceita dois formatos:
+// 1. Explicito - "numero + letra" (separados por hifen, dois-pontos, ponto, parenteses
+//    OU so espaco - cobre tanto "1-A, 2-C" quanto uma tabela colada direto do PDF do
+//    tipo "01 A  02 B  03 C"). Preferido quando ha numeros no texto colado: sobrevive a
+//    provas com questoes anuladas/puladas (o numero ancora cada resposta na questao
+//    certa, mesmo com furos na sequencia).
+// 2. Simplificado - so a SEQUENCIA de respostas, uma por questao, na ordem (1a, 2a,
+//    3a...), sem precisar digitar o numero de cada questao. Usado quando o texto colado
+//    nao tem nenhum numero (ex.: gabarito oficial colado como "A C E D B A E D C B..."
+//    ou uma letra por linha) - da muito trabalho digitar "1-", "2-"... pra cada uma das
+//    dezenas de questoes de uma prova inteira.
+export function parseGabaritoInput(text: string): Map<number, string> {
   const map = new Map<number, string>();
-  const regex = /(\d+)\s*[-:.)]\s*([A-Za-z])/g;
-  for (const match of text.matchAll(regex)) {
+  const explicitRegex = /(\d{1,3})\s*[-:.)]?\s*([A-Ea-e])\b/g;
+  for (const match of text.matchAll(explicitRegex)) {
     map.set(Number(match[1]), match[2].toUpperCase());
+  }
+  if (map.size > 0) return map;
+
+  const sequentialRegex = /\b([A-Ea-e])\b/g;
+  let numero = 1;
+  for (const match of text.matchAll(sequentialRegex)) {
+    map.set(numero, match[1].toUpperCase());
+    numero += 1;
   }
   return map;
 }
@@ -362,14 +381,17 @@ export function QuestionImportManager() {
             <div className="space-y-2 rounded-md border p-3">
               <Label htmlFor="gabarito-manual">Inserir gabarito manualmente</Label>
               <p className="text-xs text-muted-foreground">
-                Formato: numero da questao + letra da alternativa correta (A-E, ou C/E para Certo/Errado). Ex:{" "}
-                <code>1-A, 2-C, 3-E, 4-D</code>
+                Duas formas de colar (A-E, ou C/E para Certo/Errado):
+                <br />
+                <strong>Simples</strong> — so a sequencia de respostas, uma por questao, na ordem: <code>A C E D B A E D C B...</code> (uma por linha tambem funciona)
+                <br />
+                <strong>Com numero</strong> — util se a prova tiver questao anulada/pulada: <code>1-A, 2-C, 3-E, 4-D</code>
               </p>
               <Textarea
                 id="gabarito-manual"
                 value={gabaritoInput}
                 onChange={(event) => setGabaritoInput(event.target.value)}
-                placeholder="1-A, 2-C, 3-E, 4-D, 5-B..."
+                placeholder="A C E D B A E D C B... (ou 1-A, 2-C, 3-E, 4-D se preferir numerar)"
                 className="min-h-[80px] font-mono text-xs"
               />
               <Button type="button" variant="secondary" onClick={applyGabarito}>Aplicar gabarito ao rascunho</Button>
