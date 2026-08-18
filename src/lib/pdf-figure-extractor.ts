@@ -171,8 +171,12 @@ function splitIntoColumns(lines: TextLine[], pageWidth: number): Column[] {
   // Um diagrama pode se estender mais pra direita que qualquer linha de texto daquela
   // coluna (o layout de texto nao segue o tamanho de uma figura) - por isso o limite de
   // RECORTE de cada coluna vai ate a ponta OPOSTA do vao detectado (onde a outra coluna
-  // realmente comeca), em vez do meio do vao. O limite CORE (usado so pra validar se um
-  // vao e mesmo uma figura) fica no meio do vao, mais conservador.
+  // realmente comeca), em vez do meio do vao. Isso sozinho capturaria tambem o que
+  // estiver desenhado no meio do vao sem relacao com o diagrama (ex.: uma regra/linha
+  // divisoria vertical entre colunas) - por isso cropPageRegion() apara esse excesso
+  // depois de renderizar, olhando onde a tinta do proprio diagrama realmente termina
+  // (ver trimToInkExtent). O limite CORE (usado so pra validar se um vao e mesmo uma
+  // figura) fica no meio do vao, mais conservador.
   if (left.length > 0) columns.push({ lines: left, xLeft: 0, xRight: bestGutter.end, coreXLeft: 0, coreXRight: splitX });
   if (right.length > 0) columns.push({ lines: right, xLeft: bestGutter.start, xRight: pageWidth, coreXLeft: splitX, coreXRight: pageWidth });
   return columns;
@@ -307,12 +311,62 @@ function extractRegionPixels(
   return { raw, width, height };
 }
 
+const INK_THRESHOLD = 200;
+
+function columnHasInk(raw: Buffer, width: number, height: number, col: number): boolean {
+  for (let row = 0; row < height; row += 1) {
+    const offset = (row * width + col) * 3;
+    if (raw[offset] < INK_THRESHOLD || raw[offset + 1] < INK_THRESHOLD || raw[offset + 2] < INK_THRESHOLD) return true;
+  }
+  return false;
+}
+
+// Largura, em pixels na escala do recorte, de uma folga em branco continua grande o
+// bastante pra concluir que o diagrama de verdade acabou ali - maior que qualquer
+// respiro interno comum entre caixas/setas do proprio diagrama, menor que o vao ate o
+// conteudo real da coluna vizinha (ou ate uma regra/linha divisoria isolada no meio do
+// vao entre colunas, que fica cercada de espaco em branco dos dois lados).
+function blankRunThreshold(scale: number): number {
+  return Math.round(15 * scale);
+}
+
+// Caminha, a partir de fromCol, na direcao indicada, procurando ate onde a tinta do
+// diagrama realmente se estende antes de uma folga em branco grande o bastante pra
+// indicar que ele terminou. Devolve a ULTIMA coluna com tinta encontrada. Sem teto
+// artificial de distancia: um teto fixo cortaria no meio de um diagrama real que
+// precisa de mais folga (verificado na pratica - cortava a classe C2 de esbocos UML
+// nesta mesma prova), o que e pior do que ocasionalmente nao aparar todo um vazamento
+// de coluna vizinha sem folga em branco nenhuma (texto corrido raramente tem uma).
+function trimOverhang(raw: Buffer, width: number, height: number, fromCol: number, direction: 1 | -1, scale: number): number {
+  const threshold = blankRunThreshold(scale);
+  let lastInkCol = fromCol - direction;
+  let blankRun = 0;
+  for (let col = fromCol; col >= 0 && col < width; col += direction) {
+    if (columnHasInk(raw, width, height, col)) {
+      lastInkCol = col;
+      blankRun = 0;
+    } else {
+      blankRun += 1;
+      if (blankRun >= threshold) break;
+    }
+  }
+  return lastInkCol;
+}
+
 /**
  * Recorta a regiao [xLeft,xRight) x [yTop,yBottom) da pagina renderizada, como PNG -
  * mas so depois de validar que a regiao CORE (limite mais justo, sem a folga generosa
  * usada pro recorte final) tem cara de figura de verdade. Validar com os limites
  * generosos deixaria passar conteudo de texto de verdade da coluna vizinha quando o
  * vao, na coluna certa, e so espaco vazio.
+ *
+ * O recorte WIDE (generoso, ate a ponta oposta do vao entre colunas) evita cortar
+ * rente um diagrama que se estende mais que o texto da propria coluna - mas tambem
+ * capturaria, sem nenhum ajuste, qualquer coisa desenhada no meio desse vao sem
+ * relacao com o diagrama (ex.: uma regra/linha divisoria vertical entre colunas). Por
+ * isso, so a faixa CORE (ja validada acima) e mantida incondicionalmente; a faixa de
+ * folga alem dela (o "overhang") e aparada dinamicamente ate onde a tinta do proprio
+ * diagrama realmente vai (trimOverhang), em vez de usar a largura WIDE inteira.
  */
 function cropPageRegion(
   page: mupdf.Page,
@@ -326,7 +380,29 @@ function cropPageRegion(
 
   const wide = extractRegionPixels(page, column.xLeft, column.xRight, yTop, yBottom, scale);
   if (!wide) return null;
-  return buildPngFromFlateImage(wide.raw, wide.width, wide.height, 3, 8, false);
+
+  const coreLeftPx = Math.max(0, Math.round((column.coreXLeft - column.xLeft) * scale));
+  const coreRightPx = Math.min(wide.width, Math.round((column.coreXRight - column.xLeft) * scale));
+
+  const keepLeft =
+    coreLeftPx > 0 ? Math.max(0, trimOverhang(wide.raw, wide.width, wide.height, coreLeftPx - 1, -1, scale)) : 0;
+  const keepRight =
+    coreRightPx < wide.width
+      ? Math.min(wide.width, trimOverhang(wide.raw, wide.width, wide.height, coreRightPx, 1, scale) + 1)
+      : wide.width;
+
+  if (keepLeft <= 0 && keepRight >= wide.width) {
+    return buildPngFromFlateImage(wide.raw, wide.width, wide.height, 3, 8, false);
+  }
+  const trimmedWidth = keepRight - keepLeft;
+  if (trimmedWidth <= 0) return buildPngFromFlateImage(wide.raw, wide.width, wide.height, 3, 8, false);
+  const trimmedRaw = Buffer.alloc(trimmedWidth * 3 * wide.height);
+  for (let row = 0; row < wide.height; row += 1) {
+    const srcOffset = (row * wide.width + keepLeft) * 3;
+    const destOffset = row * trimmedWidth * 3;
+    wide.raw.copy(trimmedRaw, destOffset, srcOffset, srcOffset + trimmedWidth * 3);
+  }
+  return buildPngFromFlateImage(trimmedRaw, trimmedWidth, wide.height, 3, 8, false);
 }
 
 // Vao grande nem sempre e figura - as vezes e so espaco em branco sobrando no fim de
@@ -410,7 +486,12 @@ export function extractFigureCrops(
     const gap = gaps.find((g) => g.yTop >= anchor.y && g.yBottom <= nextY);
     if (!gap) continue;
 
-    const png = cropPageRegion(page, column, gap.yTop - 5, gap.yBottom + 5, scale);
+    // Margem minima (nao 5pt como antes): so o suficiente pra nao cortar rente a borda
+    // de um diagrama cujo desenho vetorial passa uns poucos pontos alem do vao medido
+    // por texto, mas pequena o bastante pra nao alcancar o corpo da linha de texto
+    // vizinha (numero do item, fim do enunciado anterior) - 5pt bastava pra revelar a
+    // base de um digito ou o topo de uma letra da linha logo antes/depois do vao.
+    const png = cropPageRegion(page, column, gap.yTop - 1, gap.yBottom + 1, scale);
     if (!png) continue;
     // A largura/altura reais do PNG vem embutidas no proprio buffer (IHDR) - descobre
     // lendo de volta em vez de recalcular, pra nao duplicar logica.
