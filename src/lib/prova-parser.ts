@@ -277,11 +277,21 @@ function findSectionTitleLines(lines: string[]): Set<string> {
       // de apoio aqui - quem decide o destino dele e o parser principal. Tambem para
       // a caminhada pra tras (o texto de apoio anterior nao faz parte desta secao).
       if (TEXTO_APOIO_TITLE.test(candidate)) break;
+      // Uma palavra quebrada por hifen de justificacao no fim da linha anterior (ex.:
+      // "organiza-" / "cional") deixa a linha seguinte ("cional") curta e sem
+      // pontuacao - o mesmo padrao usado abaixo pra reconhecer titulo de secao. Sem
+      // essa checagem, esse tipo de continuacao de palavra e engolido como se fosse
+      // titulo, cortando o conteudo real da questao (ex.: a legenda de uma questao
+      // "associe", ver splitAssociationLegend). So conta como continuacao quando a
+      // linha AINDA MAIS pra tras (j-1) termina com hifen colado a uma letra.
+      const previousLine = j > 0 ? lines[j - 1].trim() : "";
+      const isHyphenContinuation = /\p{L}-$/u.test(previousLine);
       const looksLikeRealContent =
         candidate.length > 60 ||
         /[.?!:;]$/.test(candidate) ||
         ALTERNATIVA_START.test(candidate) ||
-        ITEM_START_ALONE.test(candidate);
+        ITEM_START_ALONE.test(candidate) ||
+        isHyphenContinuation;
       if (looksLikeRealContent) break;
       titles.add(candidate);
       collected += 1;
@@ -398,6 +408,46 @@ function joinDehyphenated(rawLines: string[]): string {
   return result;
 }
 
+// Questoes do tipo "associe" (ex.: "Associe as perspectivas com os focos relacionados
+// a seguir") trazem, no LAYOUT VISUAL da pagina, uma legenda em duas colunas lado a
+// lado - uma lista em algarismos romanos ("I - Atividades", "II - ...") e uma lista em
+// letras maiusculas ("P - Perspectiva funcional", "Q - ...") - posicionada ENTRE o
+// comando da questao e as alternativas (A)-(E). Mas o texto extraido do PDF LINEARIZA
+// esse layout de duas colunas: em vez de preservar a posicao visual, ele imprime as
+// duas listas inteiras DEPOIS das alternativas, nao antes. Sem reconhecer esse padrao,
+// a legenda inteira e tratada como texto comum e fica grudada na ultima alternativa -
+// nao e um vazamento de outra questao, e sim o proprio comando desta questao impresso
+// fora de ordem. Reconhecida pelo marcador "I" (primeiro algarismo romano da lista,
+// sempre presente) seguido de mais pelo menos um outro marcador do mesmo tipo mais
+// adiante (II, III...) - uma unica linha comecando com "I -" sozinha e fraca demais
+// como sinal (podia ser coincidencia de alguma alternativa real).
+// O "I" as vezes fica sozinho na sua propria linha, com o hifen e a descricao so na
+// linha seguinte (variacao de quebra de linha observada no mesmo PDF, ex.: questao 43
+// vs. questao 40) - aceita tanto "I - Atividades" quanto "I" isolado.
+const ASSOCIATION_LEGEND_START = /^I(\s*[-–—]\s*\S.*)?$/;
+// "II" (dois "I" literais) seguido do mesmo separador da primeira marca ("I -") e um
+// sinal bem mais forte e especifico que qualquer algarismo romano isolado - aparecer
+// como o INICIO de uma linha propria, logo depois de uma linha "I -", e praticamente
+// exclusivo desse padrao de legenda (nao ha frase comum em portugues que comece assim).
+const ASSOCIATION_LEGEND_SECOND_ITEM = /^II\s*[-–—]?\s*\S/;
+
+// A PRIMEIRA linha de "lines" e sempre o comeco de verdade da propria alternativa (o
+// texto logo apos a letra, ex.: "(E)") - numa questao "associe", a resposta de uma
+// alternativa costuma ser justamente "I – S , II – P..." e bateria por engano no mesmo
+// padrao "I -" do inicio da legenda. So procura o INICIO da legenda a partir da SEGUNDA
+// linha em diante (uma legenda de verdade sempre comeca numa linha propria nova do PDF,
+// nunca colada ao resto da resposta da alternativa na mesma linha).
+function splitAssociationLegend(lines: string[]): { altLines: string[]; legendLines: string[] } {
+  if (lines.length < 2) return { altLines: lines, legendLines: [] };
+  const searchStart = 1;
+  const relativeIdx = lines.slice(searchStart).findIndex((line) => ASSOCIATION_LEGEND_START.test(line));
+  if (relativeIdx === -1) return { altLines: lines, legendLines: [] };
+  const startIdx = searchStart + relativeIdx;
+  const hasSecondItem = lines.slice(startIdx + 1).some((line) => ASSOCIATION_LEGEND_SECOND_ITEM.test(line));
+  if (!hasSecondItem) return { altLines: lines, legendLines: [] };
+  return { altLines: lines.slice(0, startIdx), legendLines: lines.slice(startIdx) };
+}
+
 export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; textosApoio: TextoApoioDraft[] } {
   const lines = rawText.split(/\r?\n/).map((line) => line.trimEnd());
   const repeatedHeaders = findRepeatedHeaderLines(lines);
@@ -487,6 +537,7 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
     const altStartIdx = blockLines.findIndex((line) =>
       ALTERNATIVA_START.test(line.trim()),
     );
+    let associationLegend = "";
     const stemLines =
       altStartIdx === -1 ? blockLines : blockLines.slice(0, altStartIdx);
     const enunciado = joinDehyphenated(stemLines).replace(/\s+/g, " ").trim();
@@ -510,12 +561,15 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
           linhasAtual.push(line.trim());
         }
       }
-      if (letraAtual)
+      if (letraAtual) {
+        const { altLines, legendLines } = splitAssociationLegend(linhasAtual);
         alternativas.push({
           letra: letraAtual,
-          texto: joinDehyphenated(linhasAtual).replace(/\s+/g, " ").trim(),
+          texto: joinDehyphenated(altLines).replace(/\s+/g, " ").trim(),
           correta: false,
         });
+        if (legendLines.length > 0) associationLegend = joinDehyphenated(legendLines).replace(/\s+/g, " ").trim();
+      }
     }
 
     // Alguns PDFs em coluna dupla (ex.: secao de lingua estrangeira da Cesgranrio)
@@ -564,10 +618,15 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
     // base na figura]" sem mais nada. Descartar silenciosamente perderia o item (e o
     // gabarito dele) sem o admin nem saber que ele existiu. Em vez disso, entra com um
     // placeholder visivel que aponta pra revisao manual.
-    const enunciadoFinal =
+    const enunciadoBase =
       enunciado.length > 0
         ? enunciado
         : `[Sem texto extraído — questão baseada em figura/imagem. Revisar o PDF original e completar o enunciado da questão ${current.numero}.]`;
+    // A legenda de uma questao "associe" (ver splitAssociationLegend) e o proprio
+    // comando da questao impresso fora de ordem no PDF - anexada aqui, no fim do
+    // enunciado, e nao antes das alternativas: preservar a ordem exata em que ela
+    // aparece no PDF de origem evita reescrever/reordenar conteudo da questao.
+    const enunciadoFinal = associationLegend ? `${enunciadoBase} ${associationLegend}` : enunciadoBase;
     questoes.push({
       numero: current.numero,
       tipo: "OBJETIVA",
