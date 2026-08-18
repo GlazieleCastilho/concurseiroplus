@@ -362,6 +362,42 @@ function findLineNumberAnnotationIndices(lines: string[]): Set<number> {
 // vazia/inutil no rascunho.
 const MIN_TEXTO_APOIO_LENGTH = 100;
 
+/**
+ * PDFs com texto justificado quebram palavras longas no fim da linha com um hifen
+ * (ex.: "engala-" numa linha, "nado" na proxima - a palavra real e "engalanado").
+ * Juntar essas linhas com espaco simples (como o resto do texto) deixa o hifen e o
+ * espaco no meio da palavra ("engala- nado"), visivel em qualquer parte da prova que
+ * tenha texto corrido. So junta sem espaco (removendo o hifen) quando ha um sinal
+ * forte de que e quebra de justificacao, nao um hifen de verdade: a linha termina
+ * exatamente num hifen colado a uma letra (sem espaco antes) E a proxima comeca com
+ * letra minuscula (continuacao da mesma palavra/frase, nunca uma sigla ou palavra
+ * nova em maiusculo como em "CARTÃO-RESPOSTA", que fica intacto). Um hifen de verdade
+ * (composto, enclise) que por acaso cair bem numa quebra de linha tambem bate nesse
+ * padrao e acaba sem hifen (ex.: "guarda-" + "chuva" > "guardachuva") - sem dicionario
+ * nao da pra distinguir os dois casos com certeza, mas quebra de justificacao e o caso
+ * disparadamente mais comum (quase toda linha longa do texto corrido de um PDF
+ * justificado tem uma), entao e a leitura correta por padrao.
+ */
+function joinDehyphenated(rawLines: string[]): string {
+  let result = "";
+  for (const rawLine of rawLines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    if (!result) {
+      result = line;
+      continue;
+    }
+    const hyphenMatch = /^(.*\p{L})-$/u.exec(result);
+    const nextStartsLowercase = /^\p{Ll}/u.test(line);
+    if (hyphenMatch && nextStartsLowercase) {
+      result = `${hyphenMatch[1]}${line}`;
+      continue;
+    }
+    result = `${result} ${line}`;
+  }
+  return result;
+}
+
 export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; textosApoio: TextoApoioDraft[] } {
   const lines = rawText.split(/\r?\n/).map((line) => line.trimEnd());
   const repeatedHeaders = findRepeatedHeaderLines(lines);
@@ -412,7 +448,7 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
 
   function flushTexto() {
     if (!currentTexto) return;
-    const conteudo = currentTexto.linhas.join(" ").replace(/\s+/g, " ").trim();
+    const conteudo = joinDehyphenated(currentTexto.linhas).replace(/\s+/g, " ").trim();
     // Um titulo isolado sem NENHUM conteudo depois (ex.: cabecalho de secao vazio
     // que por coincidencia bateu no regex) nao vira entidade - nao ha nada pra um
     // admin revisar. Mas um titulo com algum conteudo, mesmo curto (charge com
@@ -453,31 +489,31 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
     );
     const stemLines =
       altStartIdx === -1 ? blockLines : blockLines.slice(0, altStartIdx);
-    const enunciado = stemLines.join(" ").replace(/\s+/g, " ").trim();
+    const enunciado = joinDehyphenated(stemLines).replace(/\s+/g, " ").trim();
 
     const alternativas: AlternativaDraft[] = [];
     if (altStartIdx !== -1) {
       let letraAtual: string | null = null;
-      let textoAtual = "";
+      let linhasAtual: string[] = [];
       for (const line of blockLines.slice(altStartIdx)) {
         const match = ALTERNATIVA_START.exec(line.trim());
         if (match) {
           if (letraAtual)
             alternativas.push({
               letra: letraAtual,
-              texto: textoAtual.replace(/\s+/g, " ").trim(),
+              texto: joinDehyphenated(linhasAtual).replace(/\s+/g, " ").trim(),
               correta: false,
             });
           letraAtual = match[1];
-          textoAtual = match[2];
+          linhasAtual = [match[2]];
         } else if (letraAtual) {
-          textoAtual += ` ${line.trim()}`;
+          linhasAtual.push(line.trim());
         }
       }
       if (letraAtual)
         alternativas.push({
           letra: letraAtual,
-          texto: textoAtual.replace(/\s+/g, " ").trim(),
+          texto: joinDehyphenated(linhasAtual).replace(/\s+/g, " ").trim(),
           correta: false,
         });
     }
@@ -511,11 +547,10 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
           const leakedLines = blockLines.slice(breakInLastAlt);
           const rebuiltMatch = ALTERNATIVA_START.exec(keptLines[0].trim());
           if (rebuiltMatch) {
-            let textoReconstruido = rebuiltMatch[2];
-            for (const linha of keptLines.slice(1)) textoReconstruido += ` ${linha.trim()}`;
-            lastAlt.texto = textoReconstruido.replace(/\s+/g, " ").trim();
+            const linhasReconstruido = [rebuiltMatch[2], ...keptLines.slice(1).map((linha) => linha.trim())];
+            lastAlt.texto = joinDehyphenated(linhasReconstruido).replace(/\s+/g, " ").trim();
           }
-          const leaked = leakedLines.join(" ").replace(/\s+/g, " ").trim();
+          const leaked = joinDehyphenated(leakedLines).replace(/\s+/g, " ").trim();
           if (leaked.length > 0 && current.textoApoioChave) {
             const texto = textosApoio.find((item) => item.chave === current!.textoApoioChave);
             if (texto) texto.conteudo = `${texto.conteudo} ${leaked}`.trim();
@@ -711,6 +746,31 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
       if (!texto.titulo) continue;
       const escaped = texto.titulo.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       if (new RegExp(`\\b${escaped}\\b`).test(questao.enunciado)) {
+        questao.textoApoioChave = texto.chave;
+        break;
+      }
+    }
+  }
+
+  // Nem toda questao cita o titulo do texto de apoio por extenso ("Segundo o Texto
+  // II..."); e comum citar um TRECHO ENTRE ASPAS do proprio texto sem nomea-lo (ex.:
+  // “Não me consta que já houvesse um ‘diferenciado’ negativamente marcado.”). Quando
+  // esse trecho aparece, literalmente, dentro do conteudo de um texto de apoio que NAO
+  // e o atribuido por posicao, isso e um sinal tao confiavel quanto a mencao explicita
+  // ao titulo (o mesmo tipo de vazamento de layout em colunas: uma coluna ja mostra o
+  // titulo do texto seguinte enquanto a outra ainda tem questoes do anterior).
+  const QUOTED_SPAN = /[“"]([^”"]{15,}?)[”"]/gu;
+  const normalizeForQuoteMatch = (value: string) =>
+    value.replace(/[‘’“”"']/g, "").replace(/\s+/g, " ").trim();
+  for (const questao of questoes) {
+    const quotes = Array.from(questao.enunciado.matchAll(QUOTED_SPAN), (match) =>
+      normalizeForQuoteMatch(match[1]),
+    ).filter((quote) => quote.length >= 15);
+    if (quotes.length === 0) continue;
+    for (const texto of textosApoio) {
+      if (texto.chave === questao.textoApoioChave) continue;
+      const conteudoNormalizado = normalizeForQuoteMatch(texto.conteudo);
+      if (quotes.some((quote) => conteudoNormalizado.includes(quote))) {
         questao.textoApoioChave = texto.chave;
         break;
       }

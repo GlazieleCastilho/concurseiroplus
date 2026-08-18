@@ -278,6 +278,21 @@ describe("parseProvaText - CESGRANRIO/PETROBRAS (pagina de instrucoes numeradas 
     expect(questao1.textoApoioChave).toBe(texto!.chave);
   });
 
+  it("prefere um trecho entre aspas que aparece literalmente no texto de apoio sobre a posicao no PDF, mesmo sem citar o titulo por extenso", () => {
+    // Bug original (limitacao conhecida, agora corrigida): a questao 9 nao cita
+    // "Texto II" por extenso, entao so a atribuicao por posicao valia - e por posicao
+    // ela ficava colada a "Text I" (a secao de lingua estrangeira, que na extracao
+    // linearizada do PDF aparece fisicamente antes dela por causa do layout em
+    // colunas). Mas o enunciado da questao 9 cita um trecho entre aspas que e, palavra
+    // por palavra, um pedaco do conteudo real do Texto II - sinal tao confiavel quanto
+    // citar o titulo, so que sem depender de mencao explicita.
+    const { questoes, textosApoio } = parseProvaText(cesgranrioProva);
+    const textoII = textosApoio.find((item) => item.titulo === "Texto II")!;
+    const questao9 = questoes.find((item) => item.numero === 9)!;
+    expect(questao9.enunciado).toContain("houvesse");
+    expect(questao9.textoApoioChave).toBe(textoII.chave);
+  });
+
   it("prefere mencao explicita ao titulo no enunciado sobre a posicao no PDF (layout em colunas intercala secoes)", () => {
     // Bug original: nesse PDF, o titulo "Text I" (secao de lingua estrangeira)
     // aparece fisicamente ANTES das questoes 9 e 10 no texto linearizado, mesmo elas
@@ -306,6 +321,32 @@ describe("parseProvaText - CESGRANRIO/PETROBRAS (pagina de instrucoes numeradas 
     const textI = textosApoio.find((item) => item.titulo === "Text I")!;
     expect(textI.conteudo).toContain("Without");
     expect(textI.conteudo).toContain("local content policy");
+  });
+
+  it("reconstitui palavras quebradas por hifen de justificacao no fim da linha (nao deixa 'engala- nado' no lugar de 'engalanada')", () => {
+    // Bug original: linhas eram sempre juntadas com espaco simples. PDFs com texto
+    // justificado quebram palavras longas no fim da linha com hifen ("engala-" numa
+    // linha, "nado" na proxima) - juntar com espaco deixa o hifen solto no meio da
+    // palavra em qualquer texto corrido da prova (textos de apoio, enunciados,
+    // alternativas). Nao pode virar um "coma tudo": uma sigla real com hifen quebrada
+    // no fim da linha (ex.: "CARTÃO-" seguido de "RESPOSTA") tem que continuar intacta.
+    const { textosApoio, questoes } = parseProvaText(cesgranrioProva);
+    const texto1 = textosApoio.find((item) => item.titulo === "Texto I")!;
+    expect(texto1.conteudo).toContain("engalanada");
+    expect(texto1.conteudo).not.toMatch(/engala-\s/);
+    const texto2 = textosApoio.find((item) => item.titulo === "Texto II")!;
+    expect(texto2.conteudo).toContain("gente diferenciada");
+    expect(texto2.conteudo).toContain("Higienópolis");
+    expect(texto2.conteudo).toContain("polêmica");
+    for (const texto of textosApoio) {
+      expect(texto.conteudo, texto.titulo).not.toMatch(/\p{L}-\s\p{L}/u);
+    }
+    for (const questao of questoes) {
+      expect(questao.enunciado, `questao ${questao.numero}`).not.toMatch(/\p{L}-\s\p{L}/u);
+      for (const alternativa of questao.alternativas) {
+        expect(alternativa.texto, `questao ${questao.numero} alternativa ${alternativa.letra}`).not.toMatch(/\p{L}-\s\p{L}/u);
+      }
+    }
   });
 
   it("nao vaza o texto de apoio do bloco de interpretacao pras questoes de conhecimentos especificos (titulo de secao encerra o vinculo)", () => {
