@@ -1,12 +1,12 @@
 import { AppShell } from "@/components/shared/app-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireRole } from "@/lib/clerk";
-import { listProvas } from "@/repositories/questions-repository";
+import { listConcursos } from "@/repositories/concursos-repository";
 import { ConcursoManager } from "@/components/admin/concurso-manager";
 
 export default async function AdminConcursosPage() {
   await requireRole(["admin", "super_admin"]);
-  const provas = await listProvas("CONCURSO");
+  const concursos = await listConcursos();
 
   return (
     <AppShell>
@@ -16,7 +16,7 @@ export default async function AdminConcursosPage() {
           <CardTitle>Editais cadastrados</CardTitle>
         </CardHeader>
         <CardContent>
-          <ConcursoManager initialProvas={provas} />
+          <ConcursoManager initialConcursos={concursos} />
         </CardContent>
       </Card>
     </AppShell>

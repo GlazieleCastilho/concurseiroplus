@@ -24,13 +24,11 @@ export default async function SimuladosPage() {
       </div>
       <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
         {provas.map((prova) => {
-          const urgent = prova.dataProva ? prova.dataProva.getTime() - Date.now() < 30 * 24 * 60 * 60 * 1000 : false;
           return (
             <Card key={prova.id}>
               <CardHeader>
                 <div className="flex items-center justify-between gap-3">
                   <Badge variant="outline">{prova.banca}</Badge>
-                  {urgent && <Badge>Prova proxima</Badge>}
                 </div>
                 <CardTitle>{prova.titulo}</CardTitle>
               </CardHeader>

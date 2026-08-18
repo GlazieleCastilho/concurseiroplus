@@ -15,9 +15,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { ConcursoStatus, ExamLevel, Prova } from "@/generated/prisma";
+import type { ExamLevel, Prova } from "@/generated/prisma";
 
 type ProvaWithCount = Prova & { _count: { questoes: number } };
 
@@ -35,7 +34,6 @@ type ProvaFormState = {
   cargo: string;
   ano: string;
   nivel: ExamLevel[];
-  status: ConcursoStatus;
   duracaoMin: string;
 };
 
@@ -46,22 +44,7 @@ const emptyForm: ProvaFormState = {
   cargo: "",
   ano: String(new Date().getFullYear()),
   nivel: ["SUPERIOR"],
-  status: "PREVISTO",
   duracaoMin: "240",
-};
-
-const STATUS_LABELS: Record<ConcursoStatus, string> = {
-  PREVISTO: "Previsto",
-  ABERTO: "Aberto",
-  EM_ANDAMENTO: "Em andamento",
-  FECHADO: "Fechado",
-};
-
-const STATUS_BADGE_CLASS: Record<ConcursoStatus, string> = {
-  PREVISTO: "bg-muted text-muted-foreground",
-  ABERTO: "bg-green-500/15 text-green-500",
-  EM_ANDAMENTO: "bg-yellow-500/15 text-yellow-500",
-  FECHADO: "bg-red-500/15 text-red-500",
 };
 
 export function ProvaManager({ initialProvas }: { initialProvas: ProvaWithCount[] }) {
@@ -87,7 +70,6 @@ export function ProvaManager({ initialProvas }: { initialProvas: ProvaWithCount[
       cargo: prova.cargo,
       ano: String(prova.ano),
       nivel: prova.nivel,
-      status: prova.status,
       duracaoMin: String(prova.duracaoMin),
     });
     setOpen(true);
@@ -103,7 +85,6 @@ export function ProvaManager({ initialProvas }: { initialProvas: ProvaWithCount[
         cargo: form.cargo,
         ano: Number(form.ano),
         nivel: form.nivel,
-        status: form.status,
         duracaoMin: Number(form.duracaoMin),
       };
       const response = await fetch(editing ? `/api/admin/provas/${editing.id}` : "/api/admin/provas", {
@@ -202,18 +183,6 @@ export function ProvaManager({ initialProvas }: { initialProvas: ProvaWithCount[
                     <Label>Duracao (min)</Label>
                     <Input type="number" value={form.duracaoMin} onChange={(event) => setForm({ ...form, duracaoMin: event.target.value })} />
                   </div>
-                  <div className="space-y-1">
-                    <Label>Status do concurso</Label>
-                    <Select value={form.status} onValueChange={(value) => setForm({ ...form, status: value as ConcursoStatus })}>
-                      <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="PREVISTO">Previsto</SelectItem>
-                        <SelectItem value="ABERTO">Aberto</SelectItem>
-                        <SelectItem value="EM_ANDAMENTO">Em andamento</SelectItem>
-                        <SelectItem value="FECHADO">Fechado</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
                 </div>
               </div>
               <DialogFooter>
@@ -238,7 +207,6 @@ export function ProvaManager({ initialProvas }: { initialProvas: ProvaWithCount[
             <TableHead>Orgao</TableHead>
             <TableHead>Cargo</TableHead>
             <TableHead>Ano</TableHead>
-            <TableHead>Status</TableHead>
             <TableHead>Questoes</TableHead>
             <TableHead className="text-right">Acoes</TableHead>
           </TableRow>
@@ -251,11 +219,6 @@ export function ProvaManager({ initialProvas }: { initialProvas: ProvaWithCount[
               <TableCell>{prova.orgao}</TableCell>
               <TableCell>{prova.cargo}</TableCell>
               <TableCell>{prova.ano}</TableCell>
-              <TableCell>
-                <span className={`rounded-full px-2 py-1 text-xs font-medium ${STATUS_BADGE_CLASS[prova.status]}`}>
-                  {STATUS_LABELS[prova.status]}
-                </span>
-              </TableCell>
               <TableCell>{prova._count.questoes}</TableCell>
               <TableCell className="flex justify-end gap-2 text-right">
                 <Link href={`/admin/questions/${prova.id}`}>

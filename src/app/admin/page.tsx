@@ -23,17 +23,30 @@ export default async function AdminPage() {
         <Metric title="LTV" value={formatCurrency(data.ltv)} />
         <Metric title="Churn" value={`${data.churn}%`} />
       </section>
-      <Card>
-        <CardHeader><CardTitle>Provas mais acessadas</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          {data.provas.map((prova) => (
-            <div key={prova.id} className="flex justify-between rounded-md border border-border p-3 text-sm">
-              <span>{prova.titulo}</span>
-              <span className="text-muted-foreground">{prova.popularidade} acessos</span>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader><CardTitle>Provas mais acessadas</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            {data.topProvas.map((prova) => (
+              <div key={prova.id} className="flex justify-between rounded-md border border-border p-3 text-sm">
+                <span>{prova.titulo}</span>
+                <span className="text-muted-foreground">{prova.popularidade} acessos</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle>Concursos mais acessados</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            {data.topConcursos.map((concurso) => (
+              <div key={concurso.id} className="flex justify-between rounded-md border border-border p-3 text-sm">
+                <span>{concurso.titulo}</span>
+                <span className="text-muted-foreground">{concurso.popularidade} acessos</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
     </AppShell>
   );
 }
