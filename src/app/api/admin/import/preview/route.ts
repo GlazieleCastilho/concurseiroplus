@@ -74,8 +74,14 @@ export async function POST(req: Request) {
         }
       } catch (imageError) {
         // Extracao de imagem e um extra (best-effort): se falhar (ex.: storage nao
-        // configurado), o rascunho de texto continua valido e o admin so nao vera imagens.
+        // configurado), o rascunho de texto continua valido - mas sem avisar aqui, o
+        // admin so via "a imagem nao apareceu" sem nenhum sinal do motivo real (ex.:
+        // env var de storage faltando em producao), o que e indistinguivel de "essa
+        // questao nunca teve imagem nenhuma".
         console.error("Falha ao extrair/subir imagens do PDF:", imageError);
+        parsingWarnings.push(
+          `Falha ao extrair/subir imagens do PDF: ${imageError instanceof Error ? imageError.message : String(imageError)}`,
+        );
       }
 
       try {
@@ -97,8 +103,12 @@ export async function POST(req: Request) {
         }
       } catch (figureError) {
         // Mesma logica best-effort do bloco de imagem acima: se falhar, o rascunho de
-        // texto continua valido e o admin so nao vera a figura extraida.
+        // texto continua valido - mas o admin precisa de um sinal do motivo real (ver
+        // comentario no catch de imagem acima).
         console.error("Falha ao extrair figuras vetoriais do PDF:", figureError);
+        parsingWarnings.push(
+          `Falha ao extrair figuras vetoriais do PDF: ${figureError instanceof Error ? figureError.message : String(figureError)}`,
+        );
       }
 
       const inferred = inferProvaHints(text);
