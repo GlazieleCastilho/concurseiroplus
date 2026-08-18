@@ -36,7 +36,7 @@ function safeCountFromJson(text: string): { provas: number; questoes: number } {
 
 type DraftTextoApoio = { chave: string; titulo?: string; conteudo: string };
 type DraftAlternativa = { letra: string; texto: string };
-type DraftQuestao = { numero: number; enunciado: string; textoApoioChave?: string; alternativas?: DraftAlternativa[] };
+type DraftQuestao = { numero: number; enunciado: string; imagemUrl?: string; textoApoioChave?: string; alternativas?: DraftAlternativa[] };
 type DraftProva = { titulo?: string; textosApoio?: DraftTextoApoio[]; questoes?: DraftQuestao[] };
 
 // O JSON do rascunho tem textosApoio e questoes como arrays separados (contrato exigido
@@ -77,6 +77,14 @@ export function DraftPreview({ provas }: { provas: DraftProva[] }) {
                   <div className="rounded-md border p-3">
                     <p className="text-xs font-semibold text-muted-foreground">Questao {questao.numero}</p>
                     <p className="mt-1 whitespace-pre-wrap text-sm leading-6">{questao.enunciado}</p>
+                    {questao.imagemUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={questao.imagemUrl}
+                        alt={`Imagem da questao ${questao.numero}`}
+                        className="mt-2 max-w-full rounded-md border border-border"
+                      />
+                    )}
                     {(questao.alternativas ?? []).length > 0 && (
                       <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
                         {(questao.alternativas ?? []).map((alt) => (
