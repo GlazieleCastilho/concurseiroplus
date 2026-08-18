@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type { ConcursoStatus, Difficulty, ExamLevel, ProvaOrigem, QuestionType } from "@/generated/prisma";
+import type { Difficulty, ExamLevel, QuestionType } from "@/generated/prisma";
 
 export type ProvaInput = {
   titulo: string;
@@ -8,15 +8,7 @@ export type ProvaInput = {
   cargo: string;
   ano: number;
   nivel: ExamLevel[];
-  status?: ConcursoStatus;
-  origem?: ProvaOrigem;
   disciplina?: string;
-  dataProva?: Date;
-  inscricaoInicio?: Date;
-  inscricaoFim?: Date;
-  vagas?: number;
-  salario?: string;
-  editalUrl?: string;
   duracaoMin?: number;
 };
 
@@ -51,9 +43,8 @@ function provaSlug(input: Pick<ProvaInput, "banca" | "ano" | "cargo">): string {
   return `${input.banca.toLowerCase()}-${input.ano}-${input.cargo.toLowerCase().replaceAll(/\s+/g, "-")}`;
 }
 
-export async function listProvas(origem?: ProvaOrigem) {
+export async function listProvas() {
   return prisma.prova.findMany({
-    where: origem ? { origem } : undefined,
     include: { _count: { select: { questoes: true } } },
     orderBy: { createdAt: "desc" },
   });

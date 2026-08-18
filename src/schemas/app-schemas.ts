@@ -119,11 +119,12 @@ export const simuladoAnswerSchema = z.object({
 
 export const examLevelSchema = z.enum(["FUNDAMENTAL", "MEDIO", "SUPERIOR"]);
 export const concursoStatusSchema = z.enum(["PREVISTO", "ABERTO", "EM_ANDAMENTO", "FECHADO"]);
-export const provaOrigemSchema = z.enum(["QUESTOES", "CONCURSO"]);
 export const questionTypeSchema = z.enum(["OBJETIVA", "CERTO_ERRADO", "DISSERTATIVA"]);
 export const difficultySchema = z.enum(["EASY", "MEDIUM", "HARD"]);
 
-export const provaSchema = z.object({
+// Concurso publico real (edital) - inscricao, vagas, salario, status de
+// previsto/aberto/em andamento/fechado.
+export const concursoSchema = z.object({
   titulo: z.string().min(3).max(200),
   orgao: z.string().min(2).max(160),
   banca: z.string().min(2).max(80),
@@ -131,7 +132,6 @@ export const provaSchema = z.object({
   ano: z.coerce.number().int().min(1990).max(2100),
   nivel: z.array(examLevelSchema).min(1).default(["SUPERIOR"]),
   status: concursoStatusSchema.default("PREVISTO"),
-  origem: provaOrigemSchema.default("QUESTOES"),
   disciplina: z.string().max(120).optional(),
   dataProva: z.coerce.date().optional(),
   inscricaoInicio: z.coerce.date().optional(),
@@ -139,6 +139,18 @@ export const provaSchema = z.object({
   vagas: z.coerce.number().int().min(0).optional(),
   salario: z.string().max(120).optional(),
   editalUrl: z.string().url().optional().or(z.literal("")),
+});
+
+// Banco de questoes de uma prova ja realizada, importado de PDF pra uso em
+// simulados/pratica - sem campos de edital, que pertencem so a Concurso.
+export const provaSchema = z.object({
+  titulo: z.string().min(3).max(200),
+  orgao: z.string().min(2).max(160),
+  banca: z.string().min(2).max(80),
+  cargo: z.string().min(2).max(160),
+  ano: z.coerce.number().int().min(1990).max(2100),
+  nivel: z.array(examLevelSchema).min(1).default(["SUPERIOR"]),
+  disciplina: z.string().max(120).optional(),
   duracaoMin: z.coerce.number().int().min(30).max(600).default(240),
 });
 

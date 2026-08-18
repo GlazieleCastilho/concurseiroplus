@@ -26,7 +26,6 @@ export async function POST(req: Request) {
       where: {
         ...(disciplinas.length > 0 ? { disciplina: { in: disciplinas } } : {}),
         prova: {
-          origem: "QUESTOES",
           ...(bancas.length > 0 ? { banca: { in: bancas } } : {}),
           ...(anos.length > 0 ? { ano: { in: anos } } : {}),
         },
