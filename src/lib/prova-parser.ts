@@ -243,24 +243,39 @@ function findTrailingCreditsLines(lines: string[]): Set<string> {
 }
 
 /**
- * Titulos de secao (ex.: "Tópicos de Legislação", "Conhecimentos Específicos") aparecem
- * uma unica vez cada, entao a heuristica de linha repetida nao os pega. Mas sempre ficam
- * bem antes de um item numerado (a proxima questao da nova secao), separando-o da ultima
- * alternativa da secao anterior. Qualquer linha curta, sem pontuacao de frase, que aparece
- * logo antes de um "numero do item sozinho na linha" e tratada como titulo de secao.
+ * Titulos/subtitulos de secao (ex.: "Conhecimentos Específicos", "Bloco 1", "Língua
+ * Estrangeira") aparecem uma unica vez cada, entao a heuristica de linha repetida nao
+ * os pega. Mas sempre ficam bem antes de um item numerado OU de um titulo de texto de
+ * apoio (a proxima questao/texto da nova secao), separando-os da ultima alternativa da
+ * secao anterior. Qualquer RUN de linhas curtas, sem pontuacao de frase, que aparece
+ * logo antes de um "numero do item sozinho na linha" ou de um titulo de texto de apoio
+ * e tratado como titulo de secao - podem vir MAIS DE UM em sequencia (ex.: "Conhecimentos
+ * Específicos" seguido de "Bloco 1"), entao caminha pra tras coletando todos, nao so o
+ * mais proximo.
  */
+// Quantas linhas consecutivas, no maximo, um "run" de titulo/subtitulo de secao pode
+// ter (ex.: "Conhecimentos Específicos" + "Bloco 1" = 2). Sem um teto, uma caminhada
+// pra tras a partir de um titulo de texto de apoio DISTANTE (paginas depois de onde a
+// secao de verdade terminou) podia atravessar dezenas de linhas curtas e engolir um
+// item de verdade no meio do caminho (ex.: um item em formato inline cuja primeira
+// linha nao termina em pontuacao por quebrar no meio da frase).
+const MAX_SECTION_TITLE_RUN = 3;
+
 function findSectionTitleLines(lines: string[]): Set<string> {
   const titles = new Set<string>();
   for (let i = 0; i < lines.length; i += 1) {
-    if (!ITEM_START_ALONE.test(lines[i].trim())) continue;
-    for (let j = i - 1; j >= 0; j -= 1) {
+    const trimmed = lines[i].trim();
+    if (!ITEM_START_ALONE.test(trimmed) && !TEXTO_APOIO_TITLE.test(trimmed)) continue;
+    let collected = 0;
+    for (let j = i - 1; j >= 0 && collected < MAX_SECTION_TITLE_RUN; j -= 1) {
       const candidate = lines[j].trim();
       if (!candidate) continue;
       // Um titulo de texto de apoio ("Texto I", "Text II"...) pode legitimamente
       // aparecer bem antes de um "numero sozinho" (ex.: margem/anotacao de linha
       // logo apos o titulo) e bate no mesmo padrao "curto, sem pontuacao" usado
       // abaixo pra reconhecer titulo de secao. Nunca descarta um titulo de texto
-      // de apoio aqui - quem decide o destino dele e o parser principal.
+      // de apoio aqui - quem decide o destino dele e o parser principal. Tambem para
+      // a caminhada pra tras (o texto de apoio anterior nao faz parte desta secao).
       if (TEXTO_APOIO_TITLE.test(candidate)) break;
       const looksLikeRealContent =
         candidate.length > 60 ||
@@ -269,7 +284,7 @@ function findSectionTitleLines(lines: string[]): Set<string> {
         ITEM_START_ALONE.test(candidate);
       if (looksLikeRealContent) break;
       titles.add(candidate);
-      break;
+      collected += 1;
     }
   }
   return titles;
@@ -684,6 +699,15 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
     }
   }
 
+  // O array reflete a ordem em que cada questao foi reconhecida no texto linearizado
+  // do PDF (necessario internamente pra recuperar itens fora de ordem numerica, ver
+  // isOutOfOrderReopen acima) - itens como 16/17, que aparecem fisicamente depois do
+  // 20 no PDF de origem (layout em colunas), ficam fora de ordem no array resultante.
+  // Isso e correto pra reconstruir o conteudo de cada questao, mas nao faz sentido
+  // como ordem de EXIBICAO pro admin revisar - ordena por numero so no final, depois
+  // que toda a recuperacao/atribuicao de texto de apoio ja aconteceu.
+  questoes.sort((a, b) => a.numero - b.numero);
+
   return { questoes, textosApoio };
 }
 
@@ -785,7 +809,7 @@ export function findAlternativaCountWarnings(questoes: QuestaoDraft[]): string[]
       const maxLength = Math.max(...lengths);
       const otherLengths = lengths.filter((length) => length !== maxLength);
       const maxOther = otherLengths.length > 0 ? Math.max(...otherLengths) : 0;
-      return maxLength > 250 && maxLength > maxOther * 3;
+      return maxLength > 150 && maxLength > maxOther * 3;
     })
     .map(
       (questao) =>
