@@ -448,6 +448,54 @@ function splitAssociationLegend(lines: string[]): { altLines: string[]; legendLi
   return { altLines: lines.slice(0, startIdx), legendLines: lines.slice(startIdx) };
 }
 
+// Questoes com afirmativas em algarismos romanos pra julgar ("I - ...", "II - ...",
+// "III - ...", comum em enunciados do tipo "analise as afirmativas abaixo") tem cada
+// item numa linha propria no PDF de origem, mas o enunciado inteiro (comando + todas
+// as afirmativas) e achatado numa unica linha corrida ao juntar as linhas do bloco -
+// fica dificil de ler, tudo misturado sem separacao visual nenhuma. Insere quebra de
+// paragrafo antes de cada item reconhecido, preservando a separacao visual que o PDF
+// original ja tinha, sem alterar uma palavra do conteudo. So dispara com pelo menos
+// dois marcadores (I seguido de II mais adiante) - o mesmo criterio de especificidade
+// ja usado em splitAssociationLegend, pra nao quebrar paragrafo por engano numa frase
+// comum que comece com "I" por coincidencia.
+const ROMAN_ITEM_LINE = /^[IVXLC]{1,4}\s*[-–—]\s*\S/;
+// O algarismo romano (mais comumente "I", o mais curto) as vezes fica sozinho na
+// propria linha, com o hifen e o texto do item so na linha seguinte - mesma variacao
+// de quebra de linha ja tratada em ASSOCIATION_LEGEND_START.
+const ROMAN_ITEM_BARE = /^[IVXLC]{1,4}$/;
+const DASH_CONTINUATION_LINE = /^[-–—]\s*\S/;
+
+function findRomanItemIndexes(lines: string[]): number[] {
+  const indexes: number[] = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    if (ROMAN_ITEM_LINE.test(lines[i])) {
+      indexes.push(i);
+    } else if (ROMAN_ITEM_BARE.test(lines[i]) && i + 1 < lines.length && DASH_CONTINUATION_LINE.test(lines[i + 1])) {
+      indexes.push(i);
+    }
+  }
+  return indexes;
+}
+
+function formatEnunciadoWithItemBreaks(rawLines: string[]): string {
+  const lines = rawLines.map((line) => line.trim()).filter((line) => line.length > 0);
+  const itemIndexes = findRomanItemIndexes(lines);
+  if (itemIndexes.length < 2) return joinDehyphenated(lines).replace(/\s+/g, " ").trim();
+
+  const segments: string[][] = [];
+  let segmentStart = 0;
+  for (const idx of itemIndexes) {
+    if (idx > segmentStart) segments.push(lines.slice(segmentStart, idx));
+    segmentStart = idx;
+  }
+  segments.push(lines.slice(segmentStart));
+
+  return segments
+    .map((segment) => joinDehyphenated(segment).replace(/\s+/g, " ").trim())
+    .filter((text) => text.length > 0)
+    .join("\n\n");
+}
+
 export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; textosApoio: TextoApoioDraft[] } {
   const lines = rawText.split(/\r?\n/).map((line) => line.trimEnd());
   const repeatedHeaders = findRepeatedHeaderLines(lines);
@@ -540,7 +588,7 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
     let associationLegend = "";
     const stemLines =
       altStartIdx === -1 ? blockLines : blockLines.slice(0, altStartIdx);
-    const enunciado = joinDehyphenated(stemLines).replace(/\s+/g, " ").trim();
+    const enunciado = formatEnunciadoWithItemBreaks(stemLines);
 
     const alternativas: AlternativaDraft[] = [];
     if (altStartIdx !== -1) {

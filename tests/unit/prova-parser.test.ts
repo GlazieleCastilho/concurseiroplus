@@ -196,6 +196,28 @@ describe("parseProvaText - CESGRANRIO/PETROBRAS (pagina de instrucoes numeradas 
     expect(questao10.enunciado).not.toContain("per cent of GDP");
   });
 
+  it("separa afirmativas em algarismos romanos (I/II/III) em paragrafos proprios, em vez de achatar tudo numa linha corrida", () => {
+    // Pedido do usuario: enunciados do tipo "analise as afirmativas abaixo" tem cada
+    // afirmativa (I - ..., II - ..., III - ...) numa linha propria no PDF de origem,
+    // mas ficavam todos amassados numa unica linha corrida no enunciado final - dificil
+    // de ler. formatEnunciadoWithItemBreaks preserva a separacao visual (quebra de
+    // paragrafo antes de cada item) sem alterar uma palavra do conteudo. Cobre tambem a
+    // variacao em que o "I" fica sozinho na propria linha, com o hifen so na seguinte
+    // (ver ROMAN_ITEM_BARE) - a questao 9 tem exatamente esse caso no PDF de origem.
+    const questao9 = questoes.find((item) => item.numero === 9)!;
+    const paragrafos9 = questao9.enunciado.split("\n\n");
+    expect(paragrafos9.length).toBeGreaterThanOrEqual(4);
+    expect(paragrafos9[1]).toMatch(/^I - A forma verbal houvesse/);
+    expect(paragrafos9[2]).toMatch(/^II - O verbo haver/);
+    expect(paragrafos9[3]).toMatch(/^III - A forma verbal houvesse/);
+
+    const questao23 = questoes.find((item) => item.numero === 23)!;
+    const paragrafos23 = questao23.enunciado.split("\n\n");
+    expect(paragrafos23[1]).toMatch(/^I - A data mais cedo/);
+    expect(paragrafos23[2]).toMatch(/^II - Caso a previsão/);
+    expect(paragrafos23[3]).toMatch(/^III - A folga total/);
+  });
+
   it("recupera itens 16 e 17 mesmo aparecendo fora de ordem numerica no PDF (depois do item 20, layout em colunas)", () => {
     // Bug original: como o parser exige numeros crescentes, "16" e "17" apos "20" no
     // texto nunca abriam bloco proprio e ficavam grudados dentro da questao 20 (que
