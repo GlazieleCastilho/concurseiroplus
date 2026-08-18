@@ -40,12 +40,16 @@ function ensureBucket(client: ReturnType<typeof getServiceClient>): Promise<void
 }
 
 /** Sobe uma imagem (bytes) pro bucket publico do Supabase Storage e retorna a URL publica. */
-export async function uploadQuestionImage(bytes: Buffer, filename: string): Promise<string> {
+export async function uploadQuestionImage(
+  bytes: Buffer,
+  filename: string,
+  contentType: "image/jpeg" | "image/png" = "image/jpeg",
+): Promise<string> {
   const client = getServiceClient();
   await ensureBucket(client);
   const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${filename}`;
   const { error } = await client.storage.from(BUCKET).upload(path, bytes, {
-    contentType: "image/jpeg",
+    contentType,
     upsert: false,
   });
   if (error) throw new Error(`Falha ao subir imagem para o Supabase Storage: ${error.message}`);

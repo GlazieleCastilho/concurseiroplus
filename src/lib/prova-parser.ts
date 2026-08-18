@@ -20,12 +20,25 @@ type QuestaoDraft = {
   gabarito?: string;
   alternativas: AlternativaDraft[];
   textoApoioChave?: string;
+  // true quando uma tabela de dados (grade com celulas curtas: nomes, numeros, per-
+  // centuais) foi detectada e removida da ultima alternativa - ver splitGarbledTableTail.
+  // O conteudo da tabela nao e reconstruivel de forma confiavel a partir do texto
+  // extraido (cada celula vira um pedaco de texto solto, sem espaco nenhum entre elas),
+  // entao e descartado em vez de inventado; o aviso gerado a partir desta flag (ver
+  // findAlternativaCountWarnings) e o unico rastro de que algo foi removido.
+  tabelaNaoExtraida?: boolean;
+  // true quando uma legenda de questao "associe" foi detectada grudada na ultima
+  // alternativa, mas as PROPRIAS alternativas desta questao nao tem formato de
+  // associacao - sinal de que a legenda vazou de outra questao nas proximidades (ver
+  // questaoTemAlternativasDeAssociacao). Descartada em vez de incorporada ao enunciado
+  // errado; o aviso gerado a partir desta flag e o unico rastro do que foi removido.
+  legendaOrfa?: boolean;
 };
 
 export type TextoApoioDraft = { chave: string; titulo?: string; conteudo: string };
 
 const NOISE_LINE =
-  /^(pcimarkpci\b|www\.\S+$|--\s*\d+\s+of\s+\d+\s*--$|espa[cç]o livre$|.*P[ÁA]GINA\s+\d+\s*$)/i;
+  /^(pcimarkpci\b|www\.\S+$|--\s*\d+\s+of\s+\d+\s*--$|espa[cç]o livre$|rascunho$|.*P[ÁA]GINA\s+\d+\s*$)/i;
 // Numero do item seguido de texto na mesma linha.
 // Aceita formatos comuns como:
 //   9 Observe a charge...
@@ -45,11 +58,12 @@ export const ITEM_START_ALONE = /^(\d{1,3})\s*[.)]?\s*$/;
 // sem parenteses, com ou sem espaco depois do separador).
 export const ALTERNATIVA_START = /^\(?([A-E])[).:-]\s*(.*)$/;
 
-// Titulo de texto de apoio: "Texto I", "TEXTO", "Texto 1A18-I" etc. Exige "Texto"/
-// "TEXTO" com maiuscula (nunca minusculo dentro de uma frase corrida, ex.: "o texto
-// abaixo") e a linha inteira curta (so o titulo, sem mais nada) - um titulo de
-// verdade nunca continua como uma frase na mesma linha.
-const TEXTO_APOIO_TITLE = /^(?:Texto|TEXTO)\s*([IVXLC\d][\w-]*)?\s*$/;
+// Titulo de texto de apoio: "Texto I", "TEXTO", "Texto 1A18-I", ou "Text I"/"Text II"
+// (secoes de lingua estrangeira, ex.: Cesgranrio/Petrobras) etc. Exige a palavra com
+// maiuscula (nunca minusculo dentro de uma frase corrida, ex.: "o texto abaixo") e a
+// linha inteira curta (so o titulo, sem mais nada) - um titulo de verdade nunca
+// continua como uma frase na mesma linha.
+const TEXTO_APOIO_TITLE = /^(?:Texto|TEXTO|Text)\s*([IVXLC\d][\w-]*)?\s*$/;
 
 function isNoise(line: string): boolean {
   return NOISE_LINE.test(line.trim());
@@ -242,27 +256,58 @@ function findTrailingCreditsLines(lines: string[]): Set<string> {
 }
 
 /**
- * Titulos de secao (ex.: "Tópicos de Legislação", "Conhecimentos Específicos") aparecem
- * uma unica vez cada, entao a heuristica de linha repetida nao os pega. Mas sempre ficam
- * bem antes de um item numerado (a proxima questao da nova secao), separando-o da ultima
- * alternativa da secao anterior. Qualquer linha curta, sem pontuacao de frase, que aparece
- * logo antes de um "numero do item sozinho na linha" e tratada como titulo de secao.
+ * Titulos/subtitulos de secao (ex.: "Conhecimentos Específicos", "Bloco 1", "Língua
+ * Estrangeira") aparecem uma unica vez cada, entao a heuristica de linha repetida nao
+ * os pega. Mas sempre ficam bem antes de um item numerado OU de um titulo de texto de
+ * apoio (a proxima questao/texto da nova secao), separando-os da ultima alternativa da
+ * secao anterior. Qualquer RUN de linhas curtas, sem pontuacao de frase, que aparece
+ * logo antes de um "numero do item sozinho na linha" ou de um titulo de texto de apoio
+ * e tratado como titulo de secao - podem vir MAIS DE UM em sequencia (ex.: "Conhecimentos
+ * Específicos" seguido de "Bloco 1"), entao caminha pra tras coletando todos, nao so o
+ * mais proximo.
  */
+// Quantas linhas consecutivas, no maximo, um "run" de titulo/subtitulo de secao pode
+// ter (ex.: "Conhecimentos Específicos" + "Bloco 1" = 2). Sem um teto, uma caminhada
+// pra tras a partir de um titulo de texto de apoio DISTANTE (paginas depois de onde a
+// secao de verdade terminou) podia atravessar dezenas de linhas curtas e engolir um
+// item de verdade no meio do caminho (ex.: um item em formato inline cuja primeira
+// linha nao termina em pontuacao por quebrar no meio da frase).
+const MAX_SECTION_TITLE_RUN = 3;
+
 function findSectionTitleLines(lines: string[]): Set<string> {
   const titles = new Set<string>();
   for (let i = 0; i < lines.length; i += 1) {
-    if (!ITEM_START_ALONE.test(lines[i].trim())) continue;
-    for (let j = i - 1; j >= 0; j -= 1) {
+    const trimmed = lines[i].trim();
+    if (!ITEM_START_ALONE.test(trimmed) && !TEXTO_APOIO_TITLE.test(trimmed)) continue;
+    let collected = 0;
+    for (let j = i - 1; j >= 0 && collected < MAX_SECTION_TITLE_RUN; j -= 1) {
       const candidate = lines[j].trim();
       if (!candidate) continue;
+      // Um titulo de texto de apoio ("Texto I", "Text II"...) pode legitimamente
+      // aparecer bem antes de um "numero sozinho" (ex.: margem/anotacao de linha
+      // logo apos o titulo) e bate no mesmo padrao "curto, sem pontuacao" usado
+      // abaixo pra reconhecer titulo de secao. Nunca descarta um titulo de texto
+      // de apoio aqui - quem decide o destino dele e o parser principal. Tambem para
+      // a caminhada pra tras (o texto de apoio anterior nao faz parte desta secao).
+      if (TEXTO_APOIO_TITLE.test(candidate)) break;
+      // Uma palavra quebrada por hifen de justificacao no fim da linha anterior (ex.:
+      // "organiza-" / "cional") deixa a linha seguinte ("cional") curta e sem
+      // pontuacao - o mesmo padrao usado abaixo pra reconhecer titulo de secao. Sem
+      // essa checagem, esse tipo de continuacao de palavra e engolido como se fosse
+      // titulo, cortando o conteudo real da questao (ex.: a legenda de uma questao
+      // "associe", ver splitAssociationLegend). So conta como continuacao quando a
+      // linha AINDA MAIS pra tras (j-1) termina com hifen colado a uma letra.
+      const previousLine = j > 0 ? lines[j - 1].trim() : "";
+      const isHyphenContinuation = /\p{L}-$/u.test(previousLine);
       const looksLikeRealContent =
         candidate.length > 60 ||
         /[.?!:;]$/.test(candidate) ||
         ALTERNATIVA_START.test(candidate) ||
-        ITEM_START_ALONE.test(candidate);
+        ITEM_START_ALONE.test(candidate) ||
+        isHyphenContinuation;
       if (looksLikeRealContent) break;
       titles.add(candidate);
-      break;
+      collected += 1;
     }
   }
   return titles;
@@ -340,6 +385,180 @@ function findLineNumberAnnotationIndices(lines: string[]): Set<number> {
 // vazia/inutil no rascunho.
 const MIN_TEXTO_APOIO_LENGTH = 100;
 
+/**
+ * PDFs com texto justificado quebram palavras longas no fim da linha com um hifen
+ * (ex.: "engala-" numa linha, "nado" na proxima - a palavra real e "engalanado").
+ * Juntar essas linhas com espaco simples (como o resto do texto) deixa o hifen e o
+ * espaco no meio da palavra ("engala- nado"), visivel em qualquer parte da prova que
+ * tenha texto corrido. So junta sem espaco (removendo o hifen) quando ha um sinal
+ * forte de que e quebra de justificacao, nao um hifen de verdade: a linha termina
+ * exatamente num hifen colado a uma letra (sem espaco antes) E a proxima comeca com
+ * letra minuscula (continuacao da mesma palavra/frase, nunca uma sigla ou palavra
+ * nova em maiusculo como em "CARTÃO-RESPOSTA", que fica intacto). Um hifen de verdade
+ * (composto, enclise) que por acaso cair bem numa quebra de linha tambem bate nesse
+ * padrao e acaba sem hifen (ex.: "guarda-" + "chuva" > "guardachuva") - sem dicionario
+ * nao da pra distinguir os dois casos com certeza, mas quebra de justificacao e o caso
+ * disparadamente mais comum (quase toda linha longa do texto corrido de um PDF
+ * justificado tem uma), entao e a leitura correta por padrao.
+ */
+function joinDehyphenated(rawLines: string[]): string {
+  let result = "";
+  for (const rawLine of rawLines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    if (!result) {
+      result = line;
+      continue;
+    }
+    const hyphenMatch = /^(.*\p{L})-$/u.exec(result);
+    const nextStartsLowercase = /^\p{Ll}/u.test(line);
+    if (hyphenMatch && nextStartsLowercase) {
+      result = `${hyphenMatch[1]}${line}`;
+      continue;
+    }
+    result = `${result} ${line}`;
+  }
+  return result;
+}
+
+// Questoes do tipo "associe" (ex.: "Associe as perspectivas com os focos relacionados
+// a seguir") trazem, no LAYOUT VISUAL da pagina, uma legenda em duas colunas lado a
+// lado - uma lista em algarismos romanos ("I - Atividades", "II - ...") e uma lista em
+// letras maiusculas ("P - Perspectiva funcional", "Q - ...") - posicionada ENTRE o
+// comando da questao e as alternativas (A)-(E). Mas o texto extraido do PDF LINEARIZA
+// esse layout de duas colunas: em vez de preservar a posicao visual, ele imprime as
+// duas listas inteiras DEPOIS das alternativas, nao antes. Sem reconhecer esse padrao,
+// a legenda inteira e tratada como texto comum e fica grudada na ultima alternativa -
+// nao e um vazamento de outra questao, e sim o proprio comando desta questao impresso
+// fora de ordem. Reconhecida pelo marcador "I" (primeiro algarismo romano da lista,
+// sempre presente) seguido de mais pelo menos um outro marcador do mesmo tipo mais
+// adiante (II, III...) - uma unica linha comecando com "I -" sozinha e fraca demais
+// como sinal (podia ser coincidencia de alguma alternativa real).
+// O "I" as vezes fica sozinho na sua propria linha, com o hifen e a descricao so na
+// linha seguinte (variacao de quebra de linha observada no mesmo PDF, ex.: questao 43
+// vs. questao 40) - aceita tanto "I - Atividades" quanto "I" isolado.
+const ASSOCIATION_LEGEND_START = /^I(\s*[-–—]\s*\S.*)?$/;
+// "II" (dois "I" literais) seguido do mesmo separador da primeira marca ("I -") e um
+// sinal bem mais forte e especifico que qualquer algarismo romano isolado - aparecer
+// como o INICIO de uma linha propria, logo depois de uma linha "I -", e praticamente
+// exclusivo desse padrao de legenda (nao ha frase comum em portugues que comece assim).
+const ASSOCIATION_LEGEND_SECOND_ITEM = /^II\s*[-–—]?\s*\S/;
+
+// A PRIMEIRA linha de "lines" e sempre o comeco de verdade da propria alternativa (o
+// texto logo apos a letra, ex.: "(E)") - numa questao "associe", a resposta de uma
+// alternativa costuma ser justamente "I – S , II – P..." e bateria por engano no mesmo
+// padrao "I -" do inicio da legenda. So procura o INICIO da legenda a partir da SEGUNDA
+// linha em diante (uma legenda de verdade sempre comeca numa linha propria nova do PDF,
+// nunca colada ao resto da resposta da alternativa na mesma linha).
+function splitAssociationLegend(lines: string[]): { altLines: string[]; legendLines: string[] } {
+  if (lines.length < 2) return { altLines: lines, legendLines: [] };
+  const searchStart = 1;
+  const relativeIdx = lines.slice(searchStart).findIndex((line) => ASSOCIATION_LEGEND_START.test(line));
+  if (relativeIdx === -1) return { altLines: lines, legendLines: [] };
+  const startIdx = searchStart + relativeIdx;
+  const hasSecondItem = lines.slice(startIdx + 1).some((line) => ASSOCIATION_LEGEND_SECOND_ITEM.test(line));
+  if (!hasSecondItem) return { altLines: lines, legendLines: [] };
+  return { altLines: lines.slice(0, startIdx), legendLines: lines.slice(startIdx) };
+}
+
+// Uma questao "associe" DE VERDADE sempre tem alternativas no formato "I - P , II - Q ,
+// III - R" (a propria natureza da questao: a resposta E a associacao entre os grupos).
+// Se uma legenda aparece grudada numa questao cujas PROPRIAS alternativas nao tem esse
+// formato (ex.: numeros simples "0", "3", "4"...), a legenda quase certamente vazou de
+// OUTRA questao "associe" nas proximidades (mesmo artefato de layout em colunas ja
+// visto - o PDF as vezes imprime o conteudo de uma pagina fora da ordem linear
+// esperada). Sem essa checagem, uma legenda orfa assim seria incorporada ao enunciado
+// errado como se fosse dele - pior que deixar visivel como aviso, porque parece
+// conteudo legitimo da questao quando na verdade nao tem nada a ver com ela.
+const ASSOCIATION_ANSWER_PATTERN = /^I\s*[-–—].*\bII\s*[-–—]/;
+
+function questaoTemAlternativasDeAssociacao(alternativas: Array<{ texto: string }>): boolean {
+  return alternativas.some((alt) => ASSOCIATION_ANSWER_PATTERN.test(alt.texto));
+}
+
+// PDFs com tabelas de dados simples (grade com celulas curtas: nomes, numeros, per-
+// centuais) tem cada celula extraida como um pedaco de texto solto - a extracao linear
+// concatena tudo sem espaco nenhum entre elas, produzindo um texto sem sentido, bem
+// diferente de prosa normal (ex.: "RecursoJunhoJulhoAgostoPercentual trimestral
+// Roldana311219,05%..."). Diferente da legenda de questao "associe" (formato reco-
+// nhecivel, reconstruivel como texto legivel), o CONTEUDO de uma tabela assim NAO da
+// pra reconstruir de forma confiavel a partir do texto extraido - a unica opcao segura
+// e nao inventar uma reconstrucao. Detectado por um sinal generico e independente de
+// banca: prosa normal em portugues nunca cola uma letra minuscula direto numa maiuscula
+// ou num digito, nem um digito direto numa letra, sem espaco algum entre eles - varias
+// ocorrencias desse tipo de colagem no mesmo trecho e um forte indicio de celulas de
+// tabela espremidas juntas.
+const GARBLED_TEXT_TRANSITION = /[a-zà-ú](?=[A-ZÀ-Ú0-9])|\d(?=[A-Za-zÀ-ú])/g;
+const MIN_GARBLED_TRANSITIONS = 3;
+
+function looksLikeGarbledTableText(text: string): boolean {
+  const matches = text.match(GARBLED_TEXT_TRANSITION);
+  return (matches?.length ?? 0) >= MIN_GARBLED_TRANSITIONS;
+}
+
+// A PRIMEIRA linha e sempre o comeco de verdade da propria alternativa (mesmo raciocinio
+// de splitAssociationLegend) - so procura o inicio da tabela embaralhada a partir da
+// SEGUNDA linha em diante. Usa a PRIMEIRA linha que, sozinha, ja parece embaralhada
+// (normalmente a linha do cabecalho da tabela, com varias colunas coladas de uma vez).
+function splitGarbledTableTail(lines: string[]): { altLines: string[]; garbledLines: string[] } {
+  for (let i = 1; i < lines.length; i += 1) {
+    if (looksLikeGarbledTableText(lines[i])) {
+      return { altLines: lines.slice(0, i), garbledLines: lines.slice(i) };
+    }
+  }
+  return { altLines: lines, garbledLines: [] };
+}
+
+// Questoes com afirmativas em algarismos romanos pra julgar ("I - ...", "II - ...",
+// "III - ...", comum em enunciados do tipo "analise as afirmativas abaixo") ou com uma
+// legenda em letras maiusculas (a segunda coluna de uma questao "associe", ver
+// splitAssociationLegend: "P - ...", "Q - ...") tem cada item numa linha propria no PDF
+// de origem, mas o texto inteiro e achatado numa unica linha corrida ao juntar as
+// linhas do bloco - fica dificil de ler, tudo misturado sem separacao visual nenhuma.
+// Insere quebra de paragrafo antes de cada item reconhecido (romano OU letra), preser-
+// vando a separacao visual que o PDF original ja tinha, sem alterar uma palavra do
+// conteudo. So dispara com pelo menos dois marcadores do mesmo tipo (ex.: I seguido de
+// II mais adiante) - mesmo criterio de especificidade ja usado em splitAssociationLegend,
+// pra nao quebrar paragrafo por engano numa frase comum que comece com uma letra ou
+// algarismo romano por coincidencia.
+const LIST_ITEM_MARKER_INLINE = /^(?:[IVXLC]{1,4}|[A-Z])\s*[-–—]\s*\S/;
+// O marcador (mais comumente "I", o mais curto, mas tambem observado em letras como
+// "P"/"Q") as vezes fica sozinho na propria linha, com o hifen e o texto do item so na
+// linha seguinte - mesma variacao de quebra de linha ja tratada em ASSOCIATION_LEGEND_START.
+const LIST_ITEM_MARKER_BARE = /^(?:[IVXLC]{1,4}|[A-Z])$/;
+const DASH_CONTINUATION_LINE = /^[-–—]\s*\S/;
+
+function findListItemIndexes(lines: string[]): number[] {
+  const indexes: number[] = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    if (LIST_ITEM_MARKER_INLINE.test(lines[i])) {
+      indexes.push(i);
+    } else if (LIST_ITEM_MARKER_BARE.test(lines[i]) && i + 1 < lines.length && DASH_CONTINUATION_LINE.test(lines[i + 1])) {
+      indexes.push(i);
+    }
+  }
+  return indexes;
+}
+
+function formatWithItemBreaks(rawLines: string[]): string {
+  const lines = rawLines.map((line) => line.trim()).filter((line) => line.length > 0);
+  const itemIndexes = findListItemIndexes(lines);
+  if (itemIndexes.length < 2) return joinDehyphenated(lines).replace(/\s+/g, " ").trim();
+
+  const segments: string[][] = [];
+  let segmentStart = 0;
+  for (const idx of itemIndexes) {
+    if (idx > segmentStart) segments.push(lines.slice(segmentStart, idx));
+    segmentStart = idx;
+  }
+  segments.push(lines.slice(segmentStart));
+
+  return segments
+    .map((segment) => joinDehyphenated(segment).replace(/\s+/g, " ").trim())
+    .filter((text) => text.length > 0)
+    .join("\n\n");
+}
+
 export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; textosApoio: TextoApoioDraft[] } {
   const lines = rawText.split(/\r?\n/).map((line) => line.trimEnd());
   const repeatedHeaders = findRepeatedHeaderLines(lines);
@@ -357,9 +576,19 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
   for (const index of findLineNumberAnnotationIndices(lines)) lines[index] = "";
 
   const questoes: QuestaoDraft[] = [];
-  let current: { numero: number; linhas: string[]; textoApoioChave?: string } | null = null;
+  let current: {
+    numero: number;
+    linhas: string[];
+    textoApoioChave?: string;
+    // Indices (em `linhas`) de linhas que vieram logo depois de uma quebra de pagina
+    // (marca d'agua "pcimarkpci", rodape "www...", "Pagina N"...). Usado em flush()
+    // pra recuperar o caso em que o texto de apoio retoma sem titulo repetido depois
+    // da quebra e acaba grudado na ultima alternativa em aberto (ver comentario la).
+    pageBreakIdx: number[];
+  } | null = null;
   let lastNumero = 0;
   let lastRealLine: string | null = null;
+  let justCrossedPageBreak = false;
 
   // Texto de apoio: um titulo tipo "Texto I" antes de um grupo de questoes, cujo
   // conteudo (o texto/charge/reportagem em si) e compartilhado por todas as questoes
@@ -368,17 +597,40 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
   let currentTexto: { titulo: string; linhas: string[] } | null = null;
   let activeTextoApoioChave: string | undefined;
   let textoApoioSeq = 0;
+  // Fica true quando um titulo de secao e cruzado ENQUANTO currentTexto ainda esta
+  // acumulando (caso real: um numero de item "abre" cedo demais por engano - ex.: uma
+  // citacao "(line 19)" dentro do proprio texto de apoio bate no padrao de item sozinho
+  // - entao o texto de apoio so termina de acumular e e flushado bem mais tarde, DEPOIS
+  // do titulo de secao que devia separa-lo do proximo bloco). Sem isso, o flushTexto()
+  // tardio reatribuiria activeTextoApoioChave ao texto que acabou de fechar, desfazendo
+  // a limpeza feita no cruzamento do titulo de secao e vazando o texto de apoio pras
+  // questoes do bloco seguinte (que nao tem nenhuma relacao de conteudo com ele).
+  let sectionBoundaryPending = false;
 
   function flushTexto() {
     if (!currentTexto) return;
-    const conteudo = currentTexto.linhas.join(" ").replace(/\s+/g, " ").trim();
-    if (conteudo.length >= MIN_TEXTO_APOIO_LENGTH) {
+    const conteudo = joinDehyphenated(currentTexto.linhas).replace(/\s+/g, " ").trim();
+    // Um titulo isolado sem NENHUM conteudo depois (ex.: cabecalho de secao vazio
+    // que por coincidencia bateu no regex) nao vira entidade - nao ha nada pra um
+    // admin revisar. Mas um titulo com algum conteudo, mesmo curto (charge com
+    // legenda, citacao curta, texto cujo corpo principal esta numa imagem), e
+    // preservado com um aviso em vez de descartado silenciosamente: as questoes que
+    // o referenciam nao podem ficar sem chave so porque o PDF extraiu pouco texto.
+    if (conteudo.length > 0) {
       textoApoioSeq += 1;
       const chave = `texto-${textoApoioSeq}`;
-      textosApoio.push({ chave, titulo: currentTexto.titulo, conteudo });
-      activeTextoApoioChave = chave;
+      textosApoio.push({
+        chave,
+        titulo: currentTexto.titulo,
+        conteudo:
+          conteudo.length >= MIN_TEXTO_APOIO_LENGTH
+            ? conteudo
+            : `[Texto de apoio curto ou baseado em imagem — revisar PDF original e completar manualmente.] ${conteudo}`,
+      });
+      if (!sectionBoundaryPending) activeTextoApoioChave = chave;
     }
     currentTexto = null;
+    sectionBoundaryPending = false;
   }
   // Alguns PDFs (layout em colunas) trazem itens fora de ordem numerica no proprio
   // documento - ex.: ...15, 18, 19, 20, 16, 17... Sem isso, "16" e "17" nunca abririam
@@ -396,35 +648,103 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
     const altStartIdx = blockLines.findIndex((line) =>
       ALTERNATIVA_START.test(line.trim()),
     );
+    let associationLegend = "";
+    let tabelaNaoExtraida = false;
+    let legendaOrfa = false;
     const stemLines =
       altStartIdx === -1 ? blockLines : blockLines.slice(0, altStartIdx);
-    const enunciado = stemLines.join(" ").replace(/\s+/g, " ").trim();
+    const enunciado = formatWithItemBreaks(stemLines);
 
     const alternativas: AlternativaDraft[] = [];
     if (altStartIdx !== -1) {
       let letraAtual: string | null = null;
-      let textoAtual = "";
+      let linhasAtual: string[] = [];
       for (const line of blockLines.slice(altStartIdx)) {
         const match = ALTERNATIVA_START.exec(line.trim());
         if (match) {
           if (letraAtual)
             alternativas.push({
               letra: letraAtual,
-              texto: textoAtual.replace(/\s+/g, " ").trim(),
+              texto: joinDehyphenated(linhasAtual).replace(/\s+/g, " ").trim(),
               correta: false,
             });
           letraAtual = match[1];
-          textoAtual = match[2];
+          linhasAtual = [match[2]];
         } else if (letraAtual) {
-          textoAtual += ` ${line.trim()}`;
+          linhasAtual.push(line.trim());
         }
       }
-      if (letraAtual)
+      if (letraAtual) {
+        const { altLines: semLegenda, legendLines } = splitAssociationLegend(linhasAtual);
+        // So tenta detectar tabela embaralhada quando NENHUMA quebra de pagina aconteceu
+        // dentro deste bloco - quando ha uma, o vazamento (se houver) e tratado pelo
+        // mecanismo mais especifico e confiavel logo abaixo (baseado em pageBreakIdx,
+        // que sabe EXATAMENTE onde a pagina virou). Rodar os dois ao mesmo tempo no
+        // mesmo trecho e arriscado: uma citacao/URL apos quebra de pagina (ex.: "Adapted
+        // from... Available in: <http://...>") tem varios digitos colados a letras
+        // (parte de um hash de URL) e bate por engano no mesmo sinal usado pra tabela.
+        const { altLines, garbledLines } =
+          current.pageBreakIdx.length === 0 ? splitGarbledTableTail(semLegenda) : { altLines: semLegenda, garbledLines: [] };
         alternativas.push({
           letra: letraAtual,
-          texto: textoAtual.replace(/\s+/g, " ").trim(),
+          texto: joinDehyphenated(altLines).replace(/\s+/g, " ").trim(),
           correta: false,
         });
+        if (legendLines.length > 0) {
+          // A legenda so pertence de verdade a esta questao se as PROPRIAS alternativas
+          // dela tiverem o formato de associacao ("I - P , II - Q..."). Sem isso, e uma
+          // legenda orfa que vazou de outra questao "associe" nas proximidades (ver
+          // questaoTemAlternativasDeAssociacao) - nao e conteudo desta questao, entao
+          // nao entra no enunciado: so vira um aviso pro admin investigar.
+          if (questaoTemAlternativasDeAssociacao(alternativas)) {
+            associationLegend = formatWithItemBreaks(legendLines);
+          } else {
+            legendaOrfa = true;
+          }
+        }
+        if (garbledLines.length > 0) tabelaNaoExtraida = true;
+      }
+    }
+
+    // Alguns PDFs em coluna dupla (ex.: secao de lingua estrangeira da Cesgranrio)
+    // retomam o texto de apoio bem no meio de uma pagina seguinte SEM repetir o
+    // titulo ("Texto I"/"Text I"...) - a passagem so reaparece depois da marca
+    // d'agua/rodape de pagina. Sem marcador nenhum pra abrir um novo bloco, esse
+    // conteudo orfao fica grudado na ultima alternativa que estava em aberto no
+    // momento da quebra, inflando-a com um paragrafo inteiro sem relacao com ela.
+    // So tenta recortar quando ha um sinal forte de que algo vazou (a ultima
+    // alternativa ficou bem maior que as demais) E existe uma quebra de pagina
+    // registrada dentro do intervalo de linhas dela - alternativas legitimas que
+    // simplesmente quebram de pagina no meio de uma frase normal nunca disparam a
+    // combinacao das duas condicoes.
+    if (alternativas.length >= 2 && current.pageBreakIdx.length > 0) {
+      let lastAltLineStart = -1;
+      for (let i = blockLines.length - 1; i >= 0; i -= 1) {
+        if (ALTERNATIVA_START.test(blockLines[i].trim())) {
+          lastAltLineStart = i;
+          break;
+        }
+      }
+      const breakInLastAlt = current.pageBreakIdx.find((idx) => idx > lastAltLineStart);
+      if (lastAltLineStart !== -1 && breakInLastAlt !== undefined) {
+        const lastAlt = alternativas[alternativas.length - 1];
+        const outrasLens = alternativas.slice(0, -1).map((alt) => alt.texto.length);
+        const maiorOutra = outrasLens.length > 0 ? Math.max(...outrasLens) : 0;
+        if (lastAlt.texto.length > 800 && lastAlt.texto.length > maiorOutra * 3) {
+          const keptLines = blockLines.slice(lastAltLineStart, breakInLastAlt);
+          const leakedLines = blockLines.slice(breakInLastAlt);
+          const rebuiltMatch = ALTERNATIVA_START.exec(keptLines[0].trim());
+          if (rebuiltMatch) {
+            const linhasReconstruido = [rebuiltMatch[2], ...keptLines.slice(1).map((linha) => linha.trim())];
+            lastAlt.texto = joinDehyphenated(linhasReconstruido).replace(/\s+/g, " ").trim();
+          }
+          const leaked = joinDehyphenated(leakedLines).replace(/\s+/g, " ").trim();
+          if (leaked.length > 0 && current.textoApoioChave) {
+            const texto = textosApoio.find((item) => item.chave === current!.textoApoioChave);
+            if (texto) texto.conteudo = `${texto.conteudo} ${leaked}`.trim();
+          }
+        }
+      }
     }
 
     // Algumas questoes (comuns em provas com figura) nao tem nenhum texto proprio alem
@@ -432,40 +752,47 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
     // base na figura]" sem mais nada. Descartar silenciosamente perderia o item (e o
     // gabarito dele) sem o admin nem saber que ele existiu. Em vez disso, entra com um
     // placeholder visivel que aponta pra revisao manual.
-    const enunciadoFinal =
+    const enunciadoBase =
       enunciado.length > 0
         ? enunciado
         : `[Sem texto extraído — questão baseada em figura/imagem. Revisar o PDF original e completar o enunciado da questão ${current.numero}.]`;
+    // A legenda de uma questao "associe" (ver splitAssociationLegend) e o proprio
+    // comando da questao impresso fora de ordem no PDF - anexada aqui, no fim do
+    // enunciado, e nao antes das alternativas: preservar a ordem exata em que ela
+    // aparece no PDF de origem evita reescrever/reordenar conteudo da questao.
+    const enunciadoFinal = associationLegend ? `${enunciadoBase}\n\n${associationLegend}` : enunciadoBase;
     questoes.push({
       numero: current.numero,
       tipo: "OBJETIVA",
       enunciado: enunciadoFinal,
       alternativas,
       textoApoioChave: current.textoApoioChave,
+      tabelaNaoExtraida: tabelaNaoExtraida || undefined,
+      legendaOrfa: legendaOrfa || undefined,
     });
   }
 
-  // Ignora todo o material que vem antes do primeiro item real. Isso e essencial
-  // para PDFs como o da Cesgranrio/Petrobras analisado: a primeira pagina possui
-  // instrucoes "01 - ...", "02 - ..." ate "12 - ...". Sem esta barreira, o parser
-  // transforma essas instrucoes em questoes 1..12 e, quando chega a pagina 2, as
-  // questoes reais 1..12 ficam menores que lastNumero e sao anexadas a "questao 12".
-  for (
-    let lineIndex = firstQuestionIndex;
-    lineIndex < lines.length;
-    lineIndex += 1
-  ) {
+  // O loop comeca do inicio do documento (nao de firstQuestionIndex) porque o
+  // texto de apoio da questao 1 quase sempre vem ANTES dela (ex.: "Texto I" no
+  // topo da pagina 2, antes da pagina de instrucoes terminar) - comecando so em
+  // firstQuestionIndex, esse texto nunca seria visto e a questao 1 ficaria sem
+  // texto de apoio. So a ABERTURA de item (isForwardOpen/isOutOfOrderReopen) fica
+  // proibida antes de firstQuestionIndex: sem essa barreira, PDFs como o da
+  // Cesgranrio/Petrobras (pagina de instrucoes numeradas "01 - ...", "02 - ..." ate
+  // "12 - ...") teriam essas instrucoes transformadas em questoes 1..12 e, quando
+  // a pagina 2 chegasse, as questoes reais 1..12 ficariam menores que lastNumero e
+  // seriam anexadas a "questao 12".
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
     const rawLine = lines[lineIndex];
     const line = rawLine.trim();
 
-    if (
-      !line ||
-      isNoise(line) ||
-      repeatedHeaders.has(line) ||
-      trailingCredits.has(line) ||
-      sectionTitles.has(line)
-    )
+    if (isNoise(line)) {
+      // Marca que a proxima linha de conteudo real vem logo depois de uma quebra de
+      // pagina (marca d'agua/rodape/numero de pagina) - ver uso em flush().
+      justCrossedPageBreak = true;
       continue;
+    }
+    if (!line || repeatedHeaders.has(line) || trailingCredits.has(line)) continue;
 
     // Titulo de texto de apoio ("Texto I", "TEXTO", "Texto 1A18-I"...): fecha
     // qualquer questao aberta (o titulo nunca faz parte do enunciado de uma questao)
@@ -473,7 +800,10 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
     // activeTextoApoioChave so e atualizada quando o corpo capturado for substancial
     // (flushTexto) - zera aqui pra nao deixar questoes seguintes herdarem por engano
     // a chave de um texto de apoio anterior quando este aqui falha por ser curto
-    // demais (ex.: cabecalho de secao vazio).
+    // demais (ex.: cabecalho de secao vazio). Verificado ANTES de sectionTitles: um
+    // titulo de texto de apoio nunca deve ser tratado como titulo de secao generico,
+    // mesmo no caso (hoje nao observado em nenhum fixture real, mas defensivo) de
+    // um PDF cujo layout faca o titulo cair bem antes de um "numero sozinho".
     if (TEXTO_APOIO_TITLE.test(line)) {
       flush();
       current = null;
@@ -481,6 +811,20 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
       activeTextoApoioChave = undefined;
       currentTexto = { titulo: line, linhas: [] };
       lastRealLine = line;
+      justCrossedPageBreak = false;
+      continue;
+    }
+
+    if (sectionTitles.has(line)) {
+      // Um titulo de secao ("CONHECIMENTOS ESPECIFICOS", "BLOCO 1"...) marca a
+      // fronteira entre um bloco de questoes (ex.: interpretacao de texto, com
+      // texto de apoio compartilhado) e o proximo bloco, tipicamente de assunto
+      // totalmente diferente. Sem limpar aqui, activeTextoApoioChave continuaria
+      // valendo por posicao pras questoes do bloco seguinte, atribuindo a elas o
+      // texto de apoio do bloco anterior mesmo sem nenhuma relacao de conteudo.
+      activeTextoApoioChave = undefined;
+      if (currentTexto) sectionBoundaryPending = true;
+      justCrossedPageBreak = false;
       continue;
     }
 
@@ -507,6 +851,7 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
       lastRealLine === null || /[.?!:;]$/.test(lastRealLine);
     const isPlausibleItemStart = aloneMatch !== null || previousLineEndedSentence;
     const isForwardOpen =
+      lineIndex >= firstQuestionIndex &&
       numero !== null && numero > lastNumero && numero <= lastNumero + 30 && isPlausibleItemStart;
     // So reabre pra tras no formato "numero sozinho" (o menos ambiguo: a linha inteira
     // e so o numero, sem risco de ser um dado no meio de uma frase) e so quando esse
@@ -514,12 +859,23 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
     // certamente e uma referencia dentro do enunciado (ex.: "questao 16" citada em
     // outro contexto), nao uma reabertura legitima.
     const isOutOfOrderReopen =
+      lineIndex >= firstQuestionIndex &&
       numero !== null &&
       aloneMatch !== null &&
       numero > 0 &&
       numero < lastNumero &&
       lastNumero - numero <= 30 &&
       !usedNumeros.has(numero);
+
+    // Numero de pagina "cru" (so o digito, sem "Pagina"/"PÁGINA" na frente - por isso
+    // NOISE_LINE nao pega) logo apos a marca d'agua/rodape de quebra de pagina. Quando
+    // esse numero coincide com uma questao ja usada antes, nao abre nem reabre nada
+    // (isForwardOpen e isOutOfOrderReopen ambos falham) e cairia como texto solto
+    // dentro do que estiver aberto no momento - ex.: "(E) II e III" ganhando um "8"
+    // grudado no final so porque a pagina 8 comecava logo ali. Descarta em vez de
+    // acumular: um numero de pagina nunca e conteudo real de questao.
+    const isStrayPageNumber =
+      aloneMatch !== null && justCrossedPageBreak && !isForwardOpen && !isOutOfOrderReopen;
 
     if (isForwardOpen || isOutOfOrderReopen) {
       flush();
@@ -533,13 +889,20 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
         numero: numero as number,
         linhas: inlineMatch ? [inlineMatch[2]] : [],
         textoApoioChave: activeTextoApoioChave,
+        pageBreakIdx: [],
       };
+    } else if (isStrayPageNumber) {
+      // Descarta silenciosamente - nao acumula em current nem currentTexto, e nao
+      // conta como "ultima linha real" (mesmo tratamento das linhas de isNoise).
+      continue;
     } else if (current) {
+      if (justCrossedPageBreak) current.pageBreakIdx.push(current.linhas.length);
       current.linhas.push(line);
     } else if (currentTexto) {
       currentTexto.linhas.push(line);
     }
 
+    justCrossedPageBreak = false;
     lastRealLine = line;
   }
   flush();
@@ -563,6 +926,60 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
       { letra: "E", texto: "Errado", correta: false },
     ];
   }
+
+  // textoApoioChave e atribuida por posicao (o texto de apoio mais recente antes da
+  // questao no fluxo linearizado do PDF) - o que falha quando o layout em colunas
+  // intercala paginas (ex.: uma pagina com 2 colunas, uma ainda terminando questoes
+  // do texto anterior enquanto a outra ja comecou o titulo do texto seguinte). Como
+  // e comum a questao citar o titulo do texto de apoio explicitamente no proprio
+  // enunciado ("Segundo o Texto I...", "Considere o trecho do Texto II..."), uma
+  // mencao explicita e um sinal mais confiavel que a posicao e sobrescreve o valor
+  // atribuido por posicao quando os dois divergem.
+  for (const questao of questoes) {
+    for (const texto of textosApoio) {
+      if (texto.chave === questao.textoApoioChave) continue;
+      if (!texto.titulo) continue;
+      const escaped = texto.titulo.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      if (new RegExp(`\\b${escaped}\\b`).test(questao.enunciado)) {
+        questao.textoApoioChave = texto.chave;
+        break;
+      }
+    }
+  }
+
+  // Nem toda questao cita o titulo do texto de apoio por extenso ("Segundo o Texto
+  // II..."); e comum citar um TRECHO ENTRE ASPAS do proprio texto sem nomea-lo (ex.:
+  // “Não me consta que já houvesse um ‘diferenciado’ negativamente marcado.”). Quando
+  // esse trecho aparece, literalmente, dentro do conteudo de um texto de apoio que NAO
+  // e o atribuido por posicao, isso e um sinal tao confiavel quanto a mencao explicita
+  // ao titulo (o mesmo tipo de vazamento de layout em colunas: uma coluna ja mostra o
+  // titulo do texto seguinte enquanto a outra ainda tem questoes do anterior).
+  const QUOTED_SPAN = /[“"]([^”"]{15,}?)[”"]/gu;
+  const normalizeForQuoteMatch = (value: string) =>
+    value.replace(/[‘’“”"']/g, "").replace(/\s+/g, " ").trim();
+  for (const questao of questoes) {
+    const quotes = Array.from(questao.enunciado.matchAll(QUOTED_SPAN), (match) =>
+      normalizeForQuoteMatch(match[1]),
+    ).filter((quote) => quote.length >= 15);
+    if (quotes.length === 0) continue;
+    for (const texto of textosApoio) {
+      if (texto.chave === questao.textoApoioChave) continue;
+      const conteudoNormalizado = normalizeForQuoteMatch(texto.conteudo);
+      if (quotes.some((quote) => conteudoNormalizado.includes(quote))) {
+        questao.textoApoioChave = texto.chave;
+        break;
+      }
+    }
+  }
+
+  // O array reflete a ordem em que cada questao foi reconhecida no texto linearizado
+  // do PDF (necessario internamente pra recuperar itens fora de ordem numerica, ver
+  // isOutOfOrderReopen acima) - itens como 16/17, que aparecem fisicamente depois do
+  // 20 no PDF de origem (layout em colunas), ficam fora de ordem no array resultante.
+  // Isso e correto pra reconstruir o conteudo de cada questao, mas nao faz sentido
+  // como ordem de EXIBICAO pro admin revisar - ordena por numero so no final, depois
+  // que toda a recuperacao/atribuicao de texto de apoio ja aconteceu.
+  questoes.sort((a, b) => a.numero - b.numero);
 
   return { questoes, textosApoio };
 }
@@ -644,12 +1061,57 @@ export function detectParsingAnomaly(
  * revisao - por isso isso retorna avisos em vez de travar o preview.
  */
 export function findAlternativaCountWarnings(questoes: QuestaoDraft[]): string[] {
-  return questoes
+  const countWarnings = questoes
     .filter((questao) => questao.alternativas.length > 6)
     .map(
       (questao) =>
         `Questão ${questao.numero}: ficou com ${questao.alternativas.length} alternativas — nenhuma questão objetiva real tem mais que 5 (A-E). Provavelmente duas ou mais questões foram mescladas (o PDF pode ter itens fora de ordem numérica). Revise ou refaça essa questão manualmente antes de confirmar.`,
     );
+
+  // Alem da contagem, uma unica alternativa MUITO maior que as irmas tambem indica
+  // mesclagem - tipico de tabela/legenda de questao "associe" (ex.: "I - P, II - Q...")
+  // que o PDF imprime fora de ordem, longe do proprio enunciado, e acaba grudada na
+  // ultima alternativa de outra questao qualquer que estiver em aberto naquele ponto
+  // do texto. Diferente do vazamento por quebra de pagina (ja tratado e recortado
+  // automaticamente em flush()), esse nao tem um marcador de pagina pra ancorar um
+  // recorte automatico com seguranca - so avisa, nao tenta consertar sozinho.
+  const lengthWarnings = questoes
+    .filter((questao) => questao.alternativas.length >= 2)
+    .filter((questao) => {
+      const lengths = questao.alternativas.map((alt) => alt.texto.length);
+      const maxLength = Math.max(...lengths);
+      const otherLengths = lengths.filter((length) => length !== maxLength);
+      const maxOther = otherLengths.length > 0 ? Math.max(...otherLengths) : 0;
+      return maxLength > 150 && maxLength > maxOther * 3;
+    })
+    .map(
+      (questao) =>
+        `Questão ${questao.numero}: uma das alternativas ficou muito maior que as demais — provavelmente uma tabela/legenda de outra questão (comum em questões "associe") grudou nela por engano. Revise essa questão manualmente antes de confirmar.`,
+    );
+
+  // Tabela de dados removida da ultima alternativa (ver splitGarbledTableTail em
+  // flush()) - o conteudo das celulas nao e reconstruivel de forma confiavel a partir
+  // do texto extraido, entao foi descartado em vez de inventado. Esse aviso e o unico
+  // rastro de que algo foi removido.
+  const tabelaWarnings = questoes
+    .filter((questao) => questao.tabelaNaoExtraida)
+    .map(
+      (questao) =>
+        `Questão ${questao.numero}: o enunciado cita uma tabela de dados, mas o conteúdo dela veio corrompido do PDF (células coladas sem espaço) e foi removido da última alternativa. Revise o PDF original e anexe a tabela manualmente (texto ou imagem).`,
+    );
+
+  // Legenda de questao "associe" que vazou de OUTRA questao nas proximidades (ver
+  // questaoTemAlternativasDeAssociacao em flush()) - descartada em vez de incorporada
+  // ao enunciado errado, mas o admin precisa saber que uma questao "associe" em algum
+  // lugar proximo desta ficou sem a propria legenda por causa disso.
+  const legendaOrfaWarnings = questoes
+    .filter((questao) => questao.legendaOrfa)
+    .map(
+      (questao) =>
+        `Questão ${questao.numero}: uma legenda de questão "associe" (algarismos romanos + letras) apareceu grudada na última alternativa, mas as alternativas desta questão não são de associação - a legenda provavelmente pertence a outra questão "associe" próxima (revise o PDF original) e foi removida em vez de incorporada ao lugar errado.`,
+    );
+
+  return [...countWarnings, ...lengthWarnings, ...tabelaWarnings, ...legendaOrfaWarnings];
 }
 
 function normalize(text: string): string {

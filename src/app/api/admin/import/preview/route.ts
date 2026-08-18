@@ -6,6 +6,7 @@ import { csvRowsToImportPayload, parseCsv } from "@/lib/question-import";
 import { extractPdfText, extractItemPositions } from "@/services/question-extraction-service";
 import { applyGabarito, applyImages, buildProvaDraft, detectParsingAnomaly, findAlternativaCountWarnings, inferProvaHints, parseGabaritoText, parseProvaText } from "@/lib/prova-parser";
 import { assignImagesToQuestions, extractImagePlacements } from "@/lib/pdf-image-extractor";
+import { extractFigureCrops } from "@/lib/pdf-figure-extractor";
 import { uploadQuestionImage } from "@/lib/supabase-storage";
 
 export async function POST(req: Request) {
@@ -59,18 +60,55 @@ export async function POST(req: Request) {
           const itemPositions = await extractItemPositions(buffer);
           const assignments = assignImagesToQuestions(placements, itemPositions);
           const uploaded = await Promise.all(
-            assignments.map(async (assignment) => ({
-              numero: assignment.numero,
-              letra: assignment.letra,
-              url: await uploadQuestionImage(assignment.bytes, `q${assignment.numero}${assignment.letra ?? ""}.jpg`),
-            }))
+            assignments.map(async (assignment) => {
+              const ext = assignment.format === "png" ? "png" : "jpg";
+              const contentType = assignment.format === "png" ? "image/png" : "image/jpeg";
+              return {
+                numero: assignment.numero,
+                letra: assignment.letra,
+                url: await uploadQuestionImage(assignment.bytes, `q${assignment.numero}${assignment.letra ?? ""}.${ext}`, contentType),
+              };
+            })
           );
           questoes = applyImages(questoes, uploaded);
         }
       } catch (imageError) {
         // Extracao de imagem e um extra (best-effort): se falhar (ex.: storage nao
-        // configurado), o rascunho de texto continua valido e o admin so nao vera imagens.
+        // configurado), o rascunho de texto continua valido - mas sem avisar aqui, o
+        // admin so via "a imagem nao apareceu" sem nenhum sinal do motivo real (ex.:
+        // env var de storage faltando em producao), o que e indistinguivel de "essa
+        // questao nunca teve imagem nenhuma".
         console.error("Falha ao extrair/subir imagens do PDF:", imageError);
+        parsingWarnings.push(
+          `Falha ao extrair/subir imagens do PDF: ${imageError instanceof Error ? imageError.message : String(imageError)}`,
+        );
+      }
+
+      try {
+        // Diagramas desenhados com vetores (linhas/caixas, ex.: esboço de classe UML,
+        // rede de cronograma) nao sao objeto /Subtype /Image - extractImagePlacements
+        // acima nunca os encontra. So verifica questoes que ainda ficaram sem imagem
+        // (a extracao real de imagem embutida, quando existe, tem prioridade).
+        const numerosSemImagem = questoes.filter((questao) => !questao.imagemUrl).map((questao) => questao.numero);
+        const figureCrops = extractFigureCrops(buffer, questoes, numerosSemImagem);
+        if (figureCrops.length > 0) {
+          const uploaded = await Promise.all(
+            figureCrops.map(async (crop) => ({
+              numero: crop.numero,
+              letra: null,
+              url: await uploadQuestionImage(crop.bytes, `q${crop.numero}-figura.png`, "image/png"),
+            }))
+          );
+          questoes = applyImages(questoes, uploaded);
+        }
+      } catch (figureError) {
+        // Mesma logica best-effort do bloco de imagem acima: se falhar, o rascunho de
+        // texto continua valido - mas o admin precisa de um sinal do motivo real (ver
+        // comentario no catch de imagem acima).
+        console.error("Falha ao extrair figuras vetoriais do PDF:", figureError);
+        parsingWarnings.push(
+          `Falha ao extrair figuras vetoriais do PDF: ${figureError instanceof Error ? figureError.message : String(figureError)}`,
+        );
       }
 
       const inferred = inferProvaHints(text);

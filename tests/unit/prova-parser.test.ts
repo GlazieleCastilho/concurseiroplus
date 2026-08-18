@@ -196,6 +196,28 @@ describe("parseProvaText - CESGRANRIO/PETROBRAS (pagina de instrucoes numeradas 
     expect(questao10.enunciado).not.toContain("per cent of GDP");
   });
 
+  it("separa afirmativas em algarismos romanos (I/II/III) em paragrafos proprios, em vez de achatar tudo numa linha corrida", () => {
+    // Pedido do usuario: enunciados do tipo "analise as afirmativas abaixo" tem cada
+    // afirmativa (I - ..., II - ..., III - ...) numa linha propria no PDF de origem,
+    // mas ficavam todos amassados numa unica linha corrida no enunciado final - dificil
+    // de ler. formatEnunciadoWithItemBreaks preserva a separacao visual (quebra de
+    // paragrafo antes de cada item) sem alterar uma palavra do conteudo. Cobre tambem a
+    // variacao em que o "I" fica sozinho na propria linha, com o hifen so na seguinte
+    // (ver ROMAN_ITEM_BARE) - a questao 9 tem exatamente esse caso no PDF de origem.
+    const questao9 = questoes.find((item) => item.numero === 9)!;
+    const paragrafos9 = questao9.enunciado.split("\n\n");
+    expect(paragrafos9.length).toBeGreaterThanOrEqual(4);
+    expect(paragrafos9[1]).toMatch(/^I - A forma verbal houvesse/);
+    expect(paragrafos9[2]).toMatch(/^II - O verbo haver/);
+    expect(paragrafos9[3]).toMatch(/^III - A forma verbal houvesse/);
+
+    const questao23 = questoes.find((item) => item.numero === 23)!;
+    const paragrafos23 = questao23.enunciado.split("\n\n");
+    expect(paragrafos23[1]).toMatch(/^I - A data mais cedo/);
+    expect(paragrafos23[2]).toMatch(/^II - Caso a previsão/);
+    expect(paragrafos23[3]).toMatch(/^III - A folga total/);
+  });
+
   it("recupera itens 16 e 17 mesmo aparecendo fora de ordem numerica no PDF (depois do item 20, layout em colunas)", () => {
     // Bug original: como o parser exige numeros crescentes, "16" e "17" apos "20" no
     // texto nunca abriam bloco proprio e ficavam grudados dentro da questao 20 (que
@@ -212,7 +234,257 @@ describe("parseProvaText - CESGRANRIO/PETROBRAS (pagina de instrucoes numeradas 
       expect(questao.alternativas, `questao ${numero}`).toHaveLength(5);
     }
     expect(detectParsingAnomaly(cesgranrioProva, questoes)).toBeNull();
-    expect(findAlternativaCountWarnings(questoes)).toEqual([]);
+  });
+
+  it("reconhece a legenda de uma questao 'associe' impressa fora de ordem e move pro enunciado, sem deixar grudada na ultima alternativa", () => {
+    // Bug original: questoes "associe" (ex.: 40, 42, 43, 49) trazem, no LAYOUT VISUAL da
+    // pagina, uma legenda em duas colunas (lista em algarismos romanos "I - ...", lista
+    // em letras "P - ...") ENTRE o comando e as alternativas - mas o texto extraido do
+    // PDF linearriza isso e imprime a legenda inteira DEPOIS das alternativas. Nao e
+    // vazamento de outra questao: e o proprio comando da questao, so impresso fora de
+    // ordem - splitAssociationLegend reconhece o padrao e move a legenda pro fim do
+    // enunciado, no lugar de deixa-la grudada na ultima alternativa. Todas ficam com a
+    // ultima alternativa limpa (a legenda nunca mais e confundida com o texto da
+    // resposta em si, que e o que causava o falso positivo de "alternativa muito maior
+    // que as irmas").
+    for (const numero of [40, 42, 43, 49]) {
+      const questao = questoes.find((item) => item.numero === numero)!;
+      const ultimaAlternativa = questao.alternativas[questao.alternativas.length - 1];
+      expect(ultimaAlternativa.texto.length, `questao ${numero} ultima alternativa`).toBeLessThan(30);
+    }
+    const questao40 = questoes.find((item) => item.numero === 40)!;
+    expect(questao40.enunciado).toContain("Perspectiva organizacional");
+    // Pedido do usuario: a legenda (I/II/III e P/Q/R/S) tambem deve ficar separada em
+    // paragrafos proprios, igual as afirmativas comuns - nao so o enunciado original.
+    const paragrafos40 = questao40.enunciado.split("\n\n");
+    expect(paragrafos40).toContain("I - Atividades");
+    expect(paragrafos40).toContain("II - Responsabilidades, dependências e autoridade");
+    expect(paragrafos40).toContain("P - Perspectiva funcional");
+    expect(paragrafos40).toContain("S - Perspectiva organizacional");
+
+    // Questoes 46 e 51 tem avisos DIFERENTES agora (ver proximos testes: legenda orfa e
+    // tabela de dados propria) - as quatro genuinamente "associe" nao devem avisar mais.
+    const warnings = findAlternativaCountWarnings(questoes);
+    for (const numero of [40, 42, 43, 49]) {
+      expect(warnings.some((warning) => warning.startsWith(`Questão ${numero}:`)), `nao deveria mais avisar pra questao ${numero}`).toBe(false);
+    }
+  });
+
+  it("descarta uma legenda orfa (vazada de OUTRA questao 'associe' proxima) em vez de incorpora-la ao enunciado errado", () => {
+    // Bug reportado pelo usuario: a legenda que aparece grudada na questao 46 (e 51) nao
+    // e delas - e conteudo real, mas de outra questao "associe" (ex.: a legenda de
+    // "niveis organizacionais" da questao 43) que o PDF imprime fora de ordem perto
+    // dessas questoes, sem nenhuma relacao de conteudo com elas. O sinal que distingue
+    // uma legenda genuina de uma orfa: uma questao "associe" DE VERDADE sempre tem
+    // alternativas no formato "I - P , II - Q..." - a 46 (numeros simples) e a 51
+    // (nomes de conceitos de POO) nao tem esse formato, entao a legenda anexada a elas
+    // e descartada (nao incorporada ao enunciado) e vira um aviso em vez disso.
+    for (const numero of [46, 51]) {
+      const questao = questoes.find((item) => item.numero === numero)!;
+      expect(questao.legendaOrfa, `questao ${numero}`).toBe(true);
+      expect(questao.enunciado, `questao ${numero}`).not.toMatch(/\bII\s*[-–—]/);
+    }
+    const questao51 = questoes.find((item) => item.numero === 51)!;
+    expect(questao51.enunciado).toContain("Qual recurso o programador deverá utilizar");
+    expect(questao51.alternativas.map((alt) => alt.texto)).toEqual([
+      "Agregação",
+      "Classes Abstratas",
+      "Encapsulamento",
+      "Polimorfismo",
+      "Composição",
+    ]);
+
+    const warnings = findAlternativaCountWarnings(questoes);
+    for (const numero of [46, 51]) {
+      expect(warnings.some((warning) => warning.startsWith(`Questão ${numero}:`) && warning.includes("legenda"))).toBe(true);
+    }
+  });
+
+  it("remove uma tabela de dados embaralhada da ultima alternativa e avisa, em vez de deixar o texto ilegivel", () => {
+    // Bug reportado pelo usuario: a questao 46 tem uma tabela de dados de verdade
+    // (Recurso/Junho/Julho/Agosto/Percentual trimestral) entre o enunciado e a pergunta
+    // final - mas cada celula da tabela vira um pedaco de texto solto na extracao, e a
+    // linearizacao concatena tudo sem espaco ("RecursoJunhoJulhoAgostoPercentual...
+    // Roldana311219,05%..."), grudado na ultima alternativa (E). Diferente da legenda de
+    // questao "associe" (formato reconhecivel, reconstruivel), o CONTEUDO de uma tabela
+    // assim nao da pra reconstruir com confianca a partir do texto extraido - a unica
+    // opcao segura e remover (nao inventar uma reconstrucao) e avisar o admin pra
+    // revisar o PDF original e anexar a tabela manualmente.
+    const questao46 = questoes.find((item) => item.numero === 46)!;
+    expect(questao46.alternativas.map((alt) => alt.texto)).toEqual(["0", "3", "4", "9", "12"]);
+    expect(questao46.tabelaNaoExtraida).toBe(true);
+
+    const warnings = findAlternativaCountWarnings(questoes);
+    expect(warnings.some((warning) => warning.startsWith("Questão 46:") && warning.includes("tabela de dados"))).toBe(true);
+
+    // Nao pode disparar em questoes normais so por citarem uma URL/hash com muitos
+    // digitos colados a letras (ex.: questao 10, cujo vazamento por quebra de pagina
+    // inclui uma URL de citacao real "<http://www.ft.com/cms/s/0/fa11320c-4f48...>") -
+    // esse e um sinal totalmente diferente de uma tabela de dados de verdade.
+    const questao10 = questoes.find((item) => item.numero === 10)!;
+    expect(questao10.tabelaNaoExtraida).toBeUndefined();
+    expect(warnings.some((warning) => warning.startsWith("Questão 10:"))).toBe(false);
+  });
+
+  it("nao deixa um numero de pagina cru (sem 'Pagina' na frente) vazar pra ultima alternativa em aberto", () => {
+    // Bug original: apos a marca d'agua/rodape de quebra de pagina, o numero da pagina
+    // 8 aparece sozinho na linha, sem nenhuma palavra como "Pagina" na frente (por isso
+    // NOISE_LINE nao pega). Como 8 ja tinha sido usado como questao antes e nao e maior
+    // que o ultimo item (23), nem isForwardOpen nem isOutOfOrderReopen abriam bloco pra
+    // ele, entao caia como texto solto na alternativa E da questao 23: "(E) II e III 8".
+    const questao23 = questoes.find((item) => item.numero === 23)!;
+    const ultimaAlternativa23 = questao23.alternativas[questao23.alternativas.length - 1];
+    expect(ultimaAlternativa23.texto).toBe("II e III");
+  });
+
+  it("nao deixa a marca d'agua 'RASCUNHO' (espaco reservado pro candidato) vazar pra ultima alternativa", () => {
+    // Bug original: "RASCUNHO" aparece sozinho na linha, sem bater em nenhum padrao
+    // de NOISE_LINE existente (nao e "espaço livre", nao tem "Pagina" na frente) -
+    // caia como texto solto na ultima alternativa em aberto no momento, ex.:
+    // "...à qualidade. RASCUNHO" na questao 42.
+    for (const questao of questoes) {
+      for (const alternativa of questao.alternativas) {
+        expect(alternativa.texto, `questao ${questao.numero} alternativa ${alternativa.letra}`).not.toMatch(/rascunho/i);
+      }
+    }
+  });
+
+  it("reconhece titulo de texto de apoio em ingles ('Text I'/'Text II', secao de lingua estrangeira), nao so 'Texto' em portugues", () => {
+    const { textosApoio, questoes } = parseProvaText(cesgranrioProva);
+    const textI = textosApoio.find((item) => item.titulo === "Text I");
+    const textII = textosApoio.find((item) => item.titulo === "Text II");
+    expect(textI).toBeDefined();
+    expect(textII).toBeDefined();
+    // Bug original: regex so aceitava "Texto"/"TEXTO" (portugues), entao "Text I"/
+    // "Text II" (secao de lingua estrangeira) nao eram reconhecidos como titulo e o
+    // texto inteiro vazava para dentro da ultima alternativa da questao anterior.
+    const questao5 = questoes.find((item) => item.numero === 5)!;
+    const ultimaAlternativa5 = questao5.alternativas[questao5.alternativas.length - 1];
+    expect(ultimaAlternativa5.texto.length).toBeLessThan(20);
+  });
+
+  it("captura o texto de apoio que vem antes da questao 1 (fora da faixa que comeca em firstQuestionIndex)", () => {
+    // Bug original: o loop principal so comecava em firstQuestionIndex (pulando a
+    // pagina de instrucoes numeradas). Como o "Texto I" da questao 1 fica ANTES dela
+    // no PDF (junto com as instrucoes puladas), esse texto nunca era visto e a
+    // questao 1 ficava sem texto de apoio.
+    const { questoes, textosApoio } = parseProvaText(cesgranrioProva);
+    const texto = textosApoio.find((item) => item.titulo === "Texto I");
+    expect(texto).toBeDefined();
+    expect(texto!.conteudo).toContain("REPIQUE");
+    const questao1 = questoes.find((item) => item.numero === 1)!;
+    expect(questao1.textoApoioChave).toBe(texto!.chave);
+  });
+
+  it("prefere um trecho entre aspas que aparece literalmente no texto de apoio sobre a posicao no PDF, mesmo sem citar o titulo por extenso", () => {
+    // Bug original (limitacao conhecida, agora corrigida): a questao 9 nao cita
+    // "Texto II" por extenso, entao so a atribuicao por posicao valia - e por posicao
+    // ela ficava colada a "Text I" (a secao de lingua estrangeira, que na extracao
+    // linearizada do PDF aparece fisicamente antes dela por causa do layout em
+    // colunas). Mas o enunciado da questao 9 cita um trecho entre aspas que e, palavra
+    // por palavra, um pedaco do conteudo real do Texto II - sinal tao confiavel quanto
+    // citar o titulo, so que sem depender de mencao explicita.
+    const { questoes, textosApoio } = parseProvaText(cesgranrioProva);
+    const textoII = textosApoio.find((item) => item.titulo === "Texto II")!;
+    const questao9 = questoes.find((item) => item.numero === 9)!;
+    expect(questao9.enunciado).toContain("houvesse");
+    expect(questao9.textoApoioChave).toBe(textoII.chave);
+  });
+
+  it("prefere mencao explicita ao titulo no enunciado sobre a posicao no PDF (layout em colunas intercala secoes)", () => {
+    // Bug original: nesse PDF, o titulo "Text I" (secao de lingua estrangeira)
+    // aparece fisicamente ANTES das questoes 9 e 10 no texto linearizado, mesmo elas
+    // ainda sendo sobre o "Texto II" (portugues) - artefato de layout em colunas (uma
+    // coluna ja mostra o titulo da proxima secao enquanto a outra ainda termina a
+    // anterior). Atribuicao so por posicao dava a questao 10 o texto errado (Text I),
+    // apesar dela citar "Texto II" explicitamente no proprio enunciado.
+    const { questoes, textosApoio } = parseProvaText(cesgranrioProva);
+    const textoII = textosApoio.find((item) => item.titulo === "Texto II")!;
+    const questao10 = questoes.find((item) => item.numero === 10)!;
+    expect(questao10.enunciado).toContain("Texto II");
+    expect(questao10.textoApoioChave).toBe(textoII.chave);
+  });
+
+  it("nao deixa a continuacao de um texto de apoio sem titulo repetido vazar pra ultima alternativa em aberto", () => {
+    // Bug original: apos a quebra de pagina (marca d'agua "pcimarkpci"), o "Text I"
+    // retoma sem repetir o titulo, no meio da acumulacao da questao 10 (que ja tinha
+    // fechado sua alternativa E). Esse paragrafo inteiro em ingles ficava grudado no
+    // final da alternativa E da questao 10 (a ultima em aberto no momento da quebra).
+    const { questoes, textosApoio } = parseProvaText(cesgranrioProva);
+    const questao10 = questoes.find((item) => item.numero === 10)!;
+    const ultimaAlternativa10 = questao10.alternativas[questao10.alternativas.length - 1];
+    expect(ultimaAlternativa10.texto.length).toBeLessThan(50);
+    expect(ultimaAlternativa10.texto).not.toContain("Without");
+
+    const textI = textosApoio.find((item) => item.titulo === "Text I")!;
+    expect(textI.conteudo).toContain("Without");
+    expect(textI.conteudo).toContain("local content policy");
+  });
+
+  it("reconstitui palavras quebradas por hifen de justificacao no fim da linha (nao deixa 'engala- nado' no lugar de 'engalanada')", () => {
+    // Bug original: linhas eram sempre juntadas com espaco simples. PDFs com texto
+    // justificado quebram palavras longas no fim da linha com hifen ("engala-" numa
+    // linha, "nado" na proxima) - juntar com espaco deixa o hifen solto no meio da
+    // palavra em qualquer texto corrido da prova (textos de apoio, enunciados,
+    // alternativas). Nao pode virar um "coma tudo": uma sigla real com hifen quebrada
+    // no fim da linha (ex.: "CARTÃO-" seguido de "RESPOSTA") tem que continuar intacta.
+    const { textosApoio, questoes } = parseProvaText(cesgranrioProva);
+    const texto1 = textosApoio.find((item) => item.titulo === "Texto I")!;
+    expect(texto1.conteudo).toContain("engalanada");
+    expect(texto1.conteudo).not.toMatch(/engala-\s/);
+    const texto2 = textosApoio.find((item) => item.titulo === "Texto II")!;
+    expect(texto2.conteudo).toContain("gente diferenciada");
+    expect(texto2.conteudo).toContain("Higienópolis");
+    expect(texto2.conteudo).toContain("polêmica");
+    for (const texto of textosApoio) {
+      expect(texto.conteudo, texto.titulo).not.toMatch(/\p{L}-\s\p{L}/u);
+    }
+    for (const questao of questoes) {
+      expect(questao.enunciado, `questao ${questao.numero}`).not.toMatch(/\p{L}-\s\p{L}/u);
+      for (const alternativa of questao.alternativas) {
+        expect(alternativa.texto, `questao ${questao.numero} alternativa ${alternativa.letra}`).not.toMatch(/\p{L}-\s\p{L}/u);
+      }
+    }
+  });
+
+  it("nao vaza o texto de apoio do bloco de interpretacao pras questoes de conhecimentos especificos (titulo de secao encerra o vinculo)", () => {
+    // Bug original: activeTextoApoioChave e atribuida por posicao (o texto de apoio
+    // mais recente antes da questao) e so era limpa ao encontrar um NOVO titulo de
+    // texto de apoio - nunca ao encontrar um titulo de secao generico ("CONHECIMENTOS
+    // ESPECIFICOS", "BLOCO 1"), que marca a fronteira real entre o bloco de
+    // interpretacao de texto e o bloco seguinte, de assunto totalmente diferente. Toda
+    // questao de 21 a 70 (PMBOK, BPM, banco de dados, logica...) herdava por engano a
+    // chave do "Text II" (a ultima passagem de ingles antes da secao 21-70 comecar).
+    const { questoes } = parseProvaText(cesgranrioProva);
+    for (const numero of [21, 30, 40, 46, 51, 60, 70]) {
+      const questao = questoes.find((item) => item.numero === numero)!;
+      expect(questao.textoApoioChave, `questao ${numero}`).toBeUndefined();
+    }
+    for (const numero of [19, 20]) {
+      const questao = questoes.find((item) => item.numero === numero)!;
+      expect(questao.textoApoioChave, `questao ${numero}`).toBeDefined();
+    }
+  });
+
+  it("preserva texto de apoio curto (< 100 chars) com aviso de revisao em vez de descartar a referencia", () => {
+    // Antes: textos de apoio com menos de MIN_TEXTO_APOIO_LENGTH eram descartados por
+    // inteiro - a questao seguinte ficava sem nenhuma chave, mesmo tendo um titulo de
+    // texto de apoio de verdade (ex.: charge com legenda curta, citacao, texto cujo
+    // corpo principal esta numa imagem). Curto agora vira entidade com aviso, nao some.
+    const texto = [
+      "Texto I",
+      "Uma citacao curta.",
+      "1",
+      "Segundo o Texto I, a citacao e de quem?",
+      "(A) autor A.",
+      "(B) autor B.",
+    ].join("\n");
+    const { questoes, textosApoio } = parseProvaText(texto);
+    expect(textosApoio).toHaveLength(1);
+    expect(textosApoio[0].conteudo).toContain("revisar PDF original");
+    expect(textosApoio[0].conteudo).toContain("Uma citacao curta.");
+    const questao1 = questoes.find((item) => item.numero === 1)!;
+    expect(questao1.textoApoioChave).toBe(textosApoio[0].chave);
   });
 });
 

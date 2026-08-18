@@ -34,11 +34,99 @@ function safeCountFromJson(text: string): { provas: number; questoes: number } {
   }
 }
 
-function parseGabaritoInput(text: string): Map<number, string> {
+type DraftTextoApoio = { chave: string; titulo?: string; conteudo: string };
+type DraftAlternativa = { letra: string; texto: string };
+type DraftQuestao = { numero: number; enunciado: string; imagemUrl?: string; textoApoioChave?: string; alternativas?: DraftAlternativa[] };
+type DraftProva = { titulo?: string; textosApoio?: DraftTextoApoio[]; questoes?: DraftQuestao[] };
+
+// O JSON do rascunho tem textosApoio e questoes como arrays separados (contrato exigido
+// pelo schema/repository ao confirmar o import) - lendo o JSON bruto de cima pra baixo,
+// isso faz todos os textos de apoio aparecerem juntos ANTES de qualquer questao, mesmo
+// que o array de questoes ja esteja na ordem real do PDF. So pra revisao visual (nao
+// afeta o JSON editavel nem o que e enviado ao confirmar), monta uma pre-visualizacao
+// que intercala cada texto de apoio logo antes do primeiro bloco de questoes que o
+// referencia - mesmo padrao ja usado na tela de simulado do aluno.
+export function buildReadingOrderPreview(text: string): DraftProva[] | null {
+  try {
+    const parsed = JSON.parse(text) as { provas?: DraftProva[] };
+    return parsed.provas ?? [];
+  } catch {
+    return null;
+  }
+}
+
+export function DraftPreview({ provas }: { provas: DraftProva[] }) {
+  return (
+    <div className="space-y-6">
+      {provas.map((prova, provaIdx) => {
+        const questoes = prova.questoes ?? [];
+        const textosPorChave = new Map((prova.textosApoio ?? []).map((texto) => [texto.chave, texto]));
+        return (
+          <div key={provaIdx} className="space-y-3">
+            {questoes.map((questao, index) => {
+              const texto = questao.textoApoioChave ? textosPorChave.get(questao.textoApoioChave) : undefined;
+              const mudouTexto = questao.textoApoioChave !== questoes[index - 1]?.textoApoioChave;
+              return (
+                <div key={`${questao.numero}-${index}`} className="space-y-3">
+                  {texto && mudouTexto && (
+                    <div className="rounded-md border border-dashed bg-muted/30 p-3">
+                      <p className="text-sm font-semibold">{texto.titulo ?? "Texto de apoio"}</p>
+                      <p className="mt-1 whitespace-pre-wrap text-xs leading-5 text-muted-foreground">{texto.conteudo}</p>
+                    </div>
+                  )}
+                  <div className="rounded-md border p-3">
+                    <p className="text-xs font-semibold text-muted-foreground">Questao {questao.numero}</p>
+                    <p className="mt-1 whitespace-pre-wrap text-sm leading-6">{questao.enunciado}</p>
+                    {questao.imagemUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={questao.imagemUrl}
+                        alt={`Imagem da questao ${questao.numero}`}
+                        className="mt-2 max-w-full rounded-md border border-border"
+                      />
+                    )}
+                    {(questao.alternativas ?? []).length > 0 && (
+                      <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                        {(questao.alternativas ?? []).map((alt) => (
+                          <li key={alt.letra}>({alt.letra}) {alt.texto}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// Aceita dois formatos:
+// 1. Explicito - "numero + letra" (separados por hifen, dois-pontos, ponto, parenteses
+//    OU so espaco - cobre tanto "1-A, 2-C" quanto uma tabela colada direto do PDF do
+//    tipo "01 A  02 B  03 C"). Preferido quando ha numeros no texto colado: sobrevive a
+//    provas com questoes anuladas/puladas (o numero ancora cada resposta na questao
+//    certa, mesmo com furos na sequencia).
+// 2. Simplificado - so a SEQUENCIA de respostas, uma por questao, na ordem (1a, 2a,
+//    3a...), sem precisar digitar o numero de cada questao. Usado quando o texto colado
+//    nao tem nenhum numero (ex.: gabarito oficial colado como "A C E D B A E D C B..."
+//    ou uma letra por linha) - da muito trabalho digitar "1-", "2-"... pra cada uma das
+//    dezenas de questoes de uma prova inteira.
+export function parseGabaritoInput(text: string): Map<number, string> {
   const map = new Map<number, string>();
-  const regex = /(\d+)\s*[-:.)]\s*([A-Za-z])/g;
-  for (const match of text.matchAll(regex)) {
+  const explicitRegex = /(\d{1,3})\s*[-:.)]?\s*([A-Ea-e])\b/g;
+  for (const match of text.matchAll(explicitRegex)) {
     map.set(Number(match[1]), match[2].toUpperCase());
+  }
+  if (map.size > 0) return map;
+
+  const sequentialRegex = /\b([A-Ea-e])\b/g;
+  let numero = 1;
+  for (const match of text.matchAll(sequentialRegex)) {
+    map.set(numero, match[1].toUpperCase());
+    numero += 1;
   }
   return map;
 }
@@ -293,24 +381,48 @@ export function QuestionImportManager() {
             <div className="space-y-2 rounded-md border p-3">
               <Label htmlFor="gabarito-manual">Inserir gabarito manualmente</Label>
               <p className="text-xs text-muted-foreground">
-                Formato: numero da questao + letra da alternativa correta (A-E, ou C/E para Certo/Errado). Ex:{" "}
-                <code>1-A, 2-C, 3-E, 4-D</code>
+                Duas formas de colar (A-E, ou C/E para Certo/Errado):
+                <br />
+                <strong>Simples</strong> — so a sequencia de respostas, uma por questao, na ordem: <code>A C E D B A E D C B...</code> (uma por linha tambem funciona)
+                <br />
+                <strong>Com numero</strong> — util se a prova tiver questao anulada/pulada: <code>1-A, 2-C, 3-E, 4-D</code>
               </p>
               <Textarea
                 id="gabarito-manual"
                 value={gabaritoInput}
                 onChange={(event) => setGabaritoInput(event.target.value)}
-                placeholder="1-A, 2-C, 3-E, 4-D, 5-B..."
+                placeholder="A C E D B A E D C B... (ou 1-A, 2-C, 3-E, 4-D se preferir numerar)"
                 className="min-h-[80px] font-mono text-xs"
               />
               <Button type="button" variant="secondary" onClick={applyGabarito}>Aplicar gabarito ao rascunho</Button>
             </div>
-            <Label>Rascunho (edite se necessario, especialmente gabaritos)</Label>
-            <Textarea
-              value={editableJson}
-              onChange={(event) => setEditableJson(event.target.value)}
-              className="min-h-[360px] font-mono text-xs"
-            />
+            <Tabs defaultValue="preview">
+              <TabsList>
+                <TabsTrigger value="preview">Pre-visualizacao (ordem do PDF)</TabsTrigger>
+                <TabsTrigger value="json">Editar JSON</TabsTrigger>
+              </TabsList>
+              <TabsContent value="preview" className="mt-3">
+                {(() => {
+                  const provas = buildReadingOrderPreview(editableJson);
+                  if (!provas) {
+                    return <p className="text-sm text-destructive">JSON invalido - corrija na aba &ldquo;Editar JSON&rdquo; pra ver a pre-visualizacao.</p>;
+                  }
+                  return (
+                    <div className="max-h-[480px] overflow-y-auto rounded-md border p-3">
+                      <DraftPreview provas={provas} />
+                    </div>
+                  );
+                })()}
+              </TabsContent>
+              <TabsContent value="json" className="mt-3 space-y-3">
+                <Label>Rascunho (edite se necessario, especialmente gabaritos)</Label>
+                <Textarea
+                  value={editableJson}
+                  onChange={(event) => setEditableJson(event.target.value)}
+                  className="min-h-[360px] font-mono text-xs"
+                />
+              </TabsContent>
+            </Tabs>
             <Button onClick={confirmImport} disabled={confirmLoading}>
               {confirmLoading ? "Salvando..." : "Confirmar e salvar no banco"}
             </Button>
