@@ -212,7 +212,20 @@ describe("parseProvaText - CESGRANRIO/PETROBRAS (pagina de instrucoes numeradas 
       expect(questao.alternativas, `questao ${numero}`).toHaveLength(5);
     }
     expect(detectParsingAnomaly(cesgranrioProva, questoes)).toBeNull();
-    expect(findAlternativaCountWarnings(questoes)).toEqual([]);
+  });
+
+  it("avisa quando uma alternativa fica muito maior que as irmas (tabela/legenda de questao 'associe' grudada nela)", () => {
+    // Limitacao real e conhecida deste PDF: questoes "associe" (ex.: 40, 42, 46, 51)
+    // tem sua tabela/legenda (ex.: "I - P, II - Q...") impressa fora de ordem, longe
+    // do proprio enunciado - o texto acaba grudado na ultima alternativa de outra
+    // questao qualquer que estiver em aberto naquele ponto do documento. Sem marcador
+    // de pagina pra ancorar um recorte automatico seguro (diferente do vazamento por
+    // quebra de pagina, que ja e corrigido sozinho em flush()), o parser so avisa em
+    // vez de tentar consertar sozinho - o admin revisa e corrige manualmente.
+    const warnings = findAlternativaCountWarnings(questoes);
+    for (const numero of [40, 42, 46, 51]) {
+      expect(warnings.some((warning) => warning.startsWith(`Questão ${numero}:`)), `aviso pra questao ${numero}`).toBe(true);
+    }
   });
 
   it("nao deixa um numero de pagina cru (sem 'Pagina' na frente) vazar pra ultima alternativa em aberto", () => {
@@ -224,6 +237,18 @@ describe("parseProvaText - CESGRANRIO/PETROBRAS (pagina de instrucoes numeradas 
     const questao23 = questoes.find((item) => item.numero === 23)!;
     const ultimaAlternativa23 = questao23.alternativas[questao23.alternativas.length - 1];
     expect(ultimaAlternativa23.texto).toBe("II e III");
+  });
+
+  it("nao deixa a marca d'agua 'RASCUNHO' (espaco reservado pro candidato) vazar pra ultima alternativa", () => {
+    // Bug original: "RASCUNHO" aparece sozinho na linha, sem bater em nenhum padrao
+    // de NOISE_LINE existente (nao e "espaço livre", nao tem "Pagina" na frente) -
+    // caia como texto solto na ultima alternativa em aberto no momento, ex.:
+    // "...à qualidade. RASCUNHO" na questao 42.
+    for (const questao of questoes) {
+      for (const alternativa of questao.alternativas) {
+        expect(alternativa.texto, `questao ${questao.numero} alternativa ${alternativa.letra}`).not.toMatch(/rascunho/i);
+      }
+    }
   });
 
   it("reconhece titulo de texto de apoio em ingles ('Text I'/'Text II', secao de lingua estrangeira), nao so 'Texto' em portugues", () => {

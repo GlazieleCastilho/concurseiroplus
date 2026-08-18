@@ -25,7 +25,7 @@ type QuestaoDraft = {
 export type TextoApoioDraft = { chave: string; titulo?: string; conteudo: string };
 
 const NOISE_LINE =
-  /^(pcimarkpci\b|www\.\S+$|--\s*\d+\s+of\s+\d+\s*--$|espa[cç]o livre$|.*P[ÁA]GINA\s+\d+\s*$)/i;
+  /^(pcimarkpci\b|www\.\S+$|--\s*\d+\s+of\s+\d+\s*--$|espa[cç]o livre$|rascunho$|.*P[ÁA]GINA\s+\d+\s*$)/i;
 // Numero do item seguido de texto na mesma linha.
 // Aceita formatos comuns como:
 //   9 Observe a charge...
@@ -764,12 +764,35 @@ export function detectParsingAnomaly(
  * revisao - por isso isso retorna avisos em vez de travar o preview.
  */
 export function findAlternativaCountWarnings(questoes: QuestaoDraft[]): string[] {
-  return questoes
+  const countWarnings = questoes
     .filter((questao) => questao.alternativas.length > 6)
     .map(
       (questao) =>
         `Questão ${questao.numero}: ficou com ${questao.alternativas.length} alternativas — nenhuma questão objetiva real tem mais que 5 (A-E). Provavelmente duas ou mais questões foram mescladas (o PDF pode ter itens fora de ordem numérica). Revise ou refaça essa questão manualmente antes de confirmar.`,
     );
+
+  // Alem da contagem, uma unica alternativa MUITO maior que as irmas tambem indica
+  // mesclagem - tipico de tabela/legenda de questao "associe" (ex.: "I - P, II - Q...")
+  // que o PDF imprime fora de ordem, longe do proprio enunciado, e acaba grudada na
+  // ultima alternativa de outra questao qualquer que estiver em aberto naquele ponto
+  // do texto. Diferente do vazamento por quebra de pagina (ja tratado e recortado
+  // automaticamente em flush()), esse nao tem um marcador de pagina pra ancorar um
+  // recorte automatico com seguranca - so avisa, nao tenta consertar sozinho.
+  const lengthWarnings = questoes
+    .filter((questao) => questao.alternativas.length >= 2)
+    .filter((questao) => {
+      const lengths = questao.alternativas.map((alt) => alt.texto.length);
+      const maxLength = Math.max(...lengths);
+      const otherLengths = lengths.filter((length) => length !== maxLength);
+      const maxOther = otherLengths.length > 0 ? Math.max(...otherLengths) : 0;
+      return maxLength > 250 && maxLength > maxOther * 3;
+    })
+    .map(
+      (questao) =>
+        `Questão ${questao.numero}: uma das alternativas ficou muito maior que as demais — provavelmente uma tabela/legenda de outra questão (comum em questões "associe") grudou nela por engano. Revise essa questão manualmente antes de confirmar.`,
+    );
+
+  return [...countWarnings, ...lengthWarnings];
 }
 
 function normalize(text: string): string {
