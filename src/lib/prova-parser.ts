@@ -400,6 +400,15 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
   let currentTexto: { titulo: string; linhas: string[] } | null = null;
   let activeTextoApoioChave: string | undefined;
   let textoApoioSeq = 0;
+  // Fica true quando um titulo de secao e cruzado ENQUANTO currentTexto ainda esta
+  // acumulando (caso real: um numero de item "abre" cedo demais por engano - ex.: uma
+  // citacao "(line 19)" dentro do proprio texto de apoio bate no padrao de item sozinho
+  // - entao o texto de apoio so termina de acumular e e flushado bem mais tarde, DEPOIS
+  // do titulo de secao que devia separa-lo do proximo bloco). Sem isso, o flushTexto()
+  // tardio reatribuiria activeTextoApoioChave ao texto que acabou de fechar, desfazendo
+  // a limpeza feita no cruzamento do titulo de secao e vazando o texto de apoio pras
+  // questoes do bloco seguinte (que nao tem nenhuma relacao de conteudo com ele).
+  let sectionBoundaryPending = false;
 
   function flushTexto() {
     if (!currentTexto) return;
@@ -421,9 +430,10 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
             ? conteudo
             : `[Texto de apoio curto ou baseado em imagem — revisar PDF original e completar manualmente.] ${conteudo}`,
       });
-      activeTextoApoioChave = chave;
+      if (!sectionBoundaryPending) activeTextoApoioChave = chave;
     }
     currentTexto = null;
+    sectionBoundaryPending = false;
   }
   // Alguns PDFs (layout em colunas) trazem itens fora de ordem numerica no proprio
   // documento - ex.: ...15, 18, 19, 20, 16, 17... Sem isso, "16" e "17" nunca abririam
@@ -576,6 +586,14 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
     }
 
     if (sectionTitles.has(line)) {
+      // Um titulo de secao ("CONHECIMENTOS ESPECIFICOS", "BLOCO 1"...) marca a
+      // fronteira entre um bloco de questoes (ex.: interpretacao de texto, com
+      // texto de apoio compartilhado) e o proximo bloco, tipicamente de assunto
+      // totalmente diferente. Sem limpar aqui, activeTextoApoioChave continuaria
+      // valendo por posicao pras questoes do bloco seguinte, atribuindo a elas o
+      // texto de apoio do bloco anterior mesmo sem nenhuma relacao de conteudo.
+      activeTextoApoioChave = undefined;
+      if (currentTexto) sectionBoundaryPending = true;
       justCrossedPageBreak = false;
       continue;
     }

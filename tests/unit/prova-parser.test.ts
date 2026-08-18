@@ -308,6 +308,25 @@ describe("parseProvaText - CESGRANRIO/PETROBRAS (pagina de instrucoes numeradas 
     expect(textI.conteudo).toContain("local content policy");
   });
 
+  it("nao vaza o texto de apoio do bloco de interpretacao pras questoes de conhecimentos especificos (titulo de secao encerra o vinculo)", () => {
+    // Bug original: activeTextoApoioChave e atribuida por posicao (o texto de apoio
+    // mais recente antes da questao) e so era limpa ao encontrar um NOVO titulo de
+    // texto de apoio - nunca ao encontrar um titulo de secao generico ("CONHECIMENTOS
+    // ESPECIFICOS", "BLOCO 1"), que marca a fronteira real entre o bloco de
+    // interpretacao de texto e o bloco seguinte, de assunto totalmente diferente. Toda
+    // questao de 21 a 70 (PMBOK, BPM, banco de dados, logica...) herdava por engano a
+    // chave do "Text II" (a ultima passagem de ingles antes da secao 21-70 comecar).
+    const { questoes } = parseProvaText(cesgranrioProva);
+    for (const numero of [21, 30, 40, 46, 51, 60, 70]) {
+      const questao = questoes.find((item) => item.numero === numero)!;
+      expect(questao.textoApoioChave, `questao ${numero}`).toBeUndefined();
+    }
+    for (const numero of [19, 20]) {
+      const questao = questoes.find((item) => item.numero === numero)!;
+      expect(questao.textoApoioChave, `questao ${numero}`).toBeDefined();
+    }
+  });
+
   it("preserva texto de apoio curto (< 100 chars) com aviso de revisao em vez de descartar a referencia", () => {
     // Antes: textos de apoio com menos de MIN_TEXTO_APOIO_LENGTH eram descartados por
     // inteiro - a questao seguinte ficava sem nenhuma chave, mesmo tendo um titulo de
