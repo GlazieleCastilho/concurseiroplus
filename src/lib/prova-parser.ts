@@ -27,6 +27,12 @@ type QuestaoDraft = {
   // entao e descartado em vez de inventado; o aviso gerado a partir desta flag (ver
   // findAlternativaCountWarnings) e o unico rastro de que algo foi removido.
   tabelaNaoExtraida?: boolean;
+  // true quando uma legenda de questao "associe" foi detectada grudada na ultima
+  // alternativa, mas as PROPRIAS alternativas desta questao nao tem formato de
+  // associacao - sinal de que a legenda vazou de outra questao nas proximidades (ver
+  // questaoTemAlternativasDeAssociacao). Descartada em vez de incorporada ao enunciado
+  // errado; o aviso gerado a partir desta flag e o unico rastro do que foi removido.
+  legendaOrfa?: boolean;
 };
 
 export type TextoApoioDraft = { chave: string; titulo?: string; conteudo: string };
@@ -455,6 +461,21 @@ function splitAssociationLegend(lines: string[]): { altLines: string[]; legendLi
   return { altLines: lines.slice(0, startIdx), legendLines: lines.slice(startIdx) };
 }
 
+// Uma questao "associe" DE VERDADE sempre tem alternativas no formato "I - P , II - Q ,
+// III - R" (a propria natureza da questao: a resposta E a associacao entre os grupos).
+// Se uma legenda aparece grudada numa questao cujas PROPRIAS alternativas nao tem esse
+// formato (ex.: numeros simples "0", "3", "4"...), a legenda quase certamente vazou de
+// OUTRA questao "associe" nas proximidades (mesmo artefato de layout em colunas ja
+// visto - o PDF as vezes imprime o conteudo de uma pagina fora da ordem linear
+// esperada). Sem essa checagem, uma legenda orfa assim seria incorporada ao enunciado
+// errado como se fosse dele - pior que deixar visivel como aviso, porque parece
+// conteudo legitimo da questao quando na verdade nao tem nada a ver com ela.
+const ASSOCIATION_ANSWER_PATTERN = /^I\s*[-–—].*\bII\s*[-–—]/;
+
+function questaoTemAlternativasDeAssociacao(alternativas: Array<{ texto: string }>): boolean {
+  return alternativas.some((alt) => ASSOCIATION_ANSWER_PATTERN.test(alt.texto));
+}
+
 // PDFs com tabelas de dados simples (grade com celulas curtas: nomes, numeros, per-
 // centuais) tem cada celula extraida como um pedaco de texto solto - a extracao linear
 // concatena tudo sem espaco nenhum entre elas, produzindo um texto sem sentido, bem
@@ -629,6 +650,7 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
     );
     let associationLegend = "";
     let tabelaNaoExtraida = false;
+    let legendaOrfa = false;
     const stemLines =
       altStartIdx === -1 ? blockLines : blockLines.slice(0, altStartIdx);
     const enunciado = formatWithItemBreaks(stemLines);
@@ -668,7 +690,18 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
           texto: joinDehyphenated(altLines).replace(/\s+/g, " ").trim(),
           correta: false,
         });
-        if (legendLines.length > 0) associationLegend = formatWithItemBreaks(legendLines);
+        if (legendLines.length > 0) {
+          // A legenda so pertence de verdade a esta questao se as PROPRIAS alternativas
+          // dela tiverem o formato de associacao ("I - P , II - Q..."). Sem isso, e uma
+          // legenda orfa que vazou de outra questao "associe" nas proximidades (ver
+          // questaoTemAlternativasDeAssociacao) - nao e conteudo desta questao, entao
+          // nao entra no enunciado: so vira um aviso pro admin investigar.
+          if (questaoTemAlternativasDeAssociacao(alternativas)) {
+            associationLegend = formatWithItemBreaks(legendLines);
+          } else {
+            legendaOrfa = true;
+          }
+        }
         if (garbledLines.length > 0) tabelaNaoExtraida = true;
       }
     }
@@ -735,6 +768,7 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
       alternativas,
       textoApoioChave: current.textoApoioChave,
       tabelaNaoExtraida: tabelaNaoExtraida || undefined,
+      legendaOrfa: legendaOrfa || undefined,
     });
   }
 
@@ -1066,7 +1100,18 @@ export function findAlternativaCountWarnings(questoes: QuestaoDraft[]): string[]
         `Questão ${questao.numero}: o enunciado cita uma tabela de dados, mas o conteúdo dela veio corrompido do PDF (células coladas sem espaço) e foi removido da última alternativa. Revise o PDF original e anexe a tabela manualmente (texto ou imagem).`,
     );
 
-  return [...countWarnings, ...lengthWarnings, ...tabelaWarnings];
+  // Legenda de questao "associe" que vazou de OUTRA questao nas proximidades (ver
+  // questaoTemAlternativasDeAssociacao em flush()) - descartada em vez de incorporada
+  // ao enunciado errado, mas o admin precisa saber que uma questao "associe" em algum
+  // lugar proximo desta ficou sem a propria legenda por causa disso.
+  const legendaOrfaWarnings = questoes
+    .filter((questao) => questao.legendaOrfa)
+    .map(
+      (questao) =>
+        `Questão ${questao.numero}: uma legenda de questão "associe" (algarismos romanos + letras) apareceu grudada na última alternativa, mas as alternativas desta questão não são de associação - a legenda provavelmente pertence a outra questão "associe" próxima (revise o PDF original) e foi removida em vez de incorporada ao lugar errado.`,
+    );
+
+  return [...countWarnings, ...lengthWarnings, ...tabelaWarnings, ...legendaOrfaWarnings];
 }
 
 function normalize(text: string): string {

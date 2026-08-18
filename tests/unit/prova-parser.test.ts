@@ -237,26 +237,21 @@ describe("parseProvaText - CESGRANRIO/PETROBRAS (pagina de instrucoes numeradas 
   });
 
   it("reconhece a legenda de uma questao 'associe' impressa fora de ordem e move pro enunciado, sem deixar grudada na ultima alternativa", () => {
-    // Bug original: questoes "associe" (ex.: 40, 42, 43, 46, 49, 51) trazem, no LAYOUT
-    // VISUAL da pagina, uma legenda em duas colunas (lista em algarismos romanos
-    // "I - ...", lista em letras "P - ...") ENTRE o comando e as alternativas - mas o
-    // texto extraido do PDF linearriza isso e imprime a legenda inteira DEPOIS das
-    // alternativas. Nao e vazamento de outra questao: e o proprio comando da questao,
-    // so impresso fora de ordem - splitAssociationLegend reconhece o padrao e move a
-    // legenda pro fim do enunciado, no lugar de deixa-la grudada na ultima alternativa.
-    // Todas as SEIS ficam com a ultima alternativa limpa (a legenda nunca mais e
-    // confundida com o texto da resposta em si, que e o que causava o falso positivo
-    // de "alternativa muito maior que as irmas").
-    for (const numero of [40, 42, 43, 49, 51]) {
+    // Bug original: questoes "associe" (ex.: 40, 42, 43, 49) trazem, no LAYOUT VISUAL da
+    // pagina, uma legenda em duas colunas (lista em algarismos romanos "I - ...", lista
+    // em letras "P - ...") ENTRE o comando e as alternativas - mas o texto extraido do
+    // PDF linearriza isso e imprime a legenda inteira DEPOIS das alternativas. Nao e
+    // vazamento de outra questao: e o proprio comando da questao, so impresso fora de
+    // ordem - splitAssociationLegend reconhece o padrao e move a legenda pro fim do
+    // enunciado, no lugar de deixa-la grudada na ultima alternativa. Todas ficam com a
+    // ultima alternativa limpa (a legenda nunca mais e confundida com o texto da
+    // resposta em si, que e o que causava o falso positivo de "alternativa muito maior
+    // que as irmas").
+    for (const numero of [40, 42, 43, 49]) {
       const questao = questoes.find((item) => item.numero === numero)!;
       const ultimaAlternativa = questao.alternativas[questao.alternativas.length - 1];
       expect(ultimaAlternativa.texto.length, `questao ${numero} ultima alternativa`).toBeLessThan(30);
     }
-    // Limitacao residual conhecida: como a legenda de uma questao pode fisicamente
-    // aparecer no PDF logo depois de OUTRA questao (nao a dela mesma - artefato do
-    // mesmo layout em colunas), splitAssociationLegend as vezes anexa a legenda certa
-    // a questao errada (ex.: a legenda da 43 acaba na 46, a da 49 acaba na 51) - sem
-    // vazar como ruido bruto numa alternativa, so no lugar (enunciado) errado.
     const questao40 = questoes.find((item) => item.numero === 40)!;
     expect(questao40.enunciado).toContain("Perspectiva organizacional");
     // Pedido do usuario: a legenda (I/II/III e P/Q/R/S) tambem deve ficar separada em
@@ -267,11 +262,41 @@ describe("parseProvaText - CESGRANRIO/PETROBRAS (pagina de instrucoes numeradas 
     expect(paragrafos40).toContain("P - Perspectiva funcional");
     expect(paragrafos40).toContain("S - Perspectiva organizacional");
 
-    // Questao 46 tem um aviso DIFERENTE agora (ver proximo teste: tabela de dados
-    // propria dela, nao a legenda) - as outras cinco nao devem avisar mais.
+    // Questoes 46 e 51 tem avisos DIFERENTES agora (ver proximos testes: legenda orfa e
+    // tabela de dados propria) - as quatro genuinamente "associe" nao devem avisar mais.
     const warnings = findAlternativaCountWarnings(questoes);
-    for (const numero of [40, 42, 43, 49, 51]) {
+    for (const numero of [40, 42, 43, 49]) {
       expect(warnings.some((warning) => warning.startsWith(`Questão ${numero}:`)), `nao deveria mais avisar pra questao ${numero}`).toBe(false);
+    }
+  });
+
+  it("descarta uma legenda orfa (vazada de OUTRA questao 'associe' proxima) em vez de incorpora-la ao enunciado errado", () => {
+    // Bug reportado pelo usuario: a legenda que aparece grudada na questao 46 (e 51) nao
+    // e delas - e conteudo real, mas de outra questao "associe" (ex.: a legenda de
+    // "niveis organizacionais" da questao 43) que o PDF imprime fora de ordem perto
+    // dessas questoes, sem nenhuma relacao de conteudo com elas. O sinal que distingue
+    // uma legenda genuina de uma orfa: uma questao "associe" DE VERDADE sempre tem
+    // alternativas no formato "I - P , II - Q..." - a 46 (numeros simples) e a 51
+    // (nomes de conceitos de POO) nao tem esse formato, entao a legenda anexada a elas
+    // e descartada (nao incorporada ao enunciado) e vira um aviso em vez disso.
+    for (const numero of [46, 51]) {
+      const questao = questoes.find((item) => item.numero === numero)!;
+      expect(questao.legendaOrfa, `questao ${numero}`).toBe(true);
+      expect(questao.enunciado, `questao ${numero}`).not.toMatch(/\bII\s*[-–—]/);
+    }
+    const questao51 = questoes.find((item) => item.numero === 51)!;
+    expect(questao51.enunciado).toContain("Qual recurso o programador deverá utilizar");
+    expect(questao51.alternativas.map((alt) => alt.texto)).toEqual([
+      "Agregação",
+      "Classes Abstratas",
+      "Encapsulamento",
+      "Polimorfismo",
+      "Composição",
+    ]);
+
+    const warnings = findAlternativaCountWarnings(questoes);
+    for (const numero of [46, 51]) {
+      expect(warnings.some((warning) => warning.startsWith(`Questão ${numero}:`) && warning.includes("legenda"))).toBe(true);
     }
   });
 
