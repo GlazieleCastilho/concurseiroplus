@@ -267,10 +267,38 @@ describe("parseProvaText - CESGRANRIO/PETROBRAS (pagina de instrucoes numeradas 
     expect(paragrafos40).toContain("P - Perspectiva funcional");
     expect(paragrafos40).toContain("S - Perspectiva organizacional");
 
+    // Questao 46 tem um aviso DIFERENTE agora (ver proximo teste: tabela de dados
+    // propria dela, nao a legenda) - as outras cinco nao devem avisar mais.
     const warnings = findAlternativaCountWarnings(questoes);
-    for (const numero of [40, 42, 43, 46, 49, 51]) {
+    for (const numero of [40, 42, 43, 49, 51]) {
       expect(warnings.some((warning) => warning.startsWith(`Questão ${numero}:`)), `nao deveria mais avisar pra questao ${numero}`).toBe(false);
     }
+  });
+
+  it("remove uma tabela de dados embaralhada da ultima alternativa e avisa, em vez de deixar o texto ilegivel", () => {
+    // Bug reportado pelo usuario: a questao 46 tem uma tabela de dados de verdade
+    // (Recurso/Junho/Julho/Agosto/Percentual trimestral) entre o enunciado e a pergunta
+    // final - mas cada celula da tabela vira um pedaco de texto solto na extracao, e a
+    // linearizacao concatena tudo sem espaco ("RecursoJunhoJulhoAgostoPercentual...
+    // Roldana311219,05%..."), grudado na ultima alternativa (E). Diferente da legenda de
+    // questao "associe" (formato reconhecivel, reconstruivel), o CONTEUDO de uma tabela
+    // assim nao da pra reconstruir com confianca a partir do texto extraido - a unica
+    // opcao segura e remover (nao inventar uma reconstrucao) e avisar o admin pra
+    // revisar o PDF original e anexar a tabela manualmente.
+    const questao46 = questoes.find((item) => item.numero === 46)!;
+    expect(questao46.alternativas.map((alt) => alt.texto)).toEqual(["0", "3", "4", "9", "12"]);
+    expect(questao46.tabelaNaoExtraida).toBe(true);
+
+    const warnings = findAlternativaCountWarnings(questoes);
+    expect(warnings.some((warning) => warning.startsWith("Questão 46:") && warning.includes("tabela de dados"))).toBe(true);
+
+    // Nao pode disparar em questoes normais so por citarem uma URL/hash com muitos
+    // digitos colados a letras (ex.: questao 10, cujo vazamento por quebra de pagina
+    // inclui uma URL de citacao real "<http://www.ft.com/cms/s/0/fa11320c-4f48...>") -
+    // esse e um sinal totalmente diferente de uma tabela de dados de verdade.
+    const questao10 = questoes.find((item) => item.numero === 10)!;
+    expect(questao10.tabelaNaoExtraida).toBeUndefined();
+    expect(warnings.some((warning) => warning.startsWith("Questão 10:"))).toBe(false);
   });
 
   it("nao deixa um numero de pagina cru (sem 'Pagina' na frente) vazar pra ultima alternativa em aberto", () => {

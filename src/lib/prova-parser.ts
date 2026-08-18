@@ -20,6 +20,13 @@ type QuestaoDraft = {
   gabarito?: string;
   alternativas: AlternativaDraft[];
   textoApoioChave?: string;
+  // true quando uma tabela de dados (grade com celulas curtas: nomes, numeros, per-
+  // centuais) foi detectada e removida da ultima alternativa - ver splitGarbledTableTail.
+  // O conteudo da tabela nao e reconstruivel de forma confiavel a partir do texto
+  // extraido (cada celula vira um pedaco de texto solto, sem espaco nenhum entre elas),
+  // entao e descartado em vez de inventado; o aviso gerado a partir desta flag (ver
+  // findAlternativaCountWarnings) e o unico rastro de que algo foi removido.
+  tabelaNaoExtraida?: boolean;
 };
 
 export type TextoApoioDraft = { chave: string; titulo?: string; conteudo: string };
@@ -448,6 +455,39 @@ function splitAssociationLegend(lines: string[]): { altLines: string[]; legendLi
   return { altLines: lines.slice(0, startIdx), legendLines: lines.slice(startIdx) };
 }
 
+// PDFs com tabelas de dados simples (grade com celulas curtas: nomes, numeros, per-
+// centuais) tem cada celula extraida como um pedaco de texto solto - a extracao linear
+// concatena tudo sem espaco nenhum entre elas, produzindo um texto sem sentido, bem
+// diferente de prosa normal (ex.: "RecursoJunhoJulhoAgostoPercentual trimestral
+// Roldana311219,05%..."). Diferente da legenda de questao "associe" (formato reco-
+// nhecivel, reconstruivel como texto legivel), o CONTEUDO de uma tabela assim NAO da
+// pra reconstruir de forma confiavel a partir do texto extraido - a unica opcao segura
+// e nao inventar uma reconstrucao. Detectado por um sinal generico e independente de
+// banca: prosa normal em portugues nunca cola uma letra minuscula direto numa maiuscula
+// ou num digito, nem um digito direto numa letra, sem espaco algum entre eles - varias
+// ocorrencias desse tipo de colagem no mesmo trecho e um forte indicio de celulas de
+// tabela espremidas juntas.
+const GARBLED_TEXT_TRANSITION = /[a-zà-ú](?=[A-ZÀ-Ú0-9])|\d(?=[A-Za-zÀ-ú])/g;
+const MIN_GARBLED_TRANSITIONS = 3;
+
+function looksLikeGarbledTableText(text: string): boolean {
+  const matches = text.match(GARBLED_TEXT_TRANSITION);
+  return (matches?.length ?? 0) >= MIN_GARBLED_TRANSITIONS;
+}
+
+// A PRIMEIRA linha e sempre o comeco de verdade da propria alternativa (mesmo raciocinio
+// de splitAssociationLegend) - so procura o inicio da tabela embaralhada a partir da
+// SEGUNDA linha em diante. Usa a PRIMEIRA linha que, sozinha, ja parece embaralhada
+// (normalmente a linha do cabecalho da tabela, com varias colunas coladas de uma vez).
+function splitGarbledTableTail(lines: string[]): { altLines: string[]; garbledLines: string[] } {
+  for (let i = 1; i < lines.length; i += 1) {
+    if (looksLikeGarbledTableText(lines[i])) {
+      return { altLines: lines.slice(0, i), garbledLines: lines.slice(i) };
+    }
+  }
+  return { altLines: lines, garbledLines: [] };
+}
+
 // Questoes com afirmativas em algarismos romanos pra julgar ("I - ...", "II - ...",
 // "III - ...", comum em enunciados do tipo "analise as afirmativas abaixo") ou com uma
 // legenda em letras maiusculas (a segunda coluna de uma questao "associe", ver
@@ -588,6 +628,7 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
       ALTERNATIVA_START.test(line.trim()),
     );
     let associationLegend = "";
+    let tabelaNaoExtraida = false;
     const stemLines =
       altStartIdx === -1 ? blockLines : blockLines.slice(0, altStartIdx);
     const enunciado = formatWithItemBreaks(stemLines);
@@ -612,13 +653,23 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
         }
       }
       if (letraAtual) {
-        const { altLines, legendLines } = splitAssociationLegend(linhasAtual);
+        const { altLines: semLegenda, legendLines } = splitAssociationLegend(linhasAtual);
+        // So tenta detectar tabela embaralhada quando NENHUMA quebra de pagina aconteceu
+        // dentro deste bloco - quando ha uma, o vazamento (se houver) e tratado pelo
+        // mecanismo mais especifico e confiavel logo abaixo (baseado em pageBreakIdx,
+        // que sabe EXATAMENTE onde a pagina virou). Rodar os dois ao mesmo tempo no
+        // mesmo trecho e arriscado: uma citacao/URL apos quebra de pagina (ex.: "Adapted
+        // from... Available in: <http://...>") tem varios digitos colados a letras
+        // (parte de um hash de URL) e bate por engano no mesmo sinal usado pra tabela.
+        const { altLines, garbledLines } =
+          current.pageBreakIdx.length === 0 ? splitGarbledTableTail(semLegenda) : { altLines: semLegenda, garbledLines: [] };
         alternativas.push({
           letra: letraAtual,
           texto: joinDehyphenated(altLines).replace(/\s+/g, " ").trim(),
           correta: false,
         });
         if (legendLines.length > 0) associationLegend = formatWithItemBreaks(legendLines);
+        if (garbledLines.length > 0) tabelaNaoExtraida = true;
       }
     }
 
@@ -683,6 +734,7 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
       enunciado: enunciadoFinal,
       alternativas,
       textoApoioChave: current.textoApoioChave,
+      tabelaNaoExtraida: tabelaNaoExtraida || undefined,
     });
   }
 
@@ -1003,7 +1055,18 @@ export function findAlternativaCountWarnings(questoes: QuestaoDraft[]): string[]
         `Questão ${questao.numero}: uma das alternativas ficou muito maior que as demais — provavelmente uma tabela/legenda de outra questão (comum em questões "associe") grudou nela por engano. Revise essa questão manualmente antes de confirmar.`,
     );
 
-  return [...countWarnings, ...lengthWarnings];
+  // Tabela de dados removida da ultima alternativa (ver splitGarbledTableTail em
+  // flush()) - o conteudo das celulas nao e reconstruivel de forma confiavel a partir
+  // do texto extraido, entao foi descartado em vez de inventado. Esse aviso e o unico
+  // rastro de que algo foi removido.
+  const tabelaWarnings = questoes
+    .filter((questao) => questao.tabelaNaoExtraida)
+    .map(
+      (questao) =>
+        `Questão ${questao.numero}: o enunciado cita uma tabela de dados, mas o conteúdo dela veio corrompido do PDF (células coladas sem espaço) e foi removido da última alternativa. Revise o PDF original e anexe a tabela manualmente (texto ou imagem).`,
+    );
+
+  return [...countWarnings, ...lengthWarnings, ...tabelaWarnings];
 }
 
 function normalize(text: string): string {
