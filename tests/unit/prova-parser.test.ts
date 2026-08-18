@@ -259,6 +259,13 @@ describe("parseProvaText - CESGRANRIO/PETROBRAS (pagina de instrucoes numeradas 
     // vazar como ruido bruto numa alternativa, so no lugar (enunciado) errado.
     const questao40 = questoes.find((item) => item.numero === 40)!;
     expect(questao40.enunciado).toContain("Perspectiva organizacional");
+    // Pedido do usuario: a legenda (I/II/III e P/Q/R/S) tambem deve ficar separada em
+    // paragrafos proprios, igual as afirmativas comuns - nao so o enunciado original.
+    const paragrafos40 = questao40.enunciado.split("\n\n");
+    expect(paragrafos40).toContain("I - Atividades");
+    expect(paragrafos40).toContain("II - Responsabilidades, dependências e autoridade");
+    expect(paragrafos40).toContain("P - Perspectiva funcional");
+    expect(paragrafos40).toContain("S - Perspectiva organizacional");
 
     const warnings = findAlternativaCountWarnings(questoes);
     for (const numero of [40, 42, 43, 46, 49, 51]) {

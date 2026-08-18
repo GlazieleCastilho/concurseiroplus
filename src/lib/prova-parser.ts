@@ -449,37 +449,39 @@ function splitAssociationLegend(lines: string[]): { altLines: string[]; legendLi
 }
 
 // Questoes com afirmativas em algarismos romanos pra julgar ("I - ...", "II - ...",
-// "III - ...", comum em enunciados do tipo "analise as afirmativas abaixo") tem cada
-// item numa linha propria no PDF de origem, mas o enunciado inteiro (comando + todas
-// as afirmativas) e achatado numa unica linha corrida ao juntar as linhas do bloco -
-// fica dificil de ler, tudo misturado sem separacao visual nenhuma. Insere quebra de
-// paragrafo antes de cada item reconhecido, preservando a separacao visual que o PDF
-// original ja tinha, sem alterar uma palavra do conteudo. So dispara com pelo menos
-// dois marcadores (I seguido de II mais adiante) - o mesmo criterio de especificidade
-// ja usado em splitAssociationLegend, pra nao quebrar paragrafo por engano numa frase
-// comum que comece com "I" por coincidencia.
-const ROMAN_ITEM_LINE = /^[IVXLC]{1,4}\s*[-–—]\s*\S/;
-// O algarismo romano (mais comumente "I", o mais curto) as vezes fica sozinho na
-// propria linha, com o hifen e o texto do item so na linha seguinte - mesma variacao
-// de quebra de linha ja tratada em ASSOCIATION_LEGEND_START.
-const ROMAN_ITEM_BARE = /^[IVXLC]{1,4}$/;
+// "III - ...", comum em enunciados do tipo "analise as afirmativas abaixo") ou com uma
+// legenda em letras maiusculas (a segunda coluna de uma questao "associe", ver
+// splitAssociationLegend: "P - ...", "Q - ...") tem cada item numa linha propria no PDF
+// de origem, mas o texto inteiro e achatado numa unica linha corrida ao juntar as
+// linhas do bloco - fica dificil de ler, tudo misturado sem separacao visual nenhuma.
+// Insere quebra de paragrafo antes de cada item reconhecido (romano OU letra), preser-
+// vando a separacao visual que o PDF original ja tinha, sem alterar uma palavra do
+// conteudo. So dispara com pelo menos dois marcadores do mesmo tipo (ex.: I seguido de
+// II mais adiante) - mesmo criterio de especificidade ja usado em splitAssociationLegend,
+// pra nao quebrar paragrafo por engano numa frase comum que comece com uma letra ou
+// algarismo romano por coincidencia.
+const LIST_ITEM_MARKER_INLINE = /^(?:[IVXLC]{1,4}|[A-Z])\s*[-–—]\s*\S/;
+// O marcador (mais comumente "I", o mais curto, mas tambem observado em letras como
+// "P"/"Q") as vezes fica sozinho na propria linha, com o hifen e o texto do item so na
+// linha seguinte - mesma variacao de quebra de linha ja tratada em ASSOCIATION_LEGEND_START.
+const LIST_ITEM_MARKER_BARE = /^(?:[IVXLC]{1,4}|[A-Z])$/;
 const DASH_CONTINUATION_LINE = /^[-–—]\s*\S/;
 
-function findRomanItemIndexes(lines: string[]): number[] {
+function findListItemIndexes(lines: string[]): number[] {
   const indexes: number[] = [];
   for (let i = 0; i < lines.length; i += 1) {
-    if (ROMAN_ITEM_LINE.test(lines[i])) {
+    if (LIST_ITEM_MARKER_INLINE.test(lines[i])) {
       indexes.push(i);
-    } else if (ROMAN_ITEM_BARE.test(lines[i]) && i + 1 < lines.length && DASH_CONTINUATION_LINE.test(lines[i + 1])) {
+    } else if (LIST_ITEM_MARKER_BARE.test(lines[i]) && i + 1 < lines.length && DASH_CONTINUATION_LINE.test(lines[i + 1])) {
       indexes.push(i);
     }
   }
   return indexes;
 }
 
-function formatEnunciadoWithItemBreaks(rawLines: string[]): string {
+function formatWithItemBreaks(rawLines: string[]): string {
   const lines = rawLines.map((line) => line.trim()).filter((line) => line.length > 0);
-  const itemIndexes = findRomanItemIndexes(lines);
+  const itemIndexes = findListItemIndexes(lines);
   if (itemIndexes.length < 2) return joinDehyphenated(lines).replace(/\s+/g, " ").trim();
 
   const segments: string[][] = [];
@@ -588,7 +590,7 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
     let associationLegend = "";
     const stemLines =
       altStartIdx === -1 ? blockLines : blockLines.slice(0, altStartIdx);
-    const enunciado = formatEnunciadoWithItemBreaks(stemLines);
+    const enunciado = formatWithItemBreaks(stemLines);
 
     const alternativas: AlternativaDraft[] = [];
     if (altStartIdx !== -1) {
@@ -616,7 +618,7 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
           texto: joinDehyphenated(altLines).replace(/\s+/g, " ").trim(),
           correta: false,
         });
-        if (legendLines.length > 0) associationLegend = joinDehyphenated(legendLines).replace(/\s+/g, " ").trim();
+        if (legendLines.length > 0) associationLegend = formatWithItemBreaks(legendLines);
       }
     }
 
@@ -674,7 +676,7 @@ export function parseProvaText(rawText: string): { questoes: QuestaoDraft[]; tex
     // comando da questao impresso fora de ordem no PDF - anexada aqui, no fim do
     // enunciado, e nao antes das alternativas: preservar a ordem exata em que ela
     // aparece no PDF de origem evita reescrever/reordenar conteudo da questao.
-    const enunciadoFinal = associationLegend ? `${enunciadoBase} ${associationLegend}` : enunciadoBase;
+    const enunciadoFinal = associationLegend ? `${enunciadoBase}\n\n${associationLegend}` : enunciadoBase;
     questoes.push({
       numero: current.numero,
       tipo: "OBJETIVA",
