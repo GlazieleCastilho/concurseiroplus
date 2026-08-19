@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StartDmDialog } from "@/components/social/start-dm-dialog";
 import { GroupsTab } from "@/components/social/groups-tab";
+import { formatUserName } from "@/lib/social-format";
 
 export type ConversationSummary = {
   id: string;
@@ -41,7 +42,7 @@ export function ConversationSidebar({ conversations, currentUserId }: { conversa
           <div className="space-y-1">
             {conversations.map((conversation) => {
               const other = conversation.participants.find((participant) => participant.userId !== currentUserId)?.user;
-              const name = conversation.type === "GROUP" ? (conversation.group?.name ?? "Grupo") : `${other?.firstName ?? ""} ${other?.lastName ?? ""}`.trim();
+              const name = conversation.type === "GROUP" ? (conversation.group?.name ?? "Grupo") : formatUserName(other?.firstName ?? "", other?.lastName);
               const imageUrl = conversation.type === "GROUP" ? conversation.group?.imageUrl : other?.imageUrl;
               const href = `/social/c/${conversation.id}`;
               const isActive = pathname === href;

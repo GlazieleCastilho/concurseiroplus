@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { formatUserName } from "@/lib/social-format";
 
 export type ChatMessage = {
   id: string;
@@ -24,12 +25,13 @@ export function MessageList({ messages, currentUserId }: { messages: ChatMessage
       {messages.length === 0 && <p className="text-center text-sm text-muted-foreground">Nenhuma mensagem ainda. Diga oi!</p>}
       {messages.map((message) => {
         const isOwn = message.senderId === currentUserId;
+        const senderName = formatUserName(message.sender.firstName, message.sender.lastName);
         return (
           <div key={message.id} className={`flex items-end gap-2 ${isOwn ? "flex-row-reverse" : ""}`}>
             {!isOwn && (
               <Avatar className="size-7">
                 <AvatarImage src={message.sender.imageUrl ?? undefined} />
-                <AvatarFallback>{message.sender.firstName[0]}</AvatarFallback>
+                <AvatarFallback>{senderName[0]}</AvatarFallback>
               </Avatar>
             )}
             <div
@@ -37,7 +39,7 @@ export function MessageList({ messages, currentUserId }: { messages: ChatMessage
                 isOwn ? "bg-primary text-primary-foreground" : "bg-muted"
               } ${message.pending ? "opacity-60" : ""}`}
             >
-              {!isOwn && <p className="mb-1 text-xs font-semibold opacity-70">{message.sender.firstName}</p>}
+              {!isOwn && <p className="mb-1 text-xs font-semibold opacity-70">{senderName}</p>}
               <p className="whitespace-pre-wrap">{message.content}</p>
             </div>
           </div>

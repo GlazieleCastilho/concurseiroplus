@@ -4,6 +4,7 @@ import { SocialLayout } from "@/components/social/social-layout";
 import { ChatPane } from "@/components/social/chat-pane";
 import { getCurrentDbUser } from "@/lib/clerk";
 import { getConversationForUser, listConversationsForUser, listMessages } from "@/repositories/social-repository";
+import { formatUserName } from "@/lib/social-format";
 
 export default async function SocialConversationPage({ params }: { params: Promise<{ conversationId: string }> }) {
   const user = await getCurrentDbUser();
@@ -17,7 +18,7 @@ export default async function SocialConversationPage({ params }: { params: Promi
   if (!conversation) notFound();
 
   const other = conversation.participants.find((participant) => participant.userId !== user.id)?.user;
-  const title = conversation.type === "GROUP" ? (conversation.group?.name ?? "Grupo") : `${other?.firstName ?? ""} ${other?.lastName ?? ""}`.trim();
+  const title = conversation.type === "GROUP" ? (conversation.group?.name ?? "Grupo") : formatUserName(other?.firstName ?? "", other?.lastName);
   const imageUrl = conversation.type === "GROUP" ? conversation.group?.imageUrl : other?.imageUrl;
 
   return (

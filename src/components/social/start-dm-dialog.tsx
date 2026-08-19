@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { formatUserName } from "@/lib/social-format";
 
 type UserResult = { id: string; firstName: string; lastName: string | null; imageUrl: string | null };
 
@@ -73,10 +74,10 @@ export function StartDmDialog({ open, onOpenChange }: { open: boolean; onOpenCha
               >
                 <Avatar className="size-8">
                   <AvatarImage src={user.imageUrl ?? undefined} />
-                  <AvatarFallback>{user.firstName[0]}</AvatarFallback>
+                  <AvatarFallback>{formatUserName(user.firstName, user.lastName)[0]}</AvatarFallback>
                 </Avatar>
                 <span>
-                  {user.firstName} {user.lastName ?? ""}
+                  {formatUserName(user.firstName, user.lastName)}
                 </span>
               </button>
             ))}
