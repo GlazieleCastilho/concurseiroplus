@@ -22,7 +22,11 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ s
     <AppShell>
       <div>
         <Link href="/material-estudos" className="text-sm text-muted-foreground hover:underline">← Material de estudos</Link>
-        <h1 className="font-display text-3xl font-bold">{course.title}</h1>
+        {course.thumbnail && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={course.thumbnail} alt="" className="mt-2 h-48 w-full rounded-lg object-cover" />
+        )}
+        <h1 className="mt-2 font-display text-3xl font-bold">{course.title}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{course.description}</p>
         {lessonIds.length > 0 && unlocked && (
           <p className="mt-2 text-sm text-accent">{completedIds.size}/{lessonIds.length} aulas concluidas</p>

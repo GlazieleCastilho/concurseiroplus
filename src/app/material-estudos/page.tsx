@@ -16,7 +16,11 @@ export default async function MaterialEstudosPage() {
           const unlocked = hasPlanAccess(user.planTier, course.requiredTier);
           return (
             <Link key={course.id} href={`/material-estudos/${course.slug}`}>
-              <Card className="h-full transition-colors hover:border-accent">
+              <Card className="h-full overflow-hidden transition-colors hover:border-accent">
+                {course.thumbnail && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={course.thumbnail} alt="" className="h-40 w-full object-cover" />
+                )}
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between gap-2">
                     <span>{course.title}</span>
