@@ -36,7 +36,11 @@ export default async function LessonPage({ params }: { params: Promise<{ slug: s
         <p className="text-sm text-muted-foreground">{lesson.moduleTitle}</p>
       </div>
 
-      {lesson.videoId ? (
+      {lesson.videoSource === "UPLOAD" && lesson.videoUrl ? (
+        <div className="aspect-video w-full overflow-hidden rounded-lg border border-border">
+          <video controls className="h-full w-full" src={lesson.videoUrl} />
+        </div>
+      ) : lesson.videoId ? (
         <div className="aspect-video w-full overflow-hidden rounded-lg border border-border">
           <iframe
             className="h-full w-full"
@@ -48,6 +52,16 @@ export default async function LessonPage({ params }: { params: Promise<{ slug: s
         </div>
       ) : (
         <Card><CardContent className="pt-6 text-sm text-muted-foreground">Esta aula ainda nao tem video cadastrado.</CardContent></Card>
+      )}
+
+      {lesson.attachmentUrl && (
+        <Card>
+          <CardContent className="pt-6">
+            <a href={lesson.attachmentUrl} target="_blank" rel="noreferrer" className="text-sm text-primary hover:underline">
+              📎 Baixar material ({lesson.attachmentName ?? "PDF"})
+            </a>
+          </CardContent>
+        </Card>
       )}
 
       {lesson.description && (

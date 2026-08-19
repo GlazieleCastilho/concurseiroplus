@@ -71,6 +71,26 @@ export function CourseManager({ initialCourses }: { initialCourses: CourseWithCo
   const [editing, setEditing] = useState<CourseWithCount | null>(null);
   const [form, setForm] = useState<CourseFormState>(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
+
+  async function handleThumbnailChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setUploadingThumbnail(true);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const response = await fetch("/api/admin/uploads/course-thumbnail", { method: "POST", body });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Erro ao subir capa");
+      setForm((current) => ({ ...current, thumbnail: data.url }));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao subir capa");
+    } finally {
+      setUploadingThumbnail(false);
+      event.target.value = "";
+    }
+  }
 
   function openCreate() {
     setEditing(null);
@@ -178,8 +198,19 @@ export function CourseManager({ initialCourses }: { initialCourses: CourseWithCo
                 <Textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} />
               </div>
               <div className="space-y-1">
-                <Label>URL da capa (thumbnail)</Label>
-                <Input value={form.thumbnail} onChange={(event) => setForm({ ...form, thumbnail: event.target.value })} placeholder="https://..." />
+                <Label>Capa (thumbnail)</Label>
+                {form.thumbnail && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={form.thumbnail} alt="" className="h-32 w-auto rounded-md border border-border object-cover" />
+                )}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  disabled={uploadingThumbnail}
+                  onChange={handleThumbnailChange}
+                  className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-md file:border file:border-border file:bg-background file:px-3 file:py-1.5 file:text-sm"
+                />
+                {uploadingThumbnail && <p className="text-xs text-muted-foreground">Enviando...</p>}
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1">
@@ -227,7 +258,7 @@ export function CourseManager({ initialCourses }: { initialCourses: CourseWithCo
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-              <Button onClick={save} disabled={saving || !form.title || !form.slug || !form.description || !form.thumbnail}>
+              <Button onClick={save} disabled={saving || uploadingThumbnail || !form.title || !form.slug || !form.description || !form.thumbnail}>
                 {saving ? "Salvando..." : "Salvar"}
               </Button>
             </DialogFooter>

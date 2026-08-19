@@ -69,6 +69,11 @@ enum CourseDifficulty {
   HARD
 }
 
+enum LessonVideoSource {
+  YOUTUBE
+  UPLOAD
+}
+
 enum BancaPattern {
   ENEM
   CESPE
@@ -873,16 +878,20 @@ model CourseModule {
 }
 
 model CourseLesson {
-  id           String       @id @default(cuid())
-  moduleId     String
-  module       CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  title        String
-  description  String?
-  videoId      String?
-  durationInMs Int
-  order        Int
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  id             String            @id @default(cuid())
+  moduleId       String
+  module         CourseModule      @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title          String
+  description    String?
+  videoId        String?
+  videoSource    LessonVideoSource @default(YOUTUBE)
+  videoUrl       String?
+  attachmentUrl  String?
+  attachmentName String?
+  durationInMs   Int
+  order          Int
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 
   progress CourseProgress[]
 
