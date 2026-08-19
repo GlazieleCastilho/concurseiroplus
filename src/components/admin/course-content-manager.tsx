@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
+import { extractYoutubeVideoId } from "@/lib/youtube";
 import type { CourseLesson, CourseModule } from "@/generated/prisma";
 
 type ModuleWithLessons = CourseModule & { lessons: CourseLesson[] };
@@ -342,8 +343,8 @@ export function CourseContentManager({ courseId, initialModules }: { courseId: s
               {lessonForm.videoSource === "YOUTUBE" ? (
                 <Input
                   value={lessonForm.videoId}
-                  onChange={(event) => setLessonForm({ ...lessonForm, videoId: event.target.value })}
-                  placeholder="Ex: dQw4w9WgXcQ (o trecho depois de v= na URL)"
+                  onChange={(event) => setLessonForm({ ...lessonForm, videoId: extractYoutubeVideoId(event.target.value) })}
+                  placeholder="Cole o link do YouTube ou so o ID (ex: dQw4w9WgXcQ)"
                 />
               ) : (
                 <div className="space-y-1">

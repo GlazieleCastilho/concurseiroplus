@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { extractYoutubeVideoId } from "@/lib/youtube";
 
 export const bancaPatternSchema = z.enum(["ENEM", "CESPE", "FCC", "FGV"]);
 export const skillSlugSchema = z.enum([
@@ -74,7 +75,11 @@ export const courseModuleSchema = z.object({
 export const courseLessonSchema = z.object({
   title: z.string().min(3).max(160),
   description: z.string().max(2000).optional(),
-  videoId: z.string().max(40).optional(),
+  videoId: z
+    .string()
+    .transform((value) => extractYoutubeVideoId(value))
+    .pipe(z.string().max(40))
+    .optional(),
   videoSource: z.enum(["YOUTUBE", "UPLOAD"]).default("YOUTUBE"),
   videoUrl: z.string().url().optional(),
   attachmentUrl: z.string().url().optional(),
