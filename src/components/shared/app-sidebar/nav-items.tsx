@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {Separator} from "@/components/ui/separator";
 import {
     SidebarGroup,
@@ -38,8 +39,15 @@ type NavItem = {
 
 export const NavItems =() => {
     const {user} = useUser();
+    // O useUser() do Clerk so resolve a sessao depois de montar no cliente - no
+    // primeiro render (SSR e a primeira passada de hidratacao) ele ainda nao tem o
+    // usuario, entao renderizar os itens de admin condicionados a isso direto causa
+    // mismatch de hidratacao (o HTML do servidor nao tem os itens, o do cliente tem).
+    // So calcula isAdmin depois que montou, pra SSR e a hidratacao inicial baterem.
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
 
-    const isAdmin = user?.publicMetadata?.role === "admin" || user?.publicMetadata?.role === "super_admin";
+    const isAdmin = mounted && (user?.publicMetadata?.role === "admin" || user?.publicMetadata?.role === "super_admin");
     const navItems: NavItem[] = [
         {
             label:"Inicio",
