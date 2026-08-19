@@ -22,10 +22,13 @@ export function PostCard({
   const [likeCount, setLikeCount] = useState(post.likeCount);
   const [expanded, setExpanded] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [liking, setLiking] = useState(false);
 
   const authorName = formatUserName(post.user.firstName, post.user.lastName);
 
   async function toggleLike() {
+    if (liking) return;
+    setLiking(true);
     const nextLiked = !liked;
     setLiked(nextLiked);
     setLikeCount((prev) => prev + (nextLiked ? 1 : -1));
@@ -39,6 +42,8 @@ export function PostCard({
       setLiked(!nextLiked);
       setLikeCount((prev) => prev + (nextLiked ? -1 : 1));
       toast.error(error instanceof Error ? error.message : "Erro ao curtir");
+    } finally {
+      setLiking(false);
     }
   }
 
@@ -75,7 +80,7 @@ export function PostCard({
       <CardContent className="space-y-3">
         <p className="whitespace-pre-wrap">{post.content}</p>
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <button type="button" onClick={toggleLike} className={liked ? "font-semibold text-foreground" : ""}>
+          <button type="button" onClick={toggleLike} disabled={liking} className={liked ? "font-semibold text-foreground" : ""}>
             {likeCount} curtidas
           </button>
           <button type="button" onClick={() => setExpanded((prev) => !prev)}>

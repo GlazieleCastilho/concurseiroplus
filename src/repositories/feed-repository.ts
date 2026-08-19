@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@/generated/prisma";
 import type { Comment } from "@/generated/prisma";
 
 const authorSelect = { id: true, firstName: true, lastName: true, imageUrl: true } as const;
@@ -46,26 +47,46 @@ export async function deletePost(postId: string, userId: string) {
   await prisma.post.update({ where: { id: postId }, data: { status: "DELETED" } });
 }
 
+function isUniqueViolation(error: unknown): boolean {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
+}
+
 export async function togglePostLike(postId: string, userId: string) {
   const existing = await prisma.like.findUnique({ where: { userId_postId: { userId, postId } } });
+  let liked = !existing;
   if (existing) {
-    await prisma.like.delete({ where: { id: existing.id } });
+    await prisma.like.delete({ where: { id: existing.id } }).catch(() => {
+      // outra requisicao concorrente ja removeu - estado final e "nao curtido" de qualquer forma
+    });
   } else {
-    await prisma.like.create({ data: { userId, postId } });
+    // dois cliques rapidos podem chegar aqui ao mesmo tempo, ambos vendo "nao existe" -
+    // a segunda create bate na constraint @@unique([userId, postId]); trata como sucesso.
+    try {
+      await prisma.like.create({ data: { userId, postId } });
+    } catch (error) {
+      if (!isUniqueViolation(error)) throw error;
+      liked = true;
+    }
   }
   const likeCount = await prisma.like.count({ where: { postId } });
-  return { liked: !existing, likeCount };
+  return { liked, likeCount };
 }
 
 export async function toggleCommentLike(commentId: string, userId: string) {
   const existing = await prisma.like.findUnique({ where: { userId_commentId: { userId, commentId } } });
+  let liked = !existing;
   if (existing) {
-    await prisma.like.delete({ where: { id: existing.id } });
+    await prisma.like.delete({ where: { id: existing.id } }).catch(() => {});
   } else {
-    await prisma.like.create({ data: { userId, commentId } });
+    try {
+      await prisma.like.create({ data: { userId, commentId } });
+    } catch (error) {
+      if (!isUniqueViolation(error)) throw error;
+      liked = true;
+    }
   }
   const likeCount = await prisma.like.count({ where: { commentId } });
-  return { liked: !existing, likeCount };
+  return { liked, likeCount };
 }
 
 export async function listCommentsForPost(postId: string, userId: string): Promise<CommentNode[]> {

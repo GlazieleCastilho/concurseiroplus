@@ -45,11 +45,14 @@ export function CommentNode({
   const [replyContent, setReplyContent] = useState("");
   const [sendingReply, setSendingReply] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [liking, setLiking] = useState(false);
 
   const authorName = formatUserName(comment.user.firstName, comment.user.lastName);
   const indentClass = INDENT_CLASSES[Math.min(depth, 4)];
 
   async function toggleLike() {
+    if (liking) return;
+    setLiking(true);
     const nextLiked = !liked;
     setLiked(nextLiked);
     setLikeCount((prev) => prev + (nextLiked ? 1 : -1));
@@ -63,6 +66,8 @@ export function CommentNode({
       setLiked(!nextLiked);
       setLikeCount((prev) => prev + (nextLiked ? -1 : 1));
       toast.error(error instanceof Error ? error.message : "Erro ao curtir");
+    } finally {
+      setLiking(false);
     }
   }
 
@@ -114,7 +119,7 @@ export function CommentNode({
         </div>
       </div>
       <div className="ml-9 flex items-center gap-3 text-xs text-muted-foreground">
-        <button type="button" onClick={toggleLike} className={liked ? "font-semibold text-foreground" : ""}>
+        <button type="button" onClick={toggleLike} disabled={liking} className={liked ? "font-semibold text-foreground" : ""}>
           Curtir {likeCount > 0 && `(${likeCount})`}
         </button>
         <button type="button" onClick={() => setReplying((prev) => !prev)}>
