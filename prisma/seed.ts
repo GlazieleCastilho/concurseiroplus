@@ -79,7 +79,6 @@ async function seedProvas() {
       create: {
         id: `${prova.banca.toLowerCase()}-${prova.ano}-${prova.cargo.toLowerCase().replaceAll(" ", "-")}`,
         ...prova,
-        dataProva: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000),
         popularidade: 100,
       },
     });

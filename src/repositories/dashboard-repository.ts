@@ -39,13 +39,14 @@ export async function getStudentDashboard(userId: string) {
 }
 
 export async function getAdminDashboard() {
-  const [users, activeSubscriptions, payments, essays, skillMessages, provas] = await Promise.all([
+  const [users, activeSubscriptions, payments, essays, skillMessages, topProvas, topConcursos] = await Promise.all([
     prisma.user.count(),
     prisma.subscription.count({ where: { status: { in: ["ACTIVE", "LIFETIME"] } } }),
     prisma.payment.findMany({ where: { status: "APPROVED" }, select: { amountCents: true, createdAt: true } }),
     prisma.redacao.count(),
     prisma.skillMessage.count(),
     prisma.prova.findMany({ orderBy: { popularidade: "desc" }, take: 8 }),
+    prisma.concurso.findMany({ orderBy: { popularidade: "desc" }, take: 8 }),
   ]);
 
   const mrr = payments
@@ -62,6 +63,7 @@ export async function getAdminDashboard() {
     cac: 0,
     essays,
     skillMessages,
-    provas,
+    topProvas,
+    topConcursos,
   };
 }

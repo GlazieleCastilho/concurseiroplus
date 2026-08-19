@@ -89,11 +89,6 @@ enum ConcursoStatus {
   FECHADO
 }
 
-enum ProvaOrigem {
-  QUESTOES
-  CONCURSO
-}
-
 enum QuestionType {
   OBJETIVA
   CERTO_ERRADO
@@ -333,7 +328,10 @@ model WebhookEvent {
   @@map("webhook_events")
 }
 
-model Prova {
+// Concurso publico real (edital) - inscricao, vagas, salario, status de
+// previsto/aberto/em andamento/fechado. Nao tem questoes nem e usado por
+// simulado - e so o anuncio do concurso em si.
+model Concurso {
   id              String         @id @default(cuid())
   titulo          String
   orgao           String
@@ -342,7 +340,6 @@ model Prova {
   ano             Int
   nivel           ExamLevel[]    @default([SUPERIOR])
   status          ConcursoStatus @default(PREVISTO)
-  origem          ProvaOrigem    @default(QUESTOES)
   disciplina      String?
   dataProva       DateTime?
   inscricaoInicio DateTime?
@@ -350,19 +347,39 @@ model Prova {
   vagas           Int?
   salario         String?
   editalUrl       String?
-  totalQuestoes   Int            @default(0)
-  duracaoMin      Int            @default(240)
   popularidade    Int            @default(0)
-  s3Key           String?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+
+  @@index([banca, orgao, cargo])
+  @@index([dataProva])
+  @@map("concursos")
+}
+
+// Banco de questoes de uma prova JA REALIZADA, importado de PDF pra uso em
+// simulados/pratica. Sem status de inscricao/edital - isso pertence so a
+// Concurso (ver acima).
+model Prova {
+  id            String      @id @default(cuid())
+  titulo        String
+  orgao         String
+  banca         String
+  cargo         String
+  ano           Int
+  nivel         ExamLevel[] @default([SUPERIOR])
+  disciplina    String?
+  totalQuestoes Int         @default(0)
+  duracaoMin    Int         @default(240)
+  popularidade  Int         @default(0)
+  s3Key         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
   questoes    Questao[]
   simulados   Simulado[]
   textosApoio TextoApoio[]
 
   @@index([banca, orgao, cargo])
-  @@index([dataProva])
   @@map("provas")
 }
 

@@ -17,9 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { ConcursoStatus, ExamLevel, Prova } from "@/generated/prisma";
-
-type ProvaWithCount = Prova & { _count: { questoes: number } };
+import type { Concurso, ConcursoStatus, ExamLevel } from "@/generated/prisma";
 
 const NIVEL_OPTIONS: ExamLevel[] = ["FUNDAMENTAL", "MEDIO", "SUPERIOR"];
 const NIVEL_LABELS: Record<ExamLevel, string> = {
@@ -79,11 +77,11 @@ function toDateInputValue(date: Date | null | undefined): string {
   return new Date(date).toISOString().slice(0, 10);
 }
 
-export function ConcursoManager({ initialProvas }: { initialProvas: ProvaWithCount[] }) {
+export function ConcursoManager({ initialConcursos }: { initialConcursos: Concurso[] }) {
   const router = useRouter();
-  const [provas, setProvas] = useState(initialProvas);
+  const [concursos, setConcursos] = useState(initialConcursos);
   const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<ProvaWithCount | null>(null);
+  const [editing, setEditing] = useState<Concurso | null>(null);
   const [form, setForm] = useState<ConcursoFormState>(emptyForm);
   const [saving, setSaving] = useState(false);
 
@@ -93,22 +91,22 @@ export function ConcursoManager({ initialProvas }: { initialProvas: ProvaWithCou
     setOpen(true);
   }
 
-  function openEdit(prova: ProvaWithCount) {
-    setEditing(prova);
+  function openEdit(concurso: Concurso) {
+    setEditing(concurso);
     setForm({
-      titulo: prova.titulo,
-      orgao: prova.orgao,
-      banca: prova.banca,
-      cargo: prova.cargo,
-      ano: String(prova.ano),
-      nivel: prova.nivel,
-      status: prova.status,
-      dataProva: toDateInputValue(prova.dataProva),
-      inscricaoInicio: toDateInputValue(prova.inscricaoInicio),
-      inscricaoFim: toDateInputValue(prova.inscricaoFim),
-      vagas: prova.vagas ? String(prova.vagas) : "",
-      salario: prova.salario ?? "",
-      editalUrl: prova.editalUrl ?? "",
+      titulo: concurso.titulo,
+      orgao: concurso.orgao,
+      banca: concurso.banca,
+      cargo: concurso.cargo,
+      ano: String(concurso.ano),
+      nivel: concurso.nivel,
+      status: concurso.status,
+      dataProva: toDateInputValue(concurso.dataProva),
+      inscricaoInicio: toDateInputValue(concurso.inscricaoInicio),
+      inscricaoFim: toDateInputValue(concurso.inscricaoFim),
+      vagas: concurso.vagas ? String(concurso.vagas) : "",
+      salario: concurso.salario ?? "",
+      editalUrl: concurso.editalUrl ?? "",
     });
     setOpen(true);
   }
@@ -124,7 +122,6 @@ export function ConcursoManager({ initialProvas }: { initialProvas: ProvaWithCou
         ano: Number(form.ano),
         nivel: form.nivel,
         status: form.status,
-        origem: "CONCURSO" as const,
         dataProva: form.dataProva || undefined,
         inscricaoInicio: form.inscricaoInicio || undefined,
         inscricaoFim: form.inscricaoFim || undefined,
@@ -132,7 +129,7 @@ export function ConcursoManager({ initialProvas }: { initialProvas: ProvaWithCou
         salario: form.salario || undefined,
         editalUrl: form.editalUrl || undefined,
       };
-      const response = await fetch(editing ? `/api/admin/provas/${editing.id}` : "/api/admin/provas", {
+      const response = await fetch(editing ? `/api/admin/concursos/${editing.id}` : "/api/admin/concursos", {
         method: editing ? "PATCH" : "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
@@ -143,9 +140,9 @@ export function ConcursoManager({ initialProvas }: { initialProvas: ProvaWithCou
       setOpen(false);
       router.refresh();
       if (!editing) {
-        setProvas((current) => [{ ...data.prova, _count: { questoes: 0 } }, ...current]);
+        setConcursos((current) => [data.concurso, ...current]);
       } else {
-        setProvas((current) => current.map((item) => (item.id === data.prova.id ? { ...item, ...data.prova } : item)));
+        setConcursos((current) => current.map((item) => (item.id === data.concurso.id ? { ...item, ...data.concurso } : item)));
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao salvar concurso");
@@ -154,14 +151,14 @@ export function ConcursoManager({ initialProvas }: { initialProvas: ProvaWithCou
     }
   }
 
-  async function remove(prova: ProvaWithCount) {
-    if (!confirm(`Excluir o concurso "${prova.titulo}"? Isso tambem exclui as ${prova._count.questoes} questoes associadas.`)) return;
+  async function remove(concurso: Concurso) {
+    if (!confirm(`Excluir o concurso "${concurso.titulo}"?`)) return;
     try {
-      const response = await fetch(`/api/admin/provas/${prova.id}`, { method: "DELETE" });
+      const response = await fetch(`/api/admin/concursos/${concurso.id}`, { method: "DELETE" });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Erro ao excluir concurso");
       toast.success("Concurso excluido.");
-      setProvas((current) => current.filter((item) => item.id !== prova.id));
+      setConcursos((current) => current.filter((item) => item.id !== concurso.id));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao excluir concurso");
     }
@@ -284,34 +281,34 @@ export function ConcursoManager({ initialProvas }: { initialProvas: ProvaWithCou
           </TableRow>
         </TableHeader>
         <TableBody>
-          {provas.map((prova) => (
-            <TableRow key={prova.id}>
-              <TableCell className="max-w-[220px] truncate font-medium">{prova.titulo}</TableCell>
-              <TableCell>{prova.orgao}</TableCell>
+          {concursos.map((concurso) => (
+            <TableRow key={concurso.id}>
+              <TableCell className="max-w-[220px] truncate font-medium">{concurso.titulo}</TableCell>
+              <TableCell>{concurso.orgao}</TableCell>
               <TableCell>
-                <span className={`rounded-full px-2 py-1 text-xs font-medium ${STATUS_BADGE_CLASS[prova.status]}`}>
-                  {STATUS_LABELS[prova.status]}
+                <span className={`rounded-full px-2 py-1 text-xs font-medium ${STATUS_BADGE_CLASS[concurso.status]}`}>
+                  {STATUS_LABELS[concurso.status]}
                 </span>
               </TableCell>
-              <TableCell>{prova.vagas ?? "-"}</TableCell>
+              <TableCell>{concurso.vagas ?? "-"}</TableCell>
               <TableCell className="text-xs">
-                {prova.inscricaoInicio || prova.inscricaoFim
-                  ? `${prova.inscricaoInicio ? new Date(prova.inscricaoInicio).toLocaleDateString("pt-BR") : "?"} a ${prova.inscricaoFim ? new Date(prova.inscricaoFim).toLocaleDateString("pt-BR") : "?"}`
+                {concurso.inscricaoInicio || concurso.inscricaoFim
+                  ? `${concurso.inscricaoInicio ? new Date(concurso.inscricaoInicio).toLocaleDateString("pt-BR") : "?"} a ${concurso.inscricaoFim ? new Date(concurso.inscricaoFim).toLocaleDateString("pt-BR") : "?"}`
                   : "-"}
               </TableCell>
-              <TableCell>{prova.dataProva ? new Date(prova.dataProva).toLocaleDateString("pt-BR") : "A definir"}</TableCell>
+              <TableCell>{concurso.dataProva ? new Date(concurso.dataProva).toLocaleDateString("pt-BR") : "A definir"}</TableCell>
               <TableCell className="flex justify-end gap-2 text-right">
-                {prova.editalUrl && (
-                  <Link href={prova.editalUrl} target="_blank">
+                {concurso.editalUrl && (
+                  <Link href={concurso.editalUrl} target="_blank">
                     <Button size="sm" variant="outline">Edital</Button>
                   </Link>
                 )}
-                <Button size="sm" variant="outline" onClick={() => openEdit(prova)}>Editar</Button>
-                <Button size="sm" variant="destructive" onClick={() => remove(prova)}>Excluir</Button>
+                <Button size="sm" variant="outline" onClick={() => openEdit(concurso)}>Editar</Button>
+                <Button size="sm" variant="destructive" onClick={() => remove(concurso)}>Excluir</Button>
               </TableCell>
             </TableRow>
           ))}
-          {provas.length === 0 && (
+          {concursos.length === 0 && (
             <TableRow>
               <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
                 Nenhum concurso cadastrado ainda.
