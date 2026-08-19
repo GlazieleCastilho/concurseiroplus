@@ -75,8 +75,16 @@ export const courseLessonSchema = z.object({
   title: z.string().min(3).max(160),
   description: z.string().max(2000).optional(),
   videoId: z.string().max(40).optional(),
+  videoSource: z.enum(["YOUTUBE", "UPLOAD"]).default("YOUTUBE"),
+  videoUrl: z.string().url().optional(),
+  attachmentUrl: z.string().url().optional(),
+  attachmentName: z.string().max(200).optional(),
   durationInMs: z.coerce.number().int().min(0).default(0),
   order: z.coerce.number().int().min(1),
+});
+
+export const reorderSchema = z.object({
+  orderedIds: z.array(z.string().min(1)).min(1),
 });
 
 export const pomodoroSessionSchema = z.object({

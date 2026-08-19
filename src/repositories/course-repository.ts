@@ -24,6 +24,10 @@ export type CourseLessonInput = {
   title: string;
   description?: string;
   videoId?: string;
+  videoSource?: "YOUTUBE" | "UPLOAD";
+  videoUrl?: string;
+  attachmentUrl?: string;
+  attachmentName?: string;
   durationInMs: number;
   order: number;
 };
@@ -71,6 +75,23 @@ export async function updateModule(moduleId: string, input: Partial<CourseModule
 
 export async function deleteModule(moduleId: string) {
   return prisma.courseModule.delete({ where: { id: moduleId } });
+}
+
+// Duas passadas dentro da transacao: joga tudo pra valores negativos primeiro (nunca
+// colide com os positivos existentes nem entre si), depois define a ordem final -
+// evita bater na constraint @@unique([courseId, order]) no meio do reorder.
+export async function reorderModules(courseId: string, orderedIds: string[]) {
+  return prisma.$transaction(async (tx) => {
+    await Promise.all(orderedIds.map((id, index) => tx.courseModule.updateMany({ where: { id, courseId }, data: { order: -(index + 1) } })));
+    await Promise.all(orderedIds.map((id, index) => tx.courseModule.updateMany({ where: { id, courseId }, data: { order: index + 1 } })));
+  });
+}
+
+export async function reorderLessons(moduleId: string, orderedIds: string[]) {
+  return prisma.$transaction(async (tx) => {
+    await Promise.all(orderedIds.map((id, index) => tx.courseLesson.updateMany({ where: { id, moduleId }, data: { order: -(index + 1) } })));
+    await Promise.all(orderedIds.map((id, index) => tx.courseLesson.updateMany({ where: { id, moduleId }, data: { order: index + 1 } })));
+  });
 }
 
 export async function createLesson(moduleId: string, input: CourseLessonInput) {
