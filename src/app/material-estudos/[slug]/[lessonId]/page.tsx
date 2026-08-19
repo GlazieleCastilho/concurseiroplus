@@ -5,7 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getCurrentDbUser, hasPlanAccess } from "@/lib/clerk";
 import { getPublishedCourseBySlug, getProgressForUser } from "@/repositories/course-repository";
+import { getLessonNote } from "@/repositories/lesson-notes-repository";
 import { LessonCompleteButton } from "@/components/courses/lesson-complete-button";
+import { LessonNotes } from "@/components/lessons/lesson-notes";
+import { LessonCommentThread } from "@/components/lessons/lesson-comment-thread";
 
 export default async function LessonPage({ params }: { params: Promise<{ slug: string; lessonId: string }> }) {
   const { slug, lessonId } = await params;
@@ -25,7 +28,10 @@ export default async function LessonPage({ params }: { params: Promise<{ slug: s
   const previous = orderedLessons[currentIndex - 1];
   const next = orderedLessons[currentIndex + 1];
 
-  const progress = await getProgressForUser(user.id, [lesson.id]);
+  const [progress, note] = await Promise.all([
+    getProgressForUser(user.id, [lesson.id]),
+    getLessonNote(user.id, lesson.id),
+  ]);
   const completed = progress.length > 0;
 
   return (
@@ -56,13 +62,28 @@ export default async function LessonPage({ params }: { params: Promise<{ slug: s
 
       {lesson.attachmentUrl && (
         <Card>
-          <CardContent className="pt-6">
+          <CardHeader><CardTitle>Material de apoio</CardTitle></CardHeader>
+          <CardContent>
             <a href={lesson.attachmentUrl} target="_blank" rel="noreferrer" className="text-sm text-primary hover:underline">
               📎 Baixar material ({lesson.attachmentName ?? "PDF"})
             </a>
           </CardContent>
         </Card>
       )}
+
+      <Card>
+        <CardHeader><CardTitle>Anotações</CardTitle></CardHeader>
+        <CardContent>
+          <LessonNotes lessonId={lesson.id} initialContent={note?.content ?? ""} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Comentários</CardTitle></CardHeader>
+        <CardContent>
+          <LessonCommentThread lessonId={lesson.id} currentUserId={user.id} />
+        </CardContent>
+      </Card>
 
       {lesson.description && (
         <Card>

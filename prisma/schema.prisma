@@ -218,6 +218,9 @@ model User {
   supportTickets   SupportTicket[]
   auditLogs        AuditLog[]
   courseProgress   CourseProgress[]
+  lessonComments     LessonComment[]
+  lessonCommentLikes LessonCommentLike[]
+  lessonNotes        LessonNote[]
 
   @@index([role])
   @@index([planTier])
@@ -894,9 +897,58 @@ model CourseLesson {
   updatedAt      DateTime          @updatedAt
 
   progress CourseProgress[]
+  comments LessonComment[]
+  notes    LessonNote[]
 
   @@unique([moduleId, order])
   @@map("course_lessons")
+}
+
+model LessonComment {
+  id        String          @id @default(cuid())
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId  String
+  lesson    CourseLesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  parentId  String?
+  parent    LessonComment?  @relation("LessonCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   LessonComment[] @relation("LessonCommentReplies")
+  content   String          @db.Text
+  hidden    Boolean         @default(false)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  likes LessonCommentLike[]
+
+  @@index([lessonId, createdAt])
+  @@map("lesson_comments")
+}
+
+model LessonCommentLike {
+  id              String        @id @default(cuid())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonCommentId String
+  lessonComment   LessonComment @relation(fields: [lessonCommentId], references: [id], onDelete: Cascade)
+  createdAt       DateTime      @default(now())
+
+  @@unique([userId, lessonCommentId])
+  @@index([lessonCommentId])
+  @@map("lesson_comment_likes")
+}
+
+model LessonNote {
+  id        String       @id @default(cuid())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId  String
+  lesson    CourseLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  content   String       @db.Text
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@unique([userId, lessonId])
+  @@map("lesson_notes")
 }
 
 model CourseProgress {

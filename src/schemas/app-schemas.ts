@@ -117,6 +117,15 @@ export const commentSchema = z.object({
   parentId: z.string().cuid().optional(),
 });
 
+export const lessonCommentSchema = z.object({
+  content: z.string().min(1).max(2000),
+  parentId: z.string().cuid().optional(),
+});
+
+export const lessonNoteSchema = z.object({
+  content: z.string().max(10000),
+});
+
 export const groupSchema = z.object({
   name: z.string().min(3).max(80),
   discipline: z.string().min(2).max(60),
