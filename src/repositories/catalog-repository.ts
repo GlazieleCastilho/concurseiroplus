@@ -40,16 +40,3 @@ export async function getRanking(period = "global") {
     include: { user: true },
   });
 }
-
-export async function getFeed() {
-  return prisma.post.findMany({
-    where: { status: "PUBLISHED" },
-    orderBy: { createdAt: "desc" },
-    take: 50,
-    include: {
-      user: true,
-      comments: { include: { user: true }, orderBy: { createdAt: "asc" } },
-      likes: true,
-    },
-  });
-}
