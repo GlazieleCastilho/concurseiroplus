@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/shared/app-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { getCurrentDbUser, hasPlanAccess } from "@/lib/clerk";
 import { getPublishedCourseBySlug, getProgressForUser } from "@/repositories/course-repository";
@@ -60,28 +61,30 @@ export default async function LessonPage({ params }: { params: Promise<{ slug: s
         <Card><CardContent className="pt-6 text-sm text-muted-foreground">Esta aula ainda nao tem video cadastrado.</CardContent></Card>
       )}
 
-      {lesson.attachmentUrl && (
-        <Card>
-          <CardHeader><CardTitle>Material de apoio</CardTitle></CardHeader>
-          <CardContent>
-            <a href={lesson.attachmentUrl} target="_blank" rel="noreferrer" className="text-sm text-primary hover:underline">
-              📎 Baixar material ({lesson.attachmentName ?? "PDF"})
-            </a>
-          </CardContent>
-        </Card>
-      )}
-
       <Card>
-        <CardHeader><CardTitle>Anotações</CardTitle></CardHeader>
-        <CardContent>
-          <LessonNotes lessonId={lesson.id} initialContent={note?.content ?? ""} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader><CardTitle>Comentários</CardTitle></CardHeader>
-        <CardContent>
-          <LessonCommentThread lessonId={lesson.id} currentUserId={user.id} />
+        <CardContent className="pt-6">
+          <Tabs defaultValue="comentarios">
+            <TabsList>
+              <TabsTrigger value="comentarios">Comentários</TabsTrigger>
+              <TabsTrigger value="anotacoes">Anotações</TabsTrigger>
+              <TabsTrigger value="material">Material de apoio</TabsTrigger>
+            </TabsList>
+            <TabsContent value="comentarios" className="pt-4">
+              <LessonCommentThread lessonId={lesson.id} currentUserId={user.id} />
+            </TabsContent>
+            <TabsContent value="anotacoes" className="pt-4">
+              <LessonNotes lessonId={lesson.id} initialContent={note?.content ?? ""} />
+            </TabsContent>
+            <TabsContent value="material" className="pt-4">
+              {lesson.attachmentUrl ? (
+                <a href={lesson.attachmentUrl} target="_blank" rel="noreferrer" className="text-sm text-primary hover:underline">
+                  📎 Baixar material ({lesson.attachmentName ?? "PDF"})
+                </a>
+              ) : (
+                <p className="text-sm text-muted-foreground">Nenhum material anexado a esta aula.</p>
+              )}
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
 
