@@ -17,7 +17,7 @@ export const AppSidebar = ({...props}:AppSidebarProps) => {
     return (
         <Sidebar collapsible="icon" {...props}>
             <SidebarHeader className="py-4">
-              <Link href="/">
+              <Link href="/dashboard">
                <Logo className="w-full max-w-[150px] mx-auto pt-3 sm:hidden group-data-[state=expanded]:block"/>
                <LogoIcon className="w-full max-w-[20px] mx-auto pt-3 hidden group-data-[state=collapsed]:block"/>
               </Link>
