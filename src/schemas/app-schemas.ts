@@ -99,6 +99,11 @@ export const postSchema = z.object({
   tags: z.array(z.string().min(2).max(40)).max(6).default([]),
 });
 
+export const commentSchema = z.object({
+  content: z.string().min(1).max(2000),
+  parentId: z.string().cuid().optional(),
+});
+
 export const groupSchema = z.object({
   name: z.string().min(3).max(80),
   discipline: z.string().min(2).max(60),
