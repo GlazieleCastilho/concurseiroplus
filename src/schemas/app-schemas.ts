@@ -99,6 +99,17 @@ export const postSchema = z.object({
   tags: z.array(z.string().min(2).max(40)).max(6).default([]),
 });
 
+export const groupSchema = z.object({
+  name: z.string().min(3).max(80),
+  discipline: z.string().min(2).max(60),
+  description: z.string().max(500).optional(),
+  imageUrl: z.string().url().optional(),
+});
+
+export const sendMessageSchema = z.object({
+  content: z.string().min(1).max(4000),
+});
+
 export const simuladoStartSchema = z.object({
   provaId: z.string().min(1),
 });
