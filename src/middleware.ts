@@ -31,7 +31,7 @@ function withSecurityHeaders(response: NextResponse): NextResponse {
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
       "connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://api.anthropic.com https://api.openai.com https://api.pagar.me https://*.sentry.io https://*.posthog.com https://*.i.posthog.com https://*.supabase.co wss://*.supabase.co",
-      "frame-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://challenges.cloudflare.com https://*.pagar.me https://payment-link.pagar.me",
+      "frame-src 'self' https://*.clerk.accounts.dev https://*.clerk.com https://challenges.cloudflare.com https://*.pagar.me https://payment-link.pagar.me https://www.youtube.com https://www.youtube-nocookie.com",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
