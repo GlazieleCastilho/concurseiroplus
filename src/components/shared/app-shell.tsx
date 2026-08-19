@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { LogIn } from "lucide-react";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
@@ -11,6 +12,12 @@ import { PomodoroFloating } from "@/components/pomodoro/pomodoro-floating";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user } = useUser();
+  // Mesmo motivo do NavUser/NavItems: useUser() pode resolver de forma sincrona no
+  // cliente, entao so usa o valor real depois que montou pra bater com o SSR (sem
+  // sessao) na primeira renderizacao e nao quebrar a hidratacao.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const currentUser = mounted ? user : undefined;
 
   return (
     <SidebarProvider>
@@ -21,7 +28,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <SidebarTrigger className="-ml-1 flex md:hidden" />
             <SearchInput />
           </div>
-          {!user ? (
+          {!currentUser ? (
             <Link href="/auth/sign-in">
               <Button size="sm"><LogIn className="h-4 w-4" /> Entrar</Button>
             </Link>
@@ -33,7 +40,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </header>
         <div className="flex flex-1 flex-col gap-6 overflow-auto p-4 sm:p-6">{children}</div>
       </SidebarInset>
-      {user && <PomodoroFloating />}
+      {currentUser && <PomodoroFloating />}
     </SidebarProvider>
   );
 }

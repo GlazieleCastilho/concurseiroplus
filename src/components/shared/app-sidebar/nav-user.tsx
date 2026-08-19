@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,10 +32,18 @@ export const NavUser = () => {
   // pega ações do Clerk
   const { openUserProfile, signOut } = useClerk();
 
+  // O Clerk pode resolver a sessao de forma sincrona no cliente (cache local), entao
+  // "user"/"isLoaded" ja vem populado na primeira renderizacao do cliente - mas o
+  // servidor sempre renderiza sem sessao (Skeleton). Sem esse guard, cliente e servidor
+  // montam arvores de DOM diferentes (Skeleton vs menu vs botao de login) e quebra a
+  // hidratacao. So usa o valor real depois que montou, pra bater com o SSR primeiro.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        {user ? (
+        {mounted && user ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <SidebarMenuButton
@@ -93,7 +102,7 @@ export const NavUser = () => {
           </DropdownMenu>
         ) : (
           <>
-            {!isLoaded ? (
+            {!mounted || !isLoaded ? (
               <Skeleton className="h-9 w-full" />
             ) : (
               <div className="p-2">
