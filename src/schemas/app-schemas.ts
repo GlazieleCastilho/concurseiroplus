@@ -126,6 +126,14 @@ export const lessonNoteSchema = z.object({
   content: z.string().max(10000),
 });
 
+export const libraryDocumentSchema = z.object({
+  title: z.string().min(3).max(160),
+  description: z.string().max(2000).optional(),
+  category: z.string().min(2).max(80),
+  fileUrl: z.string().url(),
+  fileName: z.string().min(1).max(200),
+});
+
 export const groupSchema = z.object({
   name: z.string().min(3).max(80),
   discipline: z.string().min(2).max(60),
