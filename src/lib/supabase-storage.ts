@@ -7,6 +7,7 @@ const BUCKETS = {
   courseThumbnails: { name: "course-thumbnails", public: true, fileSizeLimit: "5MB" },
   courseAttachments: { name: "course-attachments", public: true, fileSizeLimit: "20MB" },
   courseVideos: { name: "course-videos", public: true, fileSizeLimit: "500MB" },
+  libraryDocuments: { name: "library-documents", public: true, fileSizeLimit: "20MB" },
 } as const satisfies Record<string, BucketConfig>;
 
 function getServiceClient() {
@@ -85,6 +86,12 @@ export async function uploadCourseThumbnail(
 /** Sobe um PDF de material de apoio de uma aula e retorna a URL publica + nome original. */
 export async function uploadCourseAttachment(bytes: Buffer, filename: string): Promise<{ url: string; name: string }> {
   const url = await uploadPublicFile(BUCKETS.courseAttachments, bytes, filename, "application/pdf");
+  return { url, name: filename };
+}
+
+/** Sobe um PDF pra Biblioteca e retorna a URL publica + nome original. */
+export async function uploadLibraryDocument(bytes: Buffer, filename: string): Promise<{ url: string; name: string }> {
+  const url = await uploadPublicFile(BUCKETS.libraryDocuments, bytes, filename, "application/pdf");
   return { url, name: filename };
 }
 

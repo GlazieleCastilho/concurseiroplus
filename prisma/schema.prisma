@@ -951,6 +951,20 @@ model LessonNote {
   @@map("lesson_notes")
 }
 
+model LibraryDocument {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  category    String
+  fileUrl     String
+  fileName    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@map("library_documents")
+}
+
 model CourseProgress {
   id          String       @id @default(cuid())
   userId      String

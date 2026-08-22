@@ -28,6 +28,7 @@ import {
     House,
     Landmark,
     GraduationCap,
+    Library,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -73,6 +74,11 @@ export const NavItems =() => {
             label:"Material de Estudos",
             path: "/material-estudos",
             icon: BookUp2,
+        },
+        {
+            label:"Biblioteca",
+            path: "/biblioteca",
+            icon: Library,
         },
         {
             label:"Ranking",
@@ -130,6 +136,11 @@ export const NavItems =() => {
             label:"Gerenciar Cursos",
             path: "/admin/courses",
             icon: GraduationCap,
+        },
+        {
+            label:"Gerenciar Biblioteca",
+            path: "/admin/library",
+            icon: Library,
         },
         {
             label: "Gerenciar Usuarios",
